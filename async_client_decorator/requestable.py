@@ -6,11 +6,13 @@ import aiohttp
 
 class Requestable(ABC):
     def __init__(
-            self,
-            base_url: str,
-            loop: asyncio.AbstractEventLoop = None,
-            **kwargs
+        self,
+        base_url: str,
+        loop: asyncio.AbstractEventLoop = None,
+        directly_response: bool = False,
+        **kwargs
     ):
+        self.directly_response = directly_response
         self.base_url = base_url
 
         if loop is None:

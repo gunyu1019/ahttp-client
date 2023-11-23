@@ -27,6 +27,7 @@ async def main():
     session = A(loop)
     data = await session.status(authorization="KEY")
     print(data)
+    await session.close()
 
 loop.run_until_complete(main())
 ```
