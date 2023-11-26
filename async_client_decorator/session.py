@@ -4,7 +4,7 @@ from abc import ABC
 import aiohttp
 
 
-class Requestable(ABC):
+class Session(ABC):
     def __init__(
         self,
         base_url: str,

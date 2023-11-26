@@ -6,8 +6,7 @@ import aiohttp
 
 from ._functools import wraps, wrap_annotations
 from ._types import RequestFunction
-from .component import Component, Body
-from .requestable import Requestable
+from .session import Session
 
 T = TypeVar("T")
 
@@ -19,7 +18,7 @@ def request(method: str, path: str, directly_response: bool = False, **request_k
         func_parameters = signature.parameters
         if len(func_parameters) <= 1:
             raise TypeError(
-                "%s missing 1 required parameter: 'self(extends Requestable)'".format(
+                "%s missing 1 required parameter: 'self(extends Session)'".format(
                     func.__name__
                 )
             )
@@ -35,8 +34,8 @@ def request(method: str, path: str, directly_response: bool = False, **request_k
             if not issubclass(Component, parameter.annotation):
                 continue
 
-            if issubclass(Union, parameter.annotation):
-                pass
+            annotation = getattr(parameter.annotation, "__args__", None) or tuple(parameter.annotation)
+
 
             if request_body_parameter is not None:
                 raise TypeError(
