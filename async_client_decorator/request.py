@@ -1,22 +1,44 @@
+import copy
 import inspect
 from asyncio import iscoroutinefunction
-from typing import TypeVar, Union
+from typing import TypeVar, Optional
 
 import aiohttp
 
 from ._functools import wraps, wrap_annotations
 from ._types import RequestFunction
+from .body import Body
+from .component import Component
+from .form import Form
+from .header import Header
+from .query import Query
 from .session import Session
 
 T = TypeVar("T")
 
 
-def request(method: str, path: str, directly_response: bool = False, **request_kwargs):
+def request(
+        method: str,
+        path: str,
+        directly_response: bool = False,
+        header_parameter: list[str] = None,
+        query_parameter: list[str] = None,
+        form_parameter: list[str] = None,
+        body_parameter: Optional[str] = None,
+        response_parameter: list[str] = None,
+        **request_kwargs
+):
+    header_parameter = header_parameter or list()
+    query_parameter = query_parameter or list()
+    form_parameter = form_parameter or list()
+    response_parameter = response_parameter or list()
+
     def decorator(func: RequestFunction):
         # method is related to Requestable class.
         signature = inspect.signature(func)
         func_parameters = signature.parameters
-        if len(func_parameters) <= 1:
+
+        if len(func_parameters) < 1:
             raise TypeError(
                 "%s missing 1 required parameter: 'self(extends Session)'".format(
                     func.__name__
@@ -26,70 +48,62 @@ def request(method: str, path: str, directly_response: bool = False, **request_k
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.")
 
-        request_component = {"headers": [], "params": []}
-        request_body_parameter: inspect.Parameter | None = None
-        response_parameter = []
+        component_func_parameter = Component()
+
+        component_func_parameter.header.update(
+            getattr(func, Header.DEFAULT_KEY, dict())
+        )
+        component_func_parameter.query.update(getattr(func, Query.DEFAULT_KEY, dict()))
+        component_func_parameter.form.update(getattr(func, Form.DEFAULT_KEY, dict()))
 
         for parameter in func_parameters.values():
-            if not issubclass(Component, parameter.annotation):
-                continue
+            if hasattr(parameter.annotation, "__args__"):
+                annotation = parameter.annotation.__args__
+            else:
+                annotation = (parameter.annotation,)
 
-            annotation = getattr(parameter.annotation, "__args__", None) or tuple(parameter.annotation)
+            if issubclass(Header, annotation) or parameter.name in header_parameter:
+                component_func_parameter.header[parameter.name] = parameter
+            elif issubclass(Query, annotation) or parameter.name in query_parameter:
+                component_func_parameter.query[parameter.name] = parameter
+            elif issubclass(Form, annotation) or parameter.name in form_parameter:
+                component_func_parameter.add_form(parameter.name, parameter)
+            elif issubclass(Body, annotation) or parameter.name == body_parameter:
+                component_func_parameter.set_body(parameter)
+            elif (
+                    issubclass(aiohttp.ClientResponse, annotation)
+                    or parameter.name in response_parameter
+            ):
+                component_func_parameter.response.append(parameter.name)
 
-
-            if request_body_parameter is not None:
-                raise TypeError(
-                    "Body parameter must be one. (%s, %s)".format(
-                    request_body_parameter.name, parameter.name
-                    )
-                )
-            """
-            # Function's Argument (Header)
-            if issubclass(Header, parameter.annotation):
-                request_component["headers"].append(parameter)
-            # Function's Argument (Query)
-            elif issubclass(Parameter, parameter.annotation):
-                request_component["params"].append(parameter)
-            elif issubclass(aiohttp.ClientResponse, parameter.annotation):
-                response_parameter.append(parameter)
-
-            # Function's Argument (Body)
-            # Body parameter's types can be dict(json), or aiohttp.FormData
-            elif issubclass(Body, parameter.annotation):
-                elif not (issubclass(aiohttp.FormData, parameter.annotation) or issubclass(dict, parameter.annotation)):
-                    raise TypeError(
-                        "Body parameter can only have aiohttp.FormData or dict."
-                    )
-                request_body_parameter = parameter
-            """
+        func.__component_parameter__ = component_func_parameter
 
         @wraps(func)
-        @wrap_annotations(func, delete_key=[x.name for x in response_parameter])
-        async def wrapper(self: Requestable, *args, **kwargs):
-            if not isinstance(self, Requestable):
-                raise TypeError("Class must inherit from class Requestable")
+        @wrap_annotations(func, delete_key=component_func_parameter.response)
+        async def wrapper(self: Session, *args, **kwargs):
+            wrapped_component_func_parameter = copy.copy(component_func_parameter)
+            if not isinstance(self, Session):
+                raise TypeError("Class must inherit from class Session")
+
+            for key1, key2 in {"params": "query", "headers": "header"}.items():
+                if key1 not in request_kwargs.keys():
+                    request_kwargs[key1] = dict()
+                request_kwargs[key1].update(
+                    wrapped_component_func_parameter.fill_keyword_argument_to_component(
+                        key2, kwargs
+                    )
+                )
+
+            if wrapped_component_func_parameter.is_body():
+                if wrapped_component_func_parameter.is_formal_form():
+                    wrapped_component_func_parameter.fill_keyword_argument_to_component(
+                        "form", kwargs
+                    )
+                request_kwargs[
+                    wrapped_component_func_parameter.body_type
+                ] = wrapped_component_func_parameter.get_body()
 
             url = self.base_url + path
-
-            for kv_key, kv_value in request_component.items():
-                if kv_key not in request_kwargs.keys() and len(kv_value) > 0:
-                    request_kwargs[kv_key] = {}
-
-                for _parameter in kv_value:
-                    request_kwargs[kv_key][_parameter.name] = (
-                            kwargs.get(_parameter.name) or _parameter.default
-                    )
-            if request_body_parameter is not None:
-                if issubclass(request_body_parameter.annotation, aiohttp.FormData):
-                    request_kwargs["body"] = (
-                            kwargs.get(request_body_parameter.name)
-                            or request_body_parameter.default
-                    )
-                else:
-                    request_kwargs["json"] = (
-                            kwargs.get(request_body_parameter.name)
-                            or request_body_parameter.default
-                    )
 
             response = await self.session.request(method, url, **request_kwargs)
             if (
@@ -99,8 +113,8 @@ def request(method: str, path: str, directly_response: bool = False, **request_k
             ):
                 return response
 
-            for _parameter in response_parameter:
-                kwargs[_parameter.name] = response
+            for _parameter in wrapped_component_func_parameter.response:
+                kwargs[_parameter] = response
             return await func(self, *args, **kwargs)
 
         return wrapper

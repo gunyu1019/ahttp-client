@@ -28,6 +28,6 @@ _Coroutine = Coroutine[Any, Any, T]
 CoroutineFunction = Callable[..., _Coroutine]
 
 RequestFunction = Callable[
-    ["Requestable", "aiohttp.ClientResponse", ...],
+    ["Session", ...],
     _Coroutine[T | "aiohttp.ClientResponse"],
 ]
