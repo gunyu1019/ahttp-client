@@ -8,7 +8,9 @@ _WRAPPER_ASSIGNMENTS = (
 )
 
 
-def update_wrap_annotations(wrapper, wrapped, annotations: dict[str, type] = None, delete_key: list[str] = None):
+def update_wrap_annotations(
+    wrapper, wrapped, annotations: dict[str, type] = None, delete_key: list[str] = None
+):
     __annotations__ = dict()
     annotations = annotations or dict()
     delete_key = delete_key or list()
@@ -29,5 +31,12 @@ def wraps(wrapped, assigned=_WRAPPER_ASSIGNMENTS, updated=WRAPPER_UPDATES):
     return partial(update_wrapper, wrapped=wrapped, assigned=assigned, updated=updated)
 
 
-def wrap_annotations(wrapped, annotations: dict[str, type] = None, delete_key: list[str] = None):
-    return partial(update_wrap_annotations, wrapped=wrapped, annotations=annotations, delete_key=delete_key)
+def wrap_annotations(
+    wrapped, annotations: dict[str, type] = None, delete_key: list[str] = None
+):
+    return partial(
+        update_wrap_annotations,
+        wrapped=wrapped,
+        annotations=annotations,
+        delete_key=delete_key,
+    )
