@@ -46,7 +46,7 @@ def request(
             )
 
         if not iscoroutinefunction(func):
-            raise TypeError("function %s must be coroutine.")
+            raise TypeError("function %s must be coroutine.".format(func.__name__))
 
         component_func_parameter = Component()
 
