@@ -53,7 +53,7 @@ class Component:
     ):
         return kwargs.get(key) if key in kwargs.keys() else parameter.default
 
-    def set_body(self, data: inspect.Parameter |     dict | list | aiohttp.FormData):
+    def set_body(self, data: inspect.Parameter | dict | list | aiohttp.FormData):
         body_annotations = (
             data.annotation if isinstance(data, inspect.Parameter) else type(data)
         )

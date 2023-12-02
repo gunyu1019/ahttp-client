@@ -40,15 +40,15 @@ T = TypeVar("T")
 
 
 def request(
-        method: str,
-        path: str,
-        directly_response: bool = False,
-        header_parameter: list[str] = None,
-        query_parameter: list[str] = None,
-        form_parameter: list[str] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: list[str] = None,
-        **request_kwargs
+    method: str,
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
 ):
     header_parameter = header_parameter or list()
     query_parameter = query_parameter or list()
@@ -93,8 +93,8 @@ def request(
             elif issubclass(Body, annotation) or parameter.name == body_parameter:
                 component_func_parameter.set_body(parameter)
             elif (
-                    issubclass(aiohttp.ClientResponse, annotation)
-                    or parameter.name in response_parameter
+                issubclass(aiohttp.ClientResponse, annotation)
+                or parameter.name in response_parameter
             ):
                 component_func_parameter.response.append(parameter.name)
 
@@ -129,9 +129,9 @@ def request(
 
             response = await self.session.request(method, url, **request_kwargs)
             if (
-                    issubclass(signature.return_annotation, aiohttp.ClientResponse)
-                    or directly_response
-                    or self.directly_response
+                issubclass(signature.return_annotation, aiohttp.ClientResponse)
+                or directly_response
+                or self.directly_response
             ):
                 return response
 

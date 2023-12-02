@@ -28,11 +28,11 @@ from typing import NoReturn
 
 class Session:
     def __init__(
-            self,
-            base_url: str,
-            loop: asyncio.AbstractEventLoop = None,
-            directly_response: bool = False,
-            **kwargs
+        self,
+        base_url: str,
+        loop: asyncio.AbstractEventLoop = None,
+        directly_response: bool = False,
+        **kwargs
     ):
         self.directly_response = directly_response
         self.base_url = base_url
@@ -55,10 +55,10 @@ class Session:
         raise TypeError("Use async with instead")
 
     def __exit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb,
     ) -> None:
         pass
 
@@ -66,19 +66,16 @@ class Session:
         return self
 
     async def __aexit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb,
     ) -> None:
         await self.close()
 
     @classmethod
     def single_session(
-            cls,
-            base_url: str,
-            loop: asyncio.AbstractEventLoop = None,
-            **session_kwargs
+        cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs
     ):
         def decorator(func):
             if not asyncio.iscoroutinefunction(func):
@@ -91,6 +88,7 @@ class Session:
                     await response.read()
                 await client.close()
                 return response
+
             return wrapper
 
         return decorator
