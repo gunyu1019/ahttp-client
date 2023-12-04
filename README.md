@@ -23,6 +23,7 @@ from async_client_decorator import request, Session, Query
 
 loop = asyncio.get_event_loop()
 
+
 class BusAPI(Session):
     def __init__(self, loop: asyncio.AbstractEventLoop):
         super().__init__("https://api.yhs.kr", loop)
