@@ -84,8 +84,6 @@ class Session:
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, loop, **session_kwargs)
                 response = await func(client, *args, **kwargs)
-                if isinstance(response, aiohttp.ClientResponse):
-                    await response.read()
                 await client.close()
                 return response
 

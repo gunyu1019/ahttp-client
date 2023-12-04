@@ -133,6 +133,7 @@ def request(
                 or directly_response
                 or self.directly_response
             ):
+                await response.read()
                 return response
 
             for _parameter in wrapped_component_func_parameter.response:
