@@ -33,6 +33,7 @@ class Path:
     >>> def function(path: str | Path):
     ...    pass
     """
+
     DEFAULT_KEY = "__DEFAULT_PATH__"
 
     @staticmethod

@@ -23,4 +23,12 @@ SOFTWARE.
 
 
 class Body:
+    """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
+
+    Examples
+    --------
+    >>> def function(body: dict | Body):
+    ...    pass
+    """
+
     pass

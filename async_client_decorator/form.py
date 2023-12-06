@@ -25,7 +25,15 @@ from typing import Any
 
 
 class Form:
-    DEFAULT_KEY = "__DEFAULT_Form__"
+    """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
+
+    Examples
+    --------
+    >>> def function(data: str | Form):
+    ...    pass
+    """
+
+    DEFAULT_KEY = "__DEFAULT_FORM__"
 
     @staticmethod
     def default_form(key: str, value: Any):

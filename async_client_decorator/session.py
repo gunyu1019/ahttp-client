@@ -22,65 +22,51 @@ SOFTWARE.
 """
 
 import asyncio
+import functools
+
 import aiohttp
-from typing import NoReturn
+
+from ._types import RequestFunction
 
 
-class Session:
-    def __init__(
-        self,
-        base_url: str,
-        loop: asyncio.AbstractEventLoop = None,
-        directly_response: bool = False,
-        **kwargs
-    ):
+class Session(aiohttp.ClientSession):
+    """A class to manage session for managing decoration functions."""
+
+    def __init__(self, base_url: str, directly_response: bool = False, **kwargs):
         self.directly_response = directly_response
         self.base_url = base_url
 
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        self.session = aiohttp.ClientSession(loop=loop, **kwargs)
-
-    def _get_url(self, path) -> str:
-        return self.base_url + path
-
-    async def request(self, method: str, path: str, **kwargs):
-        url = self._get_url(path)
-        return await self.session.request(method, url, **kwargs)
-
-    async def close(self):
-        return await self.session.close()
-
-    def __enter__(self) -> NoReturn:
-        raise TypeError("Use async with instead")
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb,
-    ) -> None:
-        pass
-
-    async def __aenter__(self) -> "Session":
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb,
-    ) -> None:
-        await self.close()
+        super().__init__(self.base_url, **kwargs)
 
     @classmethod
     def single_session(
         cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs
     ):
-        def decorator(func):
+        """A single session for one request.
+
+        Parameters
+        ----------
+        base_url: str
+            base url of the API. (for example, https://api.yhs.kr)
+        loop: asyncio.AbstractEventLoop
+            [event loop](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio-event-loop) used for processing HTTP requests.
+
+        Examples
+        --------
+        The session is defined through the function's decoration.
+
+        >>> @Session.single_session("https://api.yhs.kr")
+        ... @request("GET", "/bus/station")
+        ... async def station_query(session: Session, name: Query | str) -> aiohttp.ClientResponse:
+        ...     pass
+
+        """
+
+        def decorator(func: RequestFunction):
             if not asyncio.iscoroutinefunction(func):
                 raise TypeError("function %s must be coroutine.".format(func.__name__))
 
+            @functools.wraps(func)
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, loop, **session_kwargs)
                 response = await func(client, *args, **kwargs)

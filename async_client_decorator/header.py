@@ -26,6 +26,14 @@ from typing import Any
 
 
 class Header:
+    """This class is used when a function's parameters are used as headers in an HTTP request.
+
+    Examples
+    --------
+    >>> def function(header: str | Header):
+    ...    pass
+    """
+
     DEFAULT_KEY = "__DEFAULT_HEADER__"
 
     @staticmethod

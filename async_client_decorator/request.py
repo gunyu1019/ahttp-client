@@ -21,11 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import aiohttp
 import copy
 import inspect
 from asyncio import iscoroutinefunction
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Any
+
+import aiohttp
 
 from ._functools import wraps, wrap_annotations
 from ._types import RequestFunction
@@ -33,10 +34,46 @@ from .body import Body
 from .component import Component
 from .form import Form
 from .header import Header
+from .path import Path
 from .query import Query
 from .session import Session
 
 T = TypeVar("T")
+
+
+def _get_kwarg_for_request(
+    component: Component,
+    path: str,
+    request_kwargs: dict[str, Any],
+    kwargs: dict[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    # Header
+    if "headers" not in request_kwargs.keys():
+        request_kwargs["headers"] = {}
+    request_kwargs["headers"].update(
+        component.fill_keyword_argument_to_component("header", kwargs)
+    )
+
+    # Parameter
+    if "params" not in request_kwargs.keys():
+        request_kwargs["params"] = {}
+    request_kwargs["params"].update(
+        component.fill_keyword_argument_to_component("query", kwargs)
+    )
+
+    # Body
+    if component.is_body():
+        if component.is_formal_form():
+            component.fill_keyword_argument_to_component("form", kwargs)
+
+        body_type = component.body_type
+        request_kwargs[body_type] = component.get_body()
+
+    # Path
+    path_data = component.fill_keyword_argument_to_component("path", kwargs)
+    formatted_path = path.format(**path_data)
+
+    return formatted_path, request_kwargs
 
 
 def request(
@@ -46,13 +83,45 @@ def request(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
     **request_kwargs
 ):
+    """A decoration for making request.
+    Create a HTTP client-request, when decorated function is called.
+
+    Parameters
+    ----------
+    method: str
+        HTTP method (example. GET, POST)
+    path: str
+        Request path. Path connects to the base url.
+    directly_response: bool
+        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
+    header_parameter: list[str]
+        Function parameter names used in the header
+    query_parameter: list[str]
+        Function parameter names used in the query(parameter)
+    form_parameter: list[str]
+        Function parameter names used in body form.
+    path_parameter: list[str]
+        Function parameter names used in the path.
+    body_parameter: str
+        Function parameter name used in the body.
+        The body parameter must take only dict, list, or aiohttp.FormData.
+    response_parameter: list[str]
+        Function parameter name to store the HTTP result in.
+    **request_kwargs
+
+    Warnings
+    --------
+    Form_parameter and Body Parameter can only be used with one or the other.
+    """
     header_parameter = header_parameter or list()
     query_parameter = query_parameter or list()
     form_parameter = form_parameter or list()
+    path_parameter = path_parameter or list()
     response_parameter = response_parameter or list()
 
     def decorator(func: RequestFunction):
@@ -70,13 +139,12 @@ def request(
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.".format(func.__name__))
 
-        component_func_parameter = Component()
+        components = Component()
 
-        component_func_parameter.header.update(
-            getattr(func, Header.DEFAULT_KEY, dict())
-        )
-        component_func_parameter.query.update(getattr(func, Query.DEFAULT_KEY, dict()))
-        component_func_parameter.form.update(getattr(func, Form.DEFAULT_KEY, dict()))
+        components.header.update(getattr(func, Header.DEFAULT_KEY, dict()))
+        components.query.update(getattr(func, Query.DEFAULT_KEY, dict()))
+        components.form.update(getattr(func, Form.DEFAULT_KEY, dict()))
+        components.path.update(getattr(func, Path.DEFAULT_KEY, dict()))
 
         for parameter in func_parameters.values():
             if hasattr(parameter.annotation, "__args__"):
@@ -85,49 +153,40 @@ def request(
                 annotation = (parameter.annotation,)
 
             if issubclass(Header, annotation) or parameter.name in header_parameter:
-                component_func_parameter.header[parameter.name] = parameter
+                components.header[parameter.name] = parameter
             elif issubclass(Query, annotation) or parameter.name in query_parameter:
-                component_func_parameter.query[parameter.name] = parameter
+                components.query[parameter.name] = parameter
+            elif issubclass(Path, annotation) or parameter.name in path_parameter:
+                components.path[parameter.name] = parameter
             elif issubclass(Form, annotation) or parameter.name in form_parameter:
-                component_func_parameter.add_form(parameter.name, parameter)
+                components.add_form(parameter.name, parameter)
             elif issubclass(Body, annotation) or parameter.name == body_parameter:
-                component_func_parameter.set_body(parameter)
+                components.set_body(parameter)
             elif (
                 issubclass(aiohttp.ClientResponse, annotation)
                 or parameter.name in response_parameter
             ):
-                component_func_parameter.response.append(parameter.name)
+                components.response.append(parameter.name)
 
-        func.__component_parameter__ = component_func_parameter
+        func.__component_parameter__ = components
+        func.__request_path__ = path
 
         @wraps(func)
-        @wrap_annotations(func, delete_key=component_func_parameter.response)
+        @wrap_annotations(func, delete_key=components.response)
         async def wrapper(self: Session, *args, **kwargs):
-            wrapped_component_func_parameter = copy.copy(component_func_parameter)
+            wrapped_components = copy.deepcopy(components)
             if not isinstance(self, Session):
                 raise TypeError("Class must inherit from class Session")
 
-            for key1, key2 in {"params": "query", "headers": "header"}.items():
-                if key1 not in request_kwargs.keys():
-                    request_kwargs[key1] = dict()
-                request_kwargs[key1].update(
-                    wrapped_component_func_parameter.fill_keyword_argument_to_component(
-                        key2, kwargs
-                    )
-                )
+            # Add parameters, header, body to request keyword
+            formatted_path, _request_kwargs = _get_kwarg_for_request(
+                wrapped_components, path, request_kwargs, kwargs
+            )
 
-            if wrapped_component_func_parameter.is_body():
-                if wrapped_component_func_parameter.is_formal_form():
-                    wrapped_component_func_parameter.fill_keyword_argument_to_component(
-                        "form", kwargs
-                    )
-                request_kwargs[
-                    wrapped_component_func_parameter.body_type
-                ] = wrapped_component_func_parameter.get_body()
+            # Request
+            response = await self.request(method, formatted_path, **_request_kwargs)
 
-            url = self.base_url + path
-
-            response = await self.session.request(method, url, **request_kwargs)
+            # Detect directly response
             if (
                 issubclass(signature.return_annotation, aiohttp.ClientResponse)
                 or directly_response
@@ -136,7 +195,8 @@ def request(
                 await response.read()
                 return response
 
-            for _parameter in wrapped_component_func_parameter.response:
+            # Fill response to parameter
+            for _parameter in wrapped_components.response:
                 kwargs[_parameter] = response
             return await func(self, *args, **kwargs)
 

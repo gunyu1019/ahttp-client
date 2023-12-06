@@ -25,6 +25,14 @@ from typing import Any
 
 
 class Query:
+    """This class is used when a function's parameters are used as query in an HTTP request.
+
+    Examples
+    --------
+    >>> def function(query: str | Query):
+    ...    pass
+    """
+
     DEFAULT_KEY = "__DEFAULT_QUERY__"
 
     @staticmethod

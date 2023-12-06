@@ -33,17 +33,23 @@ class Component:
     header: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
     query: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
     form: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
+    path: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
     body: Optional[inspect.Parameter | dict | list | aiohttp.FormData] = None
-    body_type: Literal["json", "data"] = None
+    body_type: str = None
     response: list[str] = dataclasses.field(default_factory=list)
 
     def fill_keyword_argument_to_component(
-        self, key_type: Literal["header", "query", "form"], kwargs
+        self, key_type: Literal["header", "query", "form", "path"], kwargs
     ) -> dict[str, Any]:
         data: dict[str, Any] = getattr(self, key_type)
         for key, value in data.items():
             if isinstance(value, inspect.Parameter):
-                data[key] = self.fill_keyword_argument(key, value, kwargs)
+                argument = self.fill_keyword_argument(key, value, kwargs)
+                if inspect._empty == argument:
+                    raise TypeError(
+                        f"request function missing 1 required positional argument: '{key}'"
+                    )
+                data[key] = argument
         setattr(self, key_type, data)
         return data
 
@@ -57,13 +63,11 @@ class Component:
         body_annotations = (
             data.annotation if isinstance(data, inspect.Parameter) else type(data)
         )
-        if not issubclass(
-            body_annotations,
-            (
-                dict,
-                list,
-                aiohttp.FormData,
-            ),
+
+        if not (
+            issubclass(dict, body_annotations)
+            or issubclass(list, body_annotations)
+            or issubclass(aiohttp.FormData, body_annotations)
         ):
             raise TypeError(
                 "Body parameter can only have aiohttp.FormData or dict, list."
@@ -72,7 +76,7 @@ class Component:
         if self.body is not None:
             raise ValueError("Only one Body Parameter is allowed.")
 
-        if issubclass(body_annotations, aiohttp.FormData):
+        if issubclass(aiohttp.FormData, body_annotations):
             self.body_type = "data"
         else:
             self.body_type = "json"
