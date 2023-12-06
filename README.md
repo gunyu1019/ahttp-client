@@ -10,7 +10,7 @@ Use Union Type to describe the elements required in an HTTP request.
 **Python 3.10 or higher is required.**
 
 ```pip
-pip install async_client_decorator
+pip install async-client-decorator
 ```
 
 ## Quick Example

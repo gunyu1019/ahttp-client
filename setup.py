@@ -15,7 +15,7 @@ setup(
     name="async_client_decorator",
     version=version,
     packages=["async_client_decorator"],
-    url="https://github.com/gunyu1019/async_client_decorator",
+    url="https://github.com/gunyu1019/async-client-decorator",
     license="MIT",
     author="gunyu1019",
     author_email="gunyu1019@yhs.kr",
