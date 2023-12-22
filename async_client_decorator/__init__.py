@@ -28,7 +28,7 @@ from .form import Form
 from .header import Header
 from .path import Path
 from .query import Query
-from .request import request
+from .request import request, get, post, options, delete
 from .session import Session
 
 
