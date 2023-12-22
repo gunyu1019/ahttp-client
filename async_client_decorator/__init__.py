@@ -36,7 +36,7 @@ __title__ = "async_client_decorator"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-present gunyu1019"
-__version__ = "0.1.0"  # version_info.to_string()
+__version__ = "0.1.1"  # version_info.to_string()
 
 
 class VersionInfo(NamedTuple):
@@ -54,5 +54,5 @@ class VersionInfo(NamedTuple):
 
 
 version_info: VersionInfo = VersionInfo(
-    major=0, minor=1, micro=0, release_level=None, serial=0
+    major=0, minor=1, micro=1, release_level=None, serial=0
 )
