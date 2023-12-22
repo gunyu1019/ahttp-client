@@ -76,8 +76,8 @@ def _get_kwarg_for_request(
     return formatted_path, request_kwargs
 
 
-def request(
-    method: str,
+def _request(
+    request_cls,
     path: str,
     directly_response: bool = False,
     header_parameter: list[str] = None,
@@ -88,36 +88,6 @@ def request(
     response_parameter: list[str] = None,
     **request_kwargs
 ):
-    """A decoration for making request.
-    Create a HTTP client-request, when decorated function is called.
-
-    Parameters
-    ----------
-    method: str
-        HTTP method (example. GET, POST)
-    path: str
-        Request path. Path connects to the base url.
-    directly_response: bool
-        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
-    header_parameter: list[str]
-        Function parameter names used in the header
-    query_parameter: list[str]
-        Function parameter names used in the query(parameter)
-    form_parameter: list[str]
-        Function parameter names used in body form.
-    path_parameter: list[str]
-        Function parameter names used in the path.
-    body_parameter: str
-        Function parameter name used in the body.
-        The body parameter must take only dict, list, or aiohttp.FormData.
-    response_parameter: list[str]
-        Function parameter name to store the HTTP result in.
-    **request_kwargs
-
-    Warnings
-    --------
-    Form_parameter and Body Parameter can only be used with one or the other.
-    """
     header_parameter = header_parameter or list()
     query_parameter = query_parameter or list()
     form_parameter = form_parameter or list()
@@ -184,7 +154,7 @@ def request(
             )
 
             # Request
-            response = await self.request(method, formatted_path, **_request_kwargs)
+            response = await request_cls(self, formatted_path, **_request_kwargs)
 
             # Detect directly response
             if (
@@ -203,3 +173,159 @@ def request(
         return wrapper
 
     return decorator
+
+
+def request(
+    method: str,
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
+):
+    """A decoration for making request.
+    Create a HTTP client-request, when decorated function is called.
+
+    Parameters
+    ----------
+    method: str
+        HTTP method (example. GET, POST)
+    path: str
+        Request path. Path connects to the base url.
+    directly_response: bool
+        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
+    header_parameter: list[str]
+        Function parameter names used in the header
+    query_parameter: list[str]
+        Function parameter names used in the query(parameter)
+    form_parameter: list[str]
+        Function parameter names used in body form.
+    path_parameter: list[str]
+        Function parameter names used in the path.
+    body_parameter: str
+        Function parameter name used in the body.
+        The body parameter must take only dict, list, or aiohttp.FormData.
+    response_parameter: list[str]
+        Function parameter name to store the HTTP result in.
+    **request_kwargs
+
+    Warnings
+    --------
+    Form_parameter and Body Parameter can only be used with one or the other.
+    """
+    return _request(
+        lambda self, _path, **kwargs: self.request(method, _path, **kwargs),
+        path,
+        directly_response,
+        header_parameter,
+        query_parameter,
+        form_parameter,
+        path_parameter,
+        body_parameter,
+        response_parameter,
+        **request_kwargs
+    )
+
+
+def get(
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
+):
+    return _request(
+        lambda self, _path, **kwargs: self.get(_path, **kwargs),
+        path,
+        directly_response,
+        header_parameter,
+        query_parameter,
+        form_parameter,
+        path_parameter,
+        body_parameter,
+        response_parameter,
+        **request_kwargs
+    )
+
+
+def post(
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
+):
+    return _request(
+        lambda self, _path, **kwargs: self.post(_path, **kwargs),
+        path,
+        directly_response,
+        header_parameter,
+        query_parameter,
+        form_parameter,
+        path_parameter,
+        body_parameter,
+        response_parameter,
+        **request_kwargs
+    )
+
+
+def options(
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
+):
+    return _request(
+        lambda self, _path, **kwargs: self.options(_path, **kwargs),
+        path,
+        directly_response,
+        header_parameter,
+        query_parameter,
+        form_parameter,
+        path_parameter,
+        body_parameter,
+        response_parameter,
+        **request_kwargs
+    )
+
+
+def delete(
+    path: str,
+    directly_response: bool = False,
+    header_parameter: list[str] = None,
+    query_parameter: list[str] = None,
+    form_parameter: list[str] = None,
+    path_parameter: list[str] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: list[str] = None,
+    **request_kwargs
+):
+    return _request(
+        lambda self, _path, **kwargs: self.delete(_path, **kwargs),
+        path,
+        directly_response,
+        header_parameter,
+        query_parameter,
+        form_parameter,
+        path_parameter,
+        body_parameter,
+        response_parameter,
+        **request_kwargs
+    )
