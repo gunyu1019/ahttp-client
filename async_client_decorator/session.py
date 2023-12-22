@@ -29,14 +29,36 @@ import aiohttp
 from ._types import RequestFunction
 
 
-class Session(aiohttp.ClientSession):
+class Session:
     """A class to manage session for managing decoration functions."""
 
     def __init__(self, base_url: str, directly_response: bool = False, **kwargs):
         self.directly_response = directly_response
         self.base_url = base_url
 
-        super().__init__(self.base_url, **kwargs)
+        self.session = aiohttp.ClientSession(self.base_url, **kwargs)
+
+    @property
+    def closed(self) -> bool:
+        return self.session.closed
+
+    async def close(self):
+        return await self.session.close()
+
+    async def request(self, method: str, path: str, **kwargs):
+        return await self.session.request(method, path, **kwargs)
+
+    async def get(self, path: str, **kwargs):
+        return await self.session.get(path, **kwargs)
+
+    async def post(self, path: str, **kwargs):
+        return await self.session.post(path, **kwargs)
+
+    async def options(self, path: str, **kwargs):
+        return await self.session.options(path, **kwargs)
+
+    async def delete(self, path: str, **kwargs):
+        return await self.session.delete(path, **kwargs)
 
     @classmethod
     def single_session(
@@ -70,7 +92,8 @@ class Session(aiohttp.ClientSession):
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, loop, **session_kwargs)
                 response = await func(client, *args, **kwargs)
-                await client.close()
+                if not client.closed:
+                    await client.close()
                 return response
 
             return wrapper
