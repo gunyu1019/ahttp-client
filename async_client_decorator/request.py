@@ -157,8 +157,12 @@ def _request(
             response = await request_cls(self, formatted_path, **_request_kwargs)
 
             # Detect directly response
+            if hasattr(signature.return_annotation, "__args__"):
+                return_annotation = signature.return_annotation.__args__
+            else:
+                return_annotation = (signature.return_annotation,)
             if (
-                issubclass(signature.return_annotation, aiohttp.ClientResponse)
+                issubclass(aiohttp.ClientResponse, return_annotation)
                 or directly_response
                 or self.directly_response
             ):
