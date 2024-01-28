@@ -12,8 +12,8 @@ if not version:
     raise RuntimeError("version is not set")
 
 
-extra_require = {
-    "test": ["pytest"],
+extras_require = {
+    "test": ["pytest", "pytest-cov"],
     "lint": ["pycodestyle", "black"]
 }
 
@@ -27,6 +27,7 @@ setup(
     author_email="gunyu1019@yhs.kr",
     description="A framework for easy asynchronous HTTP request calling with decorations",
     python_requires=">=3.10",
+    extras_require=extras_require,
     long_description=open("README.md", encoding="UTF-8").read(),
     long_description_content_type="text/markdown",
     include_package_data=True,
