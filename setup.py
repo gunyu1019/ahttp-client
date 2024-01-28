@@ -11,6 +11,8 @@ if not version:
     raise RuntimeError("version is not set")
 
 
+extra_require = {"test": ["pytest"], "lint": ["black"]}
+
 setup(
     name="async_client_decorator",
     version=version,
