@@ -1,4 +1,5 @@
 import re
+
 from setuptools import setup
 
 version = ""
@@ -11,7 +12,10 @@ if not version:
     raise RuntimeError("version is not set")
 
 
-extra_require = {"test": ["pytest"], "lint": ["black"]}
+extra_require = {
+    "test": ["pytest"],
+    "lint": ["pycodestyle", "black"]
+}
 
 setup(
     name="async_client_decorator",
