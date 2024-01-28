@@ -25,6 +25,7 @@ from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
+    import aiohttp
     from .session import Session
 
 

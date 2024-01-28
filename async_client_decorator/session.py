@@ -71,7 +71,8 @@ class Session:
         base_url: str
             base url of the API. (for example, https://api.yhs.kr)
         loop: asyncio.AbstractEventLoop
-            [event loop](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio-event-loop) used for processing HTTP requests.
+            [event loop](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio-event-loop)
+             used for processing HTTP requests.
 
         Examples
         --------
