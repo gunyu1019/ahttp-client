@@ -1,26 +1,8 @@
- # async-client-decorator
-
-Using `@decorator` to esaily request an HTTP Client<br/>
-This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
-
-Use Union Type to describe the elements required in an HTTP request.
-
-
-## Installation
-**Python 3.10 or higher is required.**
-
-```pip
-pip install async-client-decorator
-```
-
-## Quick Example
-
-An example is the API provided by the [BUS API](https://github.com/gunyu1019/trafficAPI).
-
-```python
 import asyncio
 import aiohttp
+
 from async_client import request, Session, Query
+from typing import Annotated
 
 loop = asyncio.get_event_loop()
 
@@ -31,9 +13,7 @@ class BusAPI(Session):
 
     @request("GET", "/bus/station")
     async def station_search_with_query(
-            self,
-            response: aiohttp.ClientResponse,
-            name: Query | str
+        self, response: aiohttp.ClientResponse, name: Annotated[str, Query]
     ):
         return await response.json()
 
@@ -46,4 +26,3 @@ async def main():
 
 
 loop.run_until_complete(main())
-```

@@ -3,7 +3,7 @@ import re
 from setuptools import setup
 
 version = ""
-with open("async_client_decorator/__init__.py") as f:
+with open("async_client/__init__.py") as f:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
     ).group(1)
@@ -18,9 +18,9 @@ extras_require = {
 }
 
 setup(
-    name="async_client_decorator",
+    name="async_client",
     version=version,
-    packages=["async_client_decorator"],
+    packages=["async_client"],
     url="https://github.com/gunyu1019/async-client-decorator",
     license="MIT",
     author="gunyu1019",

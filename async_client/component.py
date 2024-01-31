@@ -21,11 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import aiohttp
 import dataclasses
 import inspect
+from collections.abc import Collection
 from typing import Any, Optional, Literal
 
-import aiohttp
+from .utils import *
 
 
 @dataclasses.dataclass
@@ -60,15 +62,20 @@ class Component:
         return kwargs.get(key) if key in kwargs.keys() else parameter.default
 
     def set_body(self, data: inspect.Parameter | dict | list | aiohttp.FormData):
-        body_annotations = (
+        body_annotation = (
             data.annotation if isinstance(data, inspect.Parameter) else type(data)
         )
+        argument = (
+            body_annotation.__args__
+            if is_annotated_parameter(body_annotation)
+            else body_annotation
+        )
+        separated_argument = separate_union_type(argument)
+        origin_argument = [
+            get_origin_for_generic(x) for x in make_collection(separated_argument)
+        ]
 
-        if not (
-            issubclass(dict, body_annotations)
-            or issubclass(list, body_annotations)
-            or issubclass(aiohttp.FormData, body_annotations)
-        ):
+        if not is_subclass_safe(origin_argument, (dict, list, aiohttp.FormData)):
             raise TypeError(
                 "Body parameter can only have aiohttp.FormData or dict, list."
             )
@@ -76,7 +83,7 @@ class Component:
         if self.body is not None:
             raise ValueError("Only one Body Parameter is allowed.")
 
-        if issubclass(aiohttp.FormData, body_annotations):
+        if is_subclass_safe(separated_argument, aiohttp.FormData):
             self.body_type = "data"
         else:
             self.body_type = "json"
