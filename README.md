@@ -16,10 +16,11 @@ pip install async-client-decorator
 ## Quick Example
 
 An example is the API provided by the [BUS API](https://github.com/gunyu1019/trafficAPI).
+
 ```python
 import asyncio
 import aiohttp
-from async_client_decorator import request, Session, Query
+from async_client import request, Session, Query
 
 loop = asyncio.get_event_loop()
 
@@ -30,11 +31,11 @@ class BusAPI(Session):
 
     @request("GET", "/bus/station")
     async def station_search_with_query(
-                self,
-                response: aiohttp.ClientResponse,
-                name: Query | str
+            self,
+            response: aiohttp.ClientResponse,
+            name: Query | str
     ):
-        return await response.json() 
+        return await response.json()
 
 
 async def main():
@@ -42,6 +43,7 @@ async def main():
         response = await client.station_search_with_query(name="bus-station-name")
         data = await response.json()
         print(len)
+
 
 loop.run_until_complete(main())
 ```

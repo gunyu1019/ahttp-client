@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 
-from async_client_decorator import request, Session, Query
+from async_client import request, Session, Query
 from typing import Annotated
 
 loop = asyncio.get_event_loop()
