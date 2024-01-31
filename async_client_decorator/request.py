@@ -37,6 +37,7 @@ from .header import Header
 from .path import Path
 from .query import Query
 from .session import Session
+from .utils import *
 
 T = TypeVar("T")
 
@@ -117,23 +118,41 @@ def _request(
         components.path.update(getattr(func, Path.DEFAULT_KEY, dict()))
 
         for parameter in func_parameters.values():
-            if hasattr(parameter.annotation, "__args__"):
-                annotation = parameter.annotation.__args__
-            else:
-                annotation = (parameter.annotation,)
+            annotation = parameter.annotation
+            metadata = (
+                annotation.__metadata__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
+            separated_annotation = separate_union_type(metadata)
 
-            if issubclass(Header, annotation) or parameter.name in header_parameter:
+            if (
+                is_subclass_safe(separated_annotation, Header)
+                or parameter.name in header_parameter
+            ):
                 components.header[parameter.name] = parameter
-            elif issubclass(Query, annotation) or parameter.name in query_parameter:
+            elif (
+                is_subclass_safe(separated_annotation, Query)
+                or parameter.name in query_parameter
+            ):
                 components.query[parameter.name] = parameter
-            elif issubclass(Path, annotation) or parameter.name in path_parameter:
+            elif (
+                is_subclass_safe(separated_annotation, Path)
+                or parameter.name in path_parameter
+            ):
                 components.path[parameter.name] = parameter
-            elif issubclass(Form, annotation) or parameter.name in form_parameter:
+            elif (
+                is_subclass_safe(separated_annotation, Form)
+                or parameter.name in form_parameter
+            ):
                 components.add_form(parameter.name, parameter)
-            elif issubclass(Body, annotation) or parameter.name == body_parameter:
+            elif (
+                is_subclass_safe(separated_annotation, Body)
+                or parameter.name == body_parameter
+            ):
                 components.set_body(parameter)
             elif (
-                issubclass(aiohttp.ClientResponse, annotation)
+                is_subclass_safe(separated_annotation, aiohttp.ClientResponse)
                 or parameter.name in response_parameter
             ):
                 components.response.append(parameter.name)
