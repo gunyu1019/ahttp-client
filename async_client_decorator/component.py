@@ -71,7 +71,9 @@ class Component:
             else body_annotation
         )
         separated_argument = separate_union_type(argument)
-        origin_argument = [get_origin_for_generic(x) for x in make_collection(separated_argument)]
+        origin_argument = [
+            get_origin_for_generic(x) for x in make_collection(separated_argument)
+        ]
 
         if not is_subclass_safe(origin_argument, (dict, list, aiohttp.FormData)):
             raise TypeError(
