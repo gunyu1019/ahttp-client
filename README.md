@@ -20,7 +20,7 @@ An example is the API provided by the [BUS API](https://github.com/gunyu1019/tra
 ```python
 import asyncio
 import aiohttp
-from async_client import request, Session, Query
+from async_client_decorator import request, Session, Query
 
 loop = asyncio.get_event_loop()
 

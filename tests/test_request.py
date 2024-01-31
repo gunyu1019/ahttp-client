@@ -5,8 +5,8 @@ import pytest
 
 from typing import Annotated, Any
 
-from async_client import *
-from async_client.request import _get_kwarg_for_request
+from async_client_decorator import *
+from async_client_decorator.request import _get_kwarg_for_request
 
 
 @pytest.fixture

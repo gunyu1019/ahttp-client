@@ -1,7 +1,7 @@
 import pytest
 
-from async_client import *
-from async_client.component import Component
+from async_client_decorator import *
+from async_client_decorator.component import Component
 
 
 def test_duplicated_body_type():

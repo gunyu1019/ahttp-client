@@ -3,7 +3,7 @@ import asyncio
 import aiohttp
 
 from flask import Flask
-from async_client import request, Session, Query
+from async_client_decorator import request, Session, Query
 
 app = Flask(__name__)
 loop = asyncio.get_event_loop()
