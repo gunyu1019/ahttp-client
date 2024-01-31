@@ -125,7 +125,7 @@ def test_component_parameter_3(dummy_method_with_annotated):
 
 
 def test_specific_parameter(dummy_method_with_specific_parameter):
-    pass
+    assert dummy_method_with_specific_parameter.__component_parameter__.body.name == "dummy_body"
 
 
 def test_fill_keyword(dummy_method_with_parameter):

@@ -24,6 +24,7 @@ SOFTWARE.
 import aiohttp
 import dataclasses
 import inspect
+from collections.abc import Collection
 from typing import Any, Optional, Literal
 
 from .utils import *
@@ -70,7 +71,9 @@ class Component:
             else body_annotation
         )
         separated_argument = separate_union_type(argument)
-        if not is_subclass_safe(separated_argument, (dict, list, aiohttp.FormData)):
+        origin_argument = [get_origin_for_generic(x) for x in make_collection(separated_argument)]
+
+        if not is_subclass_safe(origin_argument, (dict, list, aiohttp.FormData)):
             raise TypeError(
                 "Body parameter can only have aiohttp.FormData or dict, list."
             )
