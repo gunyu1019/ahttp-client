@@ -22,7 +22,6 @@ SOFTWARE.
 """
 
 import aiohttp
-import dataclasses
 import inspect
 from collections.abc import Collection
 from typing import Any, Optional, Literal
@@ -30,28 +29,32 @@ from typing import Any, Optional, Literal
 from .utils import *
 
 
-@dataclasses.dataclass
 class Component:
-    header: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
-    query: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
-    form: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
-    path: dict[str, inspect.Parameter | Any] = dataclasses.field(default_factory=dict)
-    body: Optional[inspect.Parameter | dict | list | aiohttp.FormData] = None
-    body_type: str = None
-    response: list[str] = dataclasses.field(default_factory=list)
+    # This class is saved component data for request.
+    def __init__(self):
+        self.header: dict[str, inspect.Parameter | Any] = dict()
+        self.query: dict[str, inspect.Parameter | Any] = dict()
+        self.form: dict[str, inspect.Parameter | Any] = dict()
+        self.path: dict[str, inspect.Parameter | Any] = dict()
+        self.body: Optional[inspect.Parameter | dict | list | aiohttp.FormData] = None
+
+        self.body_type: Optional[Literal['json', 'data']] = None
+        self.response: list[str] = list()
 
     def fill_keyword_argument_to_component(
-        self, key_type: Literal["header", "query", "form", "path"], kwargs
+        self, key_type: Literal["header", "query", "form", "path"], **kwargs
     ) -> dict[str, Any]:
         data: dict[str, Any] = getattr(self, key_type)
         for key, value in data.items():
-            if isinstance(value, inspect.Parameter):
-                argument = self.fill_keyword_argument(key, value, kwargs)
-                if inspect._empty == argument:
-                    raise TypeError(
-                        f"request function missing 1 required positional argument: '{key}'"
-                    )
-                data[key] = argument
+            if not isinstance(value, inspect.Parameter):
+                continue
+
+            argument = self.fill_keyword_argument(key, value, kwargs)
+            if inspect.Parameter.empty == argument:
+                raise TypeError(
+                    f"request function missing 1 required positional argument: '{key}'"
+                )
+            data[key] = argument
         setattr(self, key_type, data)
         return data
 
