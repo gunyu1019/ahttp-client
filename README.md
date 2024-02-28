@@ -1,6 +1,6 @@
  # async-client-decorator
 
-Using `@decorator` to esaily request an HTTP Client<br/>
+Using `@decorator` to easily request an HTTP Client<br/>
 This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
 
 Use Union Type to describe the elements required in an HTTP request.
