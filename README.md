@@ -21,28 +21,28 @@ An example is the API provided by the [BUS API](https://github.com/gunyu1019/tra
 import asyncio
 import aiohttp
 from async_client_decorator import request, Session, Query
+from typing import Any
 
 loop = asyncio.get_event_loop()
 
 
-class BusAPI(Session):
+class MetroAPI(Session):
     def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop)
+        super().__init__("https://api.yhs.kr", loop=loop)
 
-    @request("GET", "/bus/station")
+    @request("GET", "/metro/station")
     async def station_search_with_query(
             self,
             response: aiohttp.ClientResponse,
             name: Query | str
-    ):
+    ) -> dict[str, Any]:
         return await response.json()
 
 
 async def main():
-    async with BusAPI(loop) as client:
-        response = await client.station_search_with_query(name="bus-station-name")
-        data = await response.json()
-        print(len)
+    async with MetroAPI(loop) as client:
+        data = await client.station_search_with_query(name="metro-station-name")
+        print(len(data))
 
 
 loop.run_until_complete(main())
