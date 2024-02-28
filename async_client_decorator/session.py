@@ -20,13 +20,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from __future__ import annotations
 
 import asyncio
+import aiohttp
 import functools
 
-import aiohttp
-
+from typing import TYPE_CHECKING, Optional
 from ._types import RequestFunction
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+    from types import TracebackType
 
 
 class Session:
@@ -37,6 +42,17 @@ class Session:
         self.base_url = base_url
 
         self.session = aiohttp.ClientSession(self.base_url, **kwargs)
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType]
+    ):
+        await self.close()
 
     @property
     def closed(self) -> bool:
