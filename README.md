@@ -1,4 +1,8 @@
  # async-client-decorator
+ 
+![PyPI - Version](https://img.shields.io/pypi/v/async-client-decorator?style=flat)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/async-client-decorator?style=flat)
+![PyPI - License](https://img.shields.io/pypi/l/async-client-decorator?style=flat)
 
 Using `@decorator` to esaily request an HTTP Client<br/>
 This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
