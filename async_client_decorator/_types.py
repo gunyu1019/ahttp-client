@@ -20,13 +20,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
+from __future__ import annotations
 from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
 
 
 if TYPE_CHECKING:
     import aiohttp
     from .session import Session
+    from .request import RequestCore
 
 
 T = TypeVar("T")
@@ -34,6 +35,14 @@ _Coroutine = Coroutine[Any, Any, T]
 CoroutineFunction = Callable[..., _Coroutine]
 
 RequestFunction = Callable[
-    ["Session", ...],
-    _Coroutine[T | "aiohttp.ClientResponse"],
+    [Session, ...],
+    _Coroutine[T | aiohttp.ClientResponse],
+]
+RequestBeforeHookFunction = Callable[
+    [RequestCore, str],
+    _Coroutine[RequestCore],
+]
+RequestAfterHookFunction = Callable[
+    [aiohttp.ClientResponse, ...],
+    _Coroutine[T | aiohttp.ClientResponse],
 ]
