@@ -31,4 +31,5 @@ class Path:
     >>> def function(path: str | Path):
     ...    pass
     """
+
     pass

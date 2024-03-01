@@ -41,14 +41,15 @@ if TYPE_CHECKING:
 
 class Session:
     """A class to manage session for managing decoration functions."""
+
     def __init__(
-            self,
-            base_url: str,
-            *,
-            directly_response: bool = False,
-            loop: asyncio.AbstractEventLoop = None,
-            _is_single_session: bool = False,
-            **kwargs
+        self,
+        base_url: str,
+        *,
+        directly_response: bool = False,
+        loop: asyncio.AbstractEventLoop = None,
+        _is_single_session: bool = False,
+        **kwargs,
     ):
         self.directly_response = directly_response
         self.base_url = base_url
@@ -109,10 +110,7 @@ class Session:
 
     @classmethod
     def single_session(
-            cls,
-            base_url: str,
-            loop: asyncio.AbstractEventLoop = None,
-            **session_kwargs
+        cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs
     ):
         """A single session for one request.
 
@@ -138,7 +136,9 @@ class Session:
         def decorator(func: RequestFunction):
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, loop=loop, _is_single_session=True, **session_kwargs)
+                client = cls(
+                    base_url, loop=loop, _is_single_session=True, **session_kwargs
+                )
                 func.session = client
                 response = await func(*args, **kwargs)
                 if not client.closed:

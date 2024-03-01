@@ -30,4 +30,5 @@ class Form:
     >>> def function(data: str | Form):
     ...    pass
     """
+
     pass
