@@ -1,7 +1,15 @@
-from typing import Optional, Callable
+from typing import Optional, TYPE_CHECKING
 
-from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
-from .request import RequestCore
+import aiohttp
+
+if TYPE_CHECKING:
+    import asyncio
+
+    from typing import Any, Callable
+    from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
+    from .query import Query
+    from .request import RequestCore, request
+    from .session import Session
 
 
 def multiple_hook(
@@ -86,8 +94,31 @@ else:
     is_pydantic = True
 
 
-def get_pydantic_model(model: pydantic.BaseModel):
+def get_pydantic_response_model(
+    model: "pydantic.BaseModel",
+    index: Optional[int] = None,
+    *,
+    strict: Optional[bool] = None,
+    from_attributes: Optional[bool] = None,
+    context: Optional[dict[str, Any]] = None
+):
+    if not is_pydantic:
+        raise ModuleNotFoundError("pydantic is not installed.")
+
     def decorator(func: RequestCore):
-        pass
+        @multiple_hook(func.after_hook, index=index)
+        async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
+            if isinstance(response, aiohttp.ClientResponse):
+                data = await response.json()
+            else:
+                data = response
+
+            validated_data = model.model_validate(
+                obj=data,
+                strict=strict,
+                from_attributes=from_attributes,
+                context=context,
+            )
+            return validated_data
 
     return decorator
