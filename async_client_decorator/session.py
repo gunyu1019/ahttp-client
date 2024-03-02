@@ -81,7 +81,11 @@ class Session:
 
     @staticmethod
     def _special_method(_):
-        async def wrapper(*args):
+        async def wrapper(_, *args):
+            if len(args) == 0:
+                return
+            elif len(args) == 1:
+                return args[0]
             return args
 
         return wrapper
