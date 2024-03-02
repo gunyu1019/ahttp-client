@@ -26,7 +26,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
-from typing import TYPE_CHECKING, Optional, Any
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 import aiohttp
 
@@ -37,6 +37,8 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ._types import RequestFunction
+
+T = TypeVar("T")
 
 
 class Session:
@@ -75,6 +77,13 @@ class Session:
     ):
         await self.close()
 
+    @staticmethod
+    def _special_method(_):
+        async def wrapper(*args):
+            return args
+
+        return wrapper
+
     @property
     def closed(self) -> bool:
         return self.session.closed
@@ -100,13 +109,57 @@ class Session:
     async def _make_request(self, request: RequestCore, path: str, **kwargs):
         _req_obj, _path = await self.before_request(request, path)
         request_kwargs = _req_obj.get_request_kwargs()
-        return await self.session.request(_req_obj.method, _path, **request_kwargs)
-
-    async def before_request(self, request: RequestCore, path: str) -> RequestCore:
-        return request, path
-
-    async def after_request(self, response: aiohttp.ClientResponse) -> Any:
+        response = await self.session.request(_req_obj.method, _path, **request_kwargs)
+        response = await self.after_request(response)
         return response
+
+    @_special_method
+    async def before_request(
+        self, request: RequestCore, path: str
+    ) -> tuple[RequestCore, str]:
+        """A special method that acts as a session local pre-invoke hook.
+        This is similar to :meth:`RequestCore.before_request`.
+
+        When :meth:`RequestCore.before_request` exists, this method is called after
+        :meth:`RequestCore.before_request` called.
+
+        Parameters
+        ----------
+        request: RequestCore
+            The instance of RequestCore.
+        path: str
+            The final string of the request url.
+
+        Returns
+        -------
+        Tuple[RequestCore, str]
+            The return type must be the same as the parameter.
+        """
+        pass
+
+    @_special_method
+    async def after_request(
+        self, response: aiohttp.ClientResponse
+    ) -> aiohttp.ClientResponse | T:
+        """A special method that acts as a session local post-invoke.
+        This is similar to :meth:`RequestCore.after_request`.
+
+        When :meth:`RequestCore.after_request` exists, this method is called before
+        :meth:`RequestCore.after_request` called.
+
+        Parameters
+        ----------
+        response: aiohttp.ClientResponse
+            The result of HTTP request.
+
+        Returns
+        -------
+        aiohttp.ClientResponse | T
+            Cleanup response HTTP results.
+            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
+            the type of this method.
+        """
+        pass
 
     @classmethod
     def single_session(

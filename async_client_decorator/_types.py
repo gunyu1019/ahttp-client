@@ -44,6 +44,6 @@ RequestBeforeHookFunction = Callable[
     _Coroutine[RequestCore],
 ]
 RequestAfterHookFunction = Callable[
-    [aiohttp.ClientResponse, ...],
+    [T | aiohttp.ClientResponse, ...],
     _Coroutine[T | aiohttp.ClientResponse],
 ]
