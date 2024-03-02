@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
+import logging
 from typing import TYPE_CHECKING, Optional, TypeVar
 
 import aiohttp
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from ._types import RequestFunction
 
 T = TypeVar("T")
+_log = logging.getLogger(__name__)
 
 
 class Session:
@@ -109,6 +111,7 @@ class Session:
     async def _make_request(self, request: RequestCore, path: str, **kwargs):
         _req_obj, _path = await self.before_request(request, path)
         request_kwargs = _req_obj.get_request_kwargs()
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
         response = await self.session.request(_req_obj.method, _path, **request_kwargs)
         response = await self.after_request(response)
         return response
