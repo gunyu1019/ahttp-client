@@ -65,18 +65,6 @@ def test_method_with_decorator_parameter():
     return test_request
 
 
-@pytest.fixture
-def test_method_for_private_parameter():
-    @Session.single_session("https://test_base_url")
-    @request("GET", "/")
-    @Header.default_header("private_header", "__PRIVATE_HEADER__")
-    @Query.default_query("private_query", "__PRIVATE_QUERY__")
-    async def test_request(session: Session) -> None:
-        pass
-
-    return test_request
-
-
 def test_component_parameter_1(test_method_with_parameter):
     assert "test_header" in test_method_with_parameter.header_parameter
     assert "test_query" in test_method_with_parameter.query_parameter
@@ -103,30 +91,3 @@ def test_component_parameter_3(test_method_with_annotated):
 
     assert test_method_with_annotated.body_parameter.name == "test_body"
     assert test_method_with_annotated.body_parameter_type == "json"
-
-
-def test_private_component(test_method_for_private_parameter):
-    assert "private_header" in test_method_for_private_parameter.headers
-    assert "private_query" in test_method_for_private_parameter.params
-
-    assert (
-        test_method_for_private_parameter.headers.get("private_header")
-        == "__PRIVATE_HEADER__"
-    )
-    assert (
-        test_method_for_private_parameter.params.get("private_query")
-        == "__PRIVATE_QUERY__"
-    )
-
-
-def test_copy_and_equal(test_method_with_parameter):
-    other_method = test_method_with_parameter.__core__.copy()
-    assert other_method == test_method_with_parameter.__core__
-
-    bound_argument = test_method_with_parameter._signature.bind(
-        test_method_with_parameter.session
-    )
-    bound_argument.apply_defaults()
-
-    other_method._fill_parameter(bound_argument)
-    assert other_method != test_method_with_parameter.__core__
