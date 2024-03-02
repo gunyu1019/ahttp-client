@@ -80,15 +80,14 @@ class Session:
         await self.close()
 
     @staticmethod
-    def _special_method(_):
-        async def wrapper(_, *args):
-            if len(args) == 0:
-                return
-            elif len(args) == 1:
-                return args[0]
-            return args
+    def _has_overridden_method(method):
+        """Return False if the method is not overridden. Otherwise returns True if the overridden method."""
+        return not hasattr(method, "__special_method__")
 
-        return wrapper
+    @staticmethod
+    def _special_method(func):
+        func.__special_method__ = None
+        return func
 
     @property
     def closed(self) -> bool:
@@ -113,11 +112,18 @@ class Session:
         return await self.session.delete(path, **kwargs)
 
     async def _make_request(self, request: RequestCore, path: str, **kwargs):
-        _req_obj, _path = await self.before_request(request, path)
+        _req_obj = request
+        _path = path
+
+        if self._has_overridden_method(self.before_request):
+            _req_obj, _path = await self.before_request(request, path)
+
         request_kwargs = _req_obj.get_request_kwargs()
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
         response = await self.session.request(_req_obj.method, _path, **request_kwargs)
-        response = await self.after_request(response)
+
+        if self._has_overridden_method(self.after_request):
+            response = await self.after_request(response)
         return response
 
     @_special_method
