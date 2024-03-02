@@ -1,9 +1,57 @@
-from typing import Optional
+from typing import Optional, Callable
 
+from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
 from .request import RequestCore
 
 
-def multiple_hook(hook: object, index: Optional[int] = -1):
+def multiple_hook(
+        hook: Callable[
+            [RequestAfterHookFunction | RequestBeforeHookFunction],
+            RequestAfterHookFunction | RequestBeforeHookFunction
+        ],
+        index: Optional[int] = -1
+):
+    """Use this method, if more than one pre-invoke hooks or post-invoke hooks need.
+
+    Parameters
+    ----------
+    hook: Callable[
+            [RequestAfterHookFunction | RequestBeforeHookFunction],
+            RequestAfterHookFunction | RequestBeforeHookFunction
+        ]
+        Contains the decorator function used for hooking.
+        This can be :meth:`RequestObj.before_hook` or :meth:`RequestObj.after_hook`.
+    index: Optional[int]
+        Order of invocation in invoke-hook
+
+    Warnings
+    --------
+    This feature is experimental. It might not work as expected.
+
+    Examples
+    --------
+    >>> class MetroAPI(Session):
+    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
+    ...        super().__init__("https://api.yhs.kr", loop=loop)
+    ...
+    ...    @request("GET", "/metro/station")
+    ...    async def station_search_with_query(
+    ...            self,
+    ...            response: aiohttp.ClientResponse,
+    ...            name: Query | str
+    ...    ) -> dict[str, Any]:
+    ...        return await response.json()
+    ...
+    ...    @multiple_hook(station_search_with_query.before_hook)
+    ...    async def before_hook_1(self, obj, path):
+    ...        # Set-up before request
+    ...        return obj, path
+    ...
+    ...    @multiple_hook(station_search_with_query.before_hook)
+    ...    async def before_hook_2(self, obj, path):
+    ...        # Set-up before request
+    ...        return obj, path
+    """
     hook_name = hook.__name__
     instance = hook.__self__
 
