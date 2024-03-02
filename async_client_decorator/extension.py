@@ -1,5 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
+import inspect
 import aiohttp
 
 if TYPE_CHECKING:
@@ -95,7 +96,8 @@ else:
 
 
 def get_pydantic_response_model(
-    model: "pydantic.BaseModel",
+    model: Optional["pydantic.BaseModel"] = None,
+    /,
     index: Optional[int] = None,
     *,
     strict: Optional[bool] = None,
@@ -106,6 +108,10 @@ def get_pydantic_response_model(
         raise ModuleNotFoundError("pydantic is not installed.")
 
     def decorator(func: RequestCore):
+        _model = model or func._signature.return_annotation
+        if _model is inspect.Signature.empty or _model is None:
+            raise TypeError("Invalid return type.")
+
         @multiple_hook(func.after_hook, index=index)
         async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
             if isinstance(response, aiohttp.ClientResponse):
