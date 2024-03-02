@@ -27,7 +27,7 @@ import asyncio
 import functools
 import inspect
 import logging
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import aiohttp
 
@@ -36,6 +36,7 @@ from .request import RequestCore
 if TYPE_CHECKING:
     from typing_extensions import Self
     from types import TracebackType
+    from typing import Optional
 
     from ._types import RequestFunction
 
