@@ -13,6 +13,7 @@ def test_method_form_data_type_1():
         test_body: str | Form = None,
     ) -> None:
         pass
+
     return test_request
 
 
@@ -24,6 +25,7 @@ def test_method_form_data_type_2():
         test_body: aiohttp.FormData | Body = None,
     ) -> None:
         pass
+
     return test_request
 
 
@@ -35,11 +37,13 @@ def test_method_json_data():
         test_body: list[Any] | Body = None,
     ) -> None:
         pass
+
     return test_request
 
 
 def test_duplicated_body_type():
     with pytest.raises(TypeError) as error_message:
+
         @request("GET", "/test_path")
         async def test_request(
             session: Session,
@@ -53,6 +57,7 @@ def test_duplicated_body_type():
 
 def test_incorrect_body_type():
     with pytest.raises(TypeError) as error_message:
+
         @request("GET", "/test_path")
         async def test_request(
             session: Session,
@@ -69,6 +74,7 @@ def test_incorrect_body_type():
 def test_duplicated_body():
     sample_body = aiohttp.FormData()
     with pytest.raises(TypeError) as error_message:
+
         @request("GET", "/test_path", body=sample_body)
         async def test_request(
             session: Session,

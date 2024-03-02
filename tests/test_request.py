@@ -12,7 +12,7 @@ def test_method():
     async def test_request(
         session: Session,
         parameter: Annotated[str, Query] = "TEST_QUERY",
-        header: Annotated[str, Header] = "TEST_HEADER"
+        header: Annotated[str, Header] = "TEST_HEADER",
     ) -> aiohttp.ClientResponse:
         pass
 
@@ -26,7 +26,7 @@ def test_copy_and_equal(test_method):
     bound_argument = test_method._signature.bind(test_method.session)
     bound_argument.apply_defaults()
 
-    other_method._fill_parameter(bound_argument.arguments)
+    other_method._fill_parameter(bound_argument)
     assert other_method != test_method
 
 
@@ -39,8 +39,8 @@ def test_fill_parameter(test_method):
     bound_argument = test_method._signature.bind(test_method.session)
     bound_argument.apply_defaults()
 
-    new_method._fill_parameter(bound_argument.arguments)
+    new_method._fill_parameter(bound_argument)
     assert "header" in new_method.headers.keys()
     assert "parameter" in new_method.params.keys()
-    assert new_method.headers['header'] == "TEST_HEADER"
-    assert new_method.params['parameter'] == "TEST_QUERY"
+    assert new_method.headers["header"] == "TEST_HEADER"
+    assert new_method.params["parameter"] == "TEST_QUERY"

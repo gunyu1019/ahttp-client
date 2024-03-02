@@ -123,8 +123,10 @@ def test_copy_and_equal(test_method_with_parameter):
     other_method = test_method_with_parameter.__core__.copy()
     assert other_method == test_method_with_parameter.__core__
 
-    bound_argument = test_method_with_parameter._signature.bind(test_method_with_parameter.session)
+    bound_argument = test_method_with_parameter._signature.bind(
+        test_method_with_parameter.session
+    )
     bound_argument.apply_defaults()
 
-    other_method._fill_parameter(bound_argument.arguments)
+    other_method._fill_parameter(bound_argument)
     assert other_method != test_method_with_parameter.__core__
