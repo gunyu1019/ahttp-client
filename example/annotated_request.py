@@ -7,11 +7,11 @@ from typing import Annotated
 loop = asyncio.get_event_loop()
 
 
-class BusAPI(Session):
+class MetroAPI(Session):
     def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop)
+        super().__init__("https://api.yhs.kr", loop=loop)
 
-    @request("GET", "/bus/station")
+    @request("GET", "/metro/station")
     async def station_search_with_query(
         self, response: aiohttp.ClientResponse, name: Annotated[str, Query]
     ):
@@ -19,9 +19,8 @@ class BusAPI(Session):
 
 
 async def main():
-    async with BusAPI(loop) as client:
-        response = await client.station_search_with_query(name="bus-station-name")
-        data = await response.json()
+    async with MetroAPI(loop) as client:
+        data = await client.station_search_with_query(name="metro-station-name")
         print(len(data))
 
 
