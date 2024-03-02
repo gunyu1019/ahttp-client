@@ -21,8 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
-
 
 class Path:
     """This class is used when a function's parameters are used as path in an HTTP request.
@@ -34,14 +32,4 @@ class Path:
     ...    pass
     """
 
-    DEFAULT_KEY = "__DEFAULT_PATH__"
-
-    @staticmethod
-    def default_path(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Path.DEFAULT_KEY):
-                setattr(func, Path.DEFAULT_KEY, dict())
-            getattr(func, Path.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+    pass

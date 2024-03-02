@@ -21,22 +21,74 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from __future__ import annotations
+
 import asyncio
 import functools
+import inspect
+import logging
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 import aiohttp
 
-from ._types import RequestFunction
+from .request import RequestCore
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+    from types import TracebackType
+
+    from ._types import RequestFunction
+
+T = TypeVar("T")
+_log = logging.getLogger(__name__)
 
 
 class Session:
     """A class to manage session for managing decoration functions."""
 
-    def __init__(self, base_url: str, directly_response: bool = False, **kwargs):
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        directly_response: bool = False,
+        loop: asyncio.AbstractEventLoop = None,
+        _is_single_session: bool = False,
+        **kwargs,
+    ):
         self.directly_response = directly_response
         self.base_url = base_url
+        self.loop = loop
 
-        self.session = aiohttp.ClientSession(self.base_url, **kwargs)
+        self.session = aiohttp.ClientSession(self.base_url, loop=self.loop, **kwargs)
+
+        if not _is_single_session:
+            for name, func in inspect.getmembers(self):
+                if not isinstance(func, RequestCore):
+                    continue
+
+                func.session = self
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ):
+        await self.close()
+
+    @staticmethod
+    def _special_method(_):
+        async def wrapper(_, *args):
+            if len(args) == 0:
+                return
+            elif len(args) == 1:
+                return args[0]
+            return args
+
+        return wrapper
 
     @property
     def closed(self) -> bool:
@@ -59,6 +111,62 @@ class Session:
 
     async def delete(self, path: str, **kwargs):
         return await self.session.delete(path, **kwargs)
+
+    async def _make_request(self, request: RequestCore, path: str, **kwargs):
+        _req_obj, _path = await self.before_request(request, path)
+        request_kwargs = _req_obj.get_request_kwargs()
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
+        response = await self.session.request(_req_obj.method, _path, **request_kwargs)
+        response = await self.after_request(response)
+        return response
+
+    @_special_method
+    async def before_request(
+        self, request: RequestCore, path: str
+    ) -> tuple[RequestCore, str]:
+        """A special method that acts as a session local pre-invoke hook.
+        This is similar to :meth:`RequestCore.before_request`.
+
+        When :meth:`RequestCore.before_request` exists, this method is called after
+        :meth:`RequestCore.before_request` called.
+
+        Parameters
+        ----------
+        request: RequestCore
+            The instance of RequestCore.
+        path: str
+            The final string of the request url.
+
+        Returns
+        -------
+        Tuple[RequestCore, str]
+            The return type must be the same as the parameter.
+        """
+        pass
+
+    @_special_method
+    async def after_request(
+        self, response: aiohttp.ClientResponse
+    ) -> aiohttp.ClientResponse | T:
+        """A special method that acts as a session local post-invoke.
+        This is similar to :meth:`RequestCore.after_request`.
+
+        When :meth:`RequestCore.after_request` exists, this method is called before
+        :meth:`RequestCore.after_request` called.
+
+        Parameters
+        ----------
+        response: aiohttp.ClientResponse
+            The result of HTTP request.
+
+        Returns
+        -------
+        aiohttp.ClientResponse | T
+            Cleanup response HTTP results.
+            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
+            the type of this method.
+        """
+        pass
 
     @classmethod
     def single_session(
@@ -86,17 +194,20 @@ class Session:
         """
 
         def decorator(func: RequestFunction):
-            if not asyncio.iscoroutinefunction(func):
-                raise TypeError("function %s must be coroutine.".format(func.__name__))
-
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, loop, **session_kwargs)
-                response = await func(client, *args, **kwargs)
+                client = cls(
+                    base_url, loop=loop, _is_single_session=True, **session_kwargs
+                )
+                func.session = client
+                response = await func(*args, **kwargs)
                 if not client.closed:
                     await client.close()
                 return response
 
+            wrapper.__core__ = func
+            wrapper.before_hook = func.before_hook
+            wrapper.after_hook = func.after_hook
             return wrapper
 
         return decorator

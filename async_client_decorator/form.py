@@ -21,8 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
-
 
 class Form:
     """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
@@ -33,14 +31,4 @@ class Form:
     ...    pass
     """
 
-    DEFAULT_KEY = "__DEFAULT_FORM__"
-
-    @staticmethod
-    def default_form(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Form.DEFAULT_KEY):
-                setattr(func, Form.DEFAULT_KEY, dict())
-            getattr(func, Form.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+    pass
