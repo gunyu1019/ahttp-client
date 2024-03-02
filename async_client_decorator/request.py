@@ -23,13 +23,6 @@ SOFTWARE.
 
 from __future__ import annotations
 
-try:
-    import pydantic
-except (ModuleNotFoundError, ImportError):
-    is_pydantic = False
-else:
-    is_pydantic = True
-
 import aiohttp
 import copy
 import inspect
@@ -47,12 +40,13 @@ if TYPE_CHECKING:
     from collections.abc import Collection
     from typing_extensions import Self
     from ._types import (
-        T,
         RequestFunction,
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
     from .session import Session
+
+T = TypeVar('T')
 
 
 class RequestCore:
@@ -554,10 +548,10 @@ class RequestCore:
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj = await self._before_hook(req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
         response = await self.session._make_request(req_obj, formatted_path)
         if self._after_hook is not None:
-            response = await self._after_hook(response)
+            response = await self._after_hook(self.session, response)
 
         # Detect directly response
         if self.directly_response and self.session.directly_response:
