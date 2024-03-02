@@ -5,11 +5,11 @@ from .request import RequestCore
 
 
 def multiple_hook(
-        hook: Callable[
-            [RequestAfterHookFunction | RequestBeforeHookFunction],
-            RequestAfterHookFunction | RequestBeforeHookFunction
-        ],
-        index: Optional[int] = -1
+    hook: Callable[
+        [RequestAfterHookFunction | RequestBeforeHookFunction],
+        RequestAfterHookFunction | RequestBeforeHookFunction,
+    ],
+    index: Optional[int] = -1,
 ):
     """Use this method, if more than one pre-invoke hooks or post-invoke hooks need.
 

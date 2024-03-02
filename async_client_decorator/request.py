@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     )
     from .session import Session
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RequestCore:
@@ -549,7 +549,9 @@ class RequestCore:
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(
+                self.session, req_obj, formatted_path
+            )
         response = await self.session._make_request(req_obj, formatted_path)
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
