@@ -22,7 +22,7 @@ async def main():
     async with BusAPI(loop) as client:
         response = await client.station_search_with_query(name="bus-station-name")
         data = await response.json()
-        print(len)
+        print(len(data))
 
 
 loop.run_until_complete(main())
