@@ -1,7 +1,11 @@
+from __future__ import annotations
+from collections.abc import Iterable
 from typing import Optional, TYPE_CHECKING
+from types import GenericAlias
 
 import inspect
 import aiohttp
+
 
 if TYPE_CHECKING:
     import asyncio
@@ -112,6 +116,11 @@ def get_pydantic_response_model(
         if _model is inspect.Signature.empty or _model is None:
             raise TypeError("Invalid return type.")
 
+        is_listable = False
+        if isinstance(_model, GenericAlias):
+            _model = _model.__args__[0]
+            is_listable = True
+
         @multiple_hook(func.after_hook, index=index)
         async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
             if isinstance(response, aiohttp.ClientResponse):
@@ -119,12 +128,24 @@ def get_pydantic_response_model(
             else:
                 data = response
 
-            validated_data = model.model_validate(
-                obj=data,
-                strict=strict,
-                from_attributes=from_attributes,
-                context=context,
-            )
+            if is_listable or isinstance(data, Iterable):
+                validated_data = [
+                    _model.model_validate(
+                        obj=x,
+                        strict=strict,
+                        from_attributes=from_attributes,
+                        context=context,
+                    ) for x in data
+                ]
+            else:
+                validated_data = _model.model_validate(
+                    obj=data,
+                    strict=strict,
+                    from_attributes=from_attributes,
+                    context=context,
+                )
+
             return validated_data
+        return func
 
     return decorator
