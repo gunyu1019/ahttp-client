@@ -557,7 +557,7 @@ class RequestCore:
             response = await self._after_hook(self.session, response)
 
         # Detect directly response
-        if self.directly_response and self.session.directly_response:
+        if self.directly_response or self.session.directly_response:
             if isinstance(response, aiohttp.ClientResponse):
                 await response.read()  # Content-Read.
             return response
