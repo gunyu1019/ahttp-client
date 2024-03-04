@@ -68,9 +68,9 @@ def test_method_component_custom_name():
     @request("GET", "/test_path")
     async def test_request(
         _: Session,
-        test_header: str | Header.custom_name("custom_header_name"),
+        test_header: Annotated[str, Header.custom_name("custom_header_name")],
         test_query: Annotated[int, Query.to_pascal()],
-        test_form: str | Form.to_camel(),
+        test_form: Annotated[str, Form.to_camel()],
     ) -> None:
         pass
 

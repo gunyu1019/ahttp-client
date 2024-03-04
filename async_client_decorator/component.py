@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import aiohttp
-    from typing import Optional, Callable, NoReturn
+    from typing import Annotated, Optional, Callable, NoReturn
     from typing_extensions import Self
 
     from .query import Query
@@ -69,7 +69,9 @@ class Component:
         >>> @Session.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.custom_name('name') | str
+        ...     session: Session,
+        ...     response: aiohttp.ClientResponse,
+        ...     station_name: Annotated[str, Query.custom_name('name')]
         ... ) -> list[...]:
         ...     # A header called "name" is substituted with the value of station_name parameter.
         ...     pass
@@ -101,7 +103,9 @@ class Component:
         >>> @Session.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.to_camel() | str
+        ...     session: Session,
+        ...     response: aiohttp.ClientResponse,
+        ...     station_name: Annotated[str, Query.to_camel()]
         ... ) -> list[...]:
         ...     # A header called "stationName" is substituted with the value of station_name parameter.
         ...     pass
@@ -125,7 +129,9 @@ class Component:
         >>> @Session.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.to_pascal() | str
+        ...     session: Session,
+        ...     response: aiohttp.ClientResponse,
+        ...     station_name: Annotated[str, Query.to_pascal()]
         ... ) -> list[...]:
         ...     # A header called "StationName" is substituted with the value of station_name parameter.
         ...     pass
