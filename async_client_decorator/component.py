@@ -27,19 +27,55 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    import aiohttp
     from typing import Optional, Callable
     from typing_extensions import Self
 
+    from .query import Query
+    from .session import Session
+    from .request import request
+
 
 class EmptyComponent:
+    """Dummy object with nothing defined. It only uses on RequestCore."""
     pass
 
 
 class Component:
+    """Based object on Header, Query, Path, Form and Body
+
+    Attributes
+    ----------
+    get_component_name: Callable[[str], str]
+        Used to define the name of the component name.
+        In default case, it can cause an AttributesError.
+    """
     get_component_name: Optional[Callable[[str], str]]
 
     @classmethod
     def custom_name(cls, name: str) -> type[Self]:
+        """Define the name of the component(Header, Query, Form and Path)
+        Used when the component name must be different from the parameter name.
+
+        Parameters
+        ----------
+        name: str
+            The name of the component (Header, Query, Path and Form)
+
+        Examples
+        --------
+        >>> @Session.single_session("https://api.yhs.kr")
+        ... @request("GET", "/metro/station")
+        ... async def station_search_with_query(
+        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.custom_name('name') | str
+        ... ) -> list[...]:
+        ...     # A header called "name" is substituted with the value of station_name parameter.
+        ...     pass
+
+        Warnings
+        --------
+        The body component didn't allow the custom_name method to be used.
+        """
         cls.get_component_name = lambda _: name
         return cls
 
@@ -55,6 +91,22 @@ class Component:
 
     @classmethod
     def to_camel(cls) -> type[Self]:
+        """Define the name of the component(Header, Query, Form and Path) to follow camel case.
+
+        Examples
+        --------
+        >>> @Session.single_session("https://api.yhs.kr")
+        ... @request("GET", "/metro/station")
+        ... async def station_search_with_query(
+        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.to_camel() | str
+        ... ) -> list[...]:
+        ...     # A header called "stationName" is substituted with the value of station_name parameter.
+        ...     pass
+
+        Warnings
+        --------
+        The body component didn't allow the to_camel method to be used.
+        """
         cls.get_component_name = lambda original_name: Component._to_camel(
             original_name
         )
@@ -62,6 +114,22 @@ class Component:
 
     @classmethod
     def to_pascal(cls) -> type[Self]:
+        """Define the name of the component(Header, Query, Form and Path) to follow pascal case.
+
+        Examples
+        --------
+        >>> @Session.single_session("https://api.yhs.kr")
+        ... @request("GET", "/metro/station")
+        ... async def station_search_with_query(
+        ...     session: Session, response: aiohttp.ClientResponse, station_name: Query.to_pascal() | str
+        ... ) -> list[...]:
+        ...     # A header called "StationName" is substituted with the value of station_name parameter.
+        ...     pass
+
+        Warnings
+        --------
+        The body component didn't allow the to_pascal method to be used.
+        """
         cls.get_component_name = lambda original_name: Component._to_pascal(
             original_name
         )
