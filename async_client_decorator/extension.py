@@ -1,26 +1,45 @@
 from __future__ import annotations
-from collections.abc import Iterable
-from typing import Optional, TYPE_CHECKING
-from types import GenericAlias
 
 import inspect
-import aiohttp
+from collections.abc import Iterable
+from types import GenericAlias
+from typing import Optional, TYPE_CHECKING
 
+import aiohttp
 
 if TYPE_CHECKING:
     import asyncio
 
-    from typing import Any, Callable
+    from abc import ABC, abstractmethod
+    from typing import Any, Callable, TypeVar, Generic
     from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from .query import Query
     from .request import RequestCore, request
     from .session import Session
 
+    T = TypeVar('T')
+    CallableT = TypeVar('CallableT')
+    CallableR = TypeVar('CallableR')
+
+    class BoundedMethod(ABC, Generic[T, CallableT, CallableR]):
+        @abstractmethod
+        @property
+        def __self__(self) -> T:
+            ...
+
+        @abstractmethod
+        @property
+        def __func__(self) -> Callable[[T, CallableT], CallableR]:
+            ...
+
+    MultipleHookT = BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+
 
 def multiple_hook(
-    hook: Callable[
+    hook: MultipleHookT[
+        RequestCore,
         [RequestAfterHookFunction | RequestBeforeHookFunction],
-        RequestAfterHookFunction | RequestBeforeHookFunction,
+        RequestAfterHookFunction | RequestBeforeHookFunction
     ],
     index: Optional[int] = -1,
 ):
@@ -112,9 +131,12 @@ def get_pydantic_response_model(
         raise ModuleNotFoundError("pydantic is not installed.")
 
     def decorator(func: RequestCore):
-        _model = model or func._signature.return_annotation
+        _model = model
+        if model is None and func.directly_response:
+            _model = func._signature.return_annotation
+
         if _model is inspect.Signature.empty or _model is None:
-            raise TypeError("Invalid return type.")
+            raise TypeError("Invalid model type.")
 
         is_listable = False
         if isinstance(_model, GenericAlias):
