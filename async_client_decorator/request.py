@@ -418,8 +418,7 @@ class RequestCore:
                 name = self._get_component_name(parameter.name, component_type)
                 self.query_parameter[name] = parameter
             elif issubclass(component_type, Path) or parameter.name in path_parameter:
-                name = self._get_component_name(parameter.name, component_type)
-                self.path_parameter[name] = parameter
+                self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, Form) or parameter.name in form_parameter:
                 self._duplicated_check_body_parameter()
                 self.body_parameter_type = "data"
