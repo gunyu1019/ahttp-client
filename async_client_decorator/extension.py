@@ -124,7 +124,8 @@ else:
 def _parsing_json_to_model(
     data: list[Any],
     model: BaseModelT,
-    /, *,
+    /,
+    *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
@@ -232,10 +233,11 @@ def get_pydantic_response_model(
                 data = response
 
             result = _parsing_json_to_model(
-                data, _model,
+                data,
+                _model,
                 strict=strict,
                 from_attributes=from_attributes,
-                context=context
+                context=context,
             )
             return result
 
