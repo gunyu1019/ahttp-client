@@ -28,4 +28,4 @@ jobs:
     - name: Analysing the code with pycodestyle
       run: python -m pycodestyle async_client_decorator --max-line-length=120
     - name: Checking the code for formatted in black
-      run: python -m black --check async_client_decorator example
+      run: python -m black --line-length 120 --check async_client_decorator example
