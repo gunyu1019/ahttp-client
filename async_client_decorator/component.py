@@ -32,4 +32,29 @@ if TYPE_CHECKING:
 
 
 class Component:
-    pass
+    _name_call: Optional[Callable[[str], str]]
+
+    @classmethod
+    def custom_name(cls, name: str) -> type[Self]:
+        cls._name_call = lambda _: name
+        return cls
+
+    @staticmethod
+    def _to_pascal(snake: str) -> str:
+        camel = snake.title()
+        return re.sub("([0-9A-Za-z])_(?=[0-9A-Z])", lambda m: m.group(1), camel)
+
+    @staticmethod
+    def _to_camel(snake: str) -> str:
+        camel = Component._to_pascal(snake)
+        return re.sub("(^_*[A-Z])", lambda m: m.group(1).lower(), camel)
+
+    @classmethod
+    def to_camel(cls) -> type[Self]:
+        cls._name_call = lambda original_name: Component._to_camel(original_name)
+        return cls
+
+    @classmethod
+    def to_pascal(cls) -> type[Self]:
+        cls._name_call = lambda original_name: Component._to_pascal(original_name)
+        return cls
