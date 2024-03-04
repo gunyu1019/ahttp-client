@@ -20,16 +20,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-from .component import Component
+
+from __future__ import annotations
+
+import re
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Optional, Callable
+    from typing_extensions import Self
 
 
-class Body(Component):
-    """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
-
-    Examples
-    --------
-    >>> def function(body: dict | Body):
-    ...    pass
-    """
-
+class Component:
     pass

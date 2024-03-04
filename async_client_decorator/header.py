@@ -22,9 +22,10 @@ SOFTWARE.
 """
 
 from typing import Any
+from .component import Component
 
 
-class Header:
+class Header(Component):
     """This class is used when a function's parameters are used as headers in an HTTP request.
 
     Examples

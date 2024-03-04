@@ -20,9 +20,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from .component import Component
 
 
-class Path:
+class Path(Component):
     """This class is used when a function's parameters are used as path in an HTTP request.
     The parameters associated with the Path populate a portion of the HTTP URL.
 
