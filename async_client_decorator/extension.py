@@ -138,10 +138,8 @@ def get_pydantic_response_model(
         if _model is inspect.Signature.empty or _model is None:
             raise TypeError("Invalid model type.")
 
-        is_listable = False
         if isinstance(_model, GenericAlias):
             _model = _model.__args__[0]
-            is_listable = True
 
         @multiple_hook(func.after_hook, index=index)
         async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
@@ -150,7 +148,7 @@ def get_pydantic_response_model(
             else:
                 data = response
 
-            if is_listable or isinstance(data, Iterable):
+            if isinstance(data, Iterable):
                 validated_data = [
                     _model.model_validate(
                         obj=x,
