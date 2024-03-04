@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .query import Query
     from .request import RequestCore, request
     from .session import Session
-    
+
     CallableT = TypeVar("CallableT")
     CallableR = TypeVar("CallableR")
 

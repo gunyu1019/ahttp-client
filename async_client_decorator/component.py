@@ -55,10 +55,14 @@ class Component:
 
     @classmethod
     def to_camel(cls) -> type[Self]:
-        cls.get_component_name = lambda original_name: Component._to_camel(original_name)
+        cls.get_component_name = lambda original_name: Component._to_camel(
+            original_name
+        )
         return cls
 
     @classmethod
     def to_pascal(cls) -> type[Self]:
-        cls.get_component_name = lambda original_name: Component._to_pascal(original_name)
+        cls.get_component_name = lambda original_name: Component._to_pascal(
+            original_name
+        )
         return cls

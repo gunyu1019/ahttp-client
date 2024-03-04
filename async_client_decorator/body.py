@@ -20,6 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+from typing import NoReturn
 from .component import Component
 
 
@@ -32,4 +34,14 @@ class Body(Component):
     ...    pass
     """
 
-    pass
+    @classmethod
+    def custom_name(cls, name: str) -> NoReturn:
+        raise NotImplementedError("Body.custom_name is not supported.")
+
+    @classmethod
+    def to_camel(cls) -> NoReturn:
+        raise NotImplementedError("Body.to_camel is not supported.")
+
+    @classmethod
+    def to_pascal(cls) -> NoReturn:
+        raise NotImplementedError("Body.to_pascal is not supported.")

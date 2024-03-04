@@ -354,8 +354,8 @@ class RequestCore:
 
     @staticmethod
     def _get_component_name(
-            name: str,
-            component_type: type[Component] | type[EmptyComponent] = EmptyComponent
+        name: str,
+        component_type: type[Component] | type[EmptyComponent] = EmptyComponent,
     ) -> str:
         try:
             component_name = component_type.get_component_name(name)
@@ -398,12 +398,16 @@ class RequestCore:
                 else annotation
             )
             separated_annotation = separate_union_type(metadata)
-            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
+            component_type: (
+                type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse]
+            ) = EmptyComponent
             for annotation in make_collection(separated_annotation):
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
+                if issubclass(annotation, Component) or issubclass(
+                    annotation, aiohttp.ClientResponse
+                ):
                     component_type = annotation
                     break
 
