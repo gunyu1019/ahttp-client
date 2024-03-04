@@ -11,35 +11,35 @@ if TYPE_CHECKING:
     import asyncio
 
     from abc import ABC, abstractmethod
-    from typing import Any, Callable, TypeVar, Generic
+    from typing import Any, Callable, TypeVar, Generic, overload
     from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from .query import Query
     from .request import RequestCore, request
     from .session import Session
 
-    T = TypeVar('T')
-    CallableT = TypeVar('CallableT')
-    CallableR = TypeVar('CallableR')
+    T = TypeVar("T")
+    CallableT = TypeVar("CallableT")
+    CallableR = TypeVar("CallableR")
 
     class BoundedMethod(ABC, Generic[T, CallableT, CallableR]):
         @abstractmethod
         @property
-        def __self__(self) -> T:
-            ...
+        def __self__(self) -> T: ...
 
         @abstractmethod
         @property
-        def __func__(self) -> Callable[[T, CallableT], CallableR]:
-            ...
+        def __func__(self) -> Callable[[T, CallableT], CallableR]: ...
 
-    MultipleHookT = BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    MultipleHookT = (
+        BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    )
 
 
 def multiple_hook(
     hook: MultipleHookT[
         RequestCore,
         [RequestAfterHookFunction | RequestBeforeHookFunction],
-        RequestAfterHookFunction | RequestBeforeHookFunction
+        RequestAfterHookFunction | RequestBeforeHookFunction,
     ],
     index: Optional[int] = -1,
 ):
@@ -114,8 +114,49 @@ try:
     import pydantic
 except (ModuleNotFoundError, ImportError):
     is_pydantic = False
+    BaseModelT = TypeVar("BaseModel")
 else:
     is_pydantic = True
+    BaseModelT = TypeVar("BaseModel", bound=pydantic.BaseModel)
+
+
+@overload
+def _parsing_json_to_model(
+    data: list[Any],
+    model: BaseModelT,
+    /, *,
+    strict: Optional[bool] = None,
+    from_attributes: Optional[bool] = None,
+    context: Optional[dict[str, Any]] = None,
+) -> list[BaseModelT]: ...
+
+
+def _parsing_json_to_model(
+    data: dict[Any, ...],
+    model: BaseModelT,
+    *,
+    strict: Optional[bool] = None,
+    from_attributes: Optional[bool] = None,
+    context: Optional[dict[str, Any]] = None,
+) -> BaseModelT:
+    if isinstance(data, Iterable):
+        validated_data = [
+            model.model_validate(
+                obj=x,
+                strict=strict,
+                from_attributes=from_attributes,
+                context=context,
+            )
+            for x in data
+        ]
+    else:
+        validated_data = model.model_validate(
+            obj=data,
+            strict=strict,
+            from_attributes=from_attributes,
+            context=context,
+        )
+    return validated_data
 
 
 def get_pydantic_response_model(
@@ -125,7 +166,7 @@ def get_pydantic_response_model(
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
-    context: Optional[dict[str, Any]] = None
+    context: Optional[dict[str, Any]] = None,
 ):
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
@@ -148,24 +189,14 @@ def get_pydantic_response_model(
             else:
                 data = response
 
-            if isinstance(data, Iterable):
-                validated_data = [
-                    _model.model_validate(
-                        obj=x,
-                        strict=strict,
-                        from_attributes=from_attributes,
-                        context=context,
-                    ) for x in data
-                ]
-            else:
-                validated_data = _model.model_validate(
-                    obj=data,
-                    strict=strict,
-                    from_attributes=from_attributes,
-                    context=context,
-                )
+            result = _parsing_json_to_model(
+                data, _model,
+                strict=strict,
+                from_attributes=from_attributes,
+                context=context
+            )
+            return result
 
-            return validated_data
         return func
 
     return decorator
