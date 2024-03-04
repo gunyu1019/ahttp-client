@@ -33,4 +33,5 @@ class Path(UnsupportedCustomNameComponent):
     >>> def function(path: str | Path):
     ...    pass
     """
+
     pass

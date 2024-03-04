@@ -21,7 +21,9 @@ class PydanticModel(pydantic.BaseModel):
     subway: str
     subway_id: int
 
-    model_config = pydantic.ConfigDict(alias_generator=pydantic.alias_generators.to_camel)
+    model_config = pydantic.ConfigDict(
+        alias_generator=pydantic.alias_generators.to_camel
+    )
 
 
 class MetroAPI(Session):
@@ -31,7 +33,7 @@ class MetroAPI(Session):
     @get_pydantic_response_model()
     @request("GET", "/metro/station", directly_response=True)
     async def station_search_with_query(
-            self, response: aiohttp.ClientResponse, name: Annotated[str, Query()]
+        self, response: aiohttp.ClientResponse, name: Annotated[str, Query()]
     ) -> PydanticModel:
         pass
 

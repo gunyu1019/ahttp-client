@@ -13,7 +13,9 @@ class MetroAPI(Session):
 
     @request("GET", "/metro/station", directly_response=True)
     async def station_search_with_query(
-            self, response: aiohttp.ClientResponse, station_name: Annotated[str, Query.custom_name('name')]
+        self,
+        response: aiohttp.ClientResponse,
+        station_name: Annotated[str, Query.custom_name("name")],
     ) -> aiohttp.ClientResponse:
         pass
 

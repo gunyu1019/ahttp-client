@@ -32,4 +32,5 @@ class Body(UnsupportedCustomNameComponent):
     >>> def function(body: dict | Body):
     ...    pass
     """
+
     pass

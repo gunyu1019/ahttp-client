@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 
 class EmptyComponent:
     """Dummy object with nothing defined. It only uses on RequestCore."""
+
     pass
 
 
