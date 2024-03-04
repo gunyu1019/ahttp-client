@@ -115,6 +115,7 @@ class RequestCore:
         self.__module__ = func.__module__
         self.__name__ = func.__name__
         self.__doc__ = func.__doc__
+        self.__annotations__ = func.__annotations__
 
         self.request_kwargs = kwargs
 
@@ -440,6 +441,12 @@ class RequestCore:
         self._signature = self._signature.replace(
             parameters=parameter_without_return_annotation
         )
+        for parameter_name in self.response_parameter:
+            if parameter_name not in self.func.__annotations__.keys():
+                continue
+
+            del self.func.__annotations__[parameter_name]
+        self.__annotations__ = self.func.__annotations__
 
     def _fill_parameter(
         self, bounded_argument: dict[str, Any] | inspect.BoundArguments
