@@ -23,18 +23,11 @@ SOFTWARE.
 
 from __future__ import annotations
 
-try:
-    import pydantic
-except (ModuleNotFoundError, ImportError):
-    is_pydantic = False
-else:
-    is_pydantic = True
-
 import aiohttp
 import copy
 import inspect
 from asyncio import iscoroutinefunction
-from typing import TypeVar, Optional, Any, Literal, TYPE_CHECKING
+from typing import TypeVar, TYPE_CHECKING
 
 from .body import Body
 from .form import Form
@@ -45,14 +38,16 @@ from .utils import *
 
 if TYPE_CHECKING:
     from collections.abc import Collection
+    from typing import Optional, NoReturn, Any, Literal
     from typing_extensions import Self
     from ._types import (
-        T,
         RequestFunction,
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
     from .session import Session
+
+T = TypeVar("T")
 
 
 class RequestCore:
@@ -120,6 +115,7 @@ class RequestCore:
         self.__module__ = func.__module__
         self.__name__ = func.__name__
         self.__doc__ = func.__doc__
+        self.__annotations__ = func.__annotations__
 
         self.request_kwargs = kwargs
 
@@ -222,7 +218,7 @@ class RequestCore:
         new_cls._delete_response_annotation()
         return new_cls
 
-    def before_hook(self, func: RequestBeforeHookFunction):
+    def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
         """A decorator that registers a coroutine as a pre-invoke hook.
         A pre-invoke hook is called directly before the HTTP request is called.
         This makes it a useful function to set up authorizations or any type of set up required.
@@ -238,7 +234,7 @@ class RequestCore:
         self._before_hook = func
         return func
 
-    def after_hook(self, func: RequestAfterHookFunction):
+    def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
         """A decorator that registers a coroutine as a post-invoke hook.
         A post-invoke hook is called directly after the returned HTTP response.
         This makes it a useful function to check correct response or any type of clean up response data.
@@ -294,7 +290,7 @@ class RequestCore:
             return self.body_parameter_type
         return "json"
 
-    def _duplicated_check_body(self):
+    def _duplicated_check_body(self) -> Optional[NoReturn]:
         """Check if body is already in fill.
 
         Raises
@@ -305,7 +301,7 @@ class RequestCore:
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
 
-    def _duplicated_check_body_parameter(self):
+    def _duplicated_check_body_parameter(self) -> Optional[NoReturn]:
         """Check if body parameter is already in fill.
 
         Raises
@@ -317,7 +313,7 @@ class RequestCore:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
     @staticmethod
-    def _check_body_type(parameter: inspect.Parameter):
+    def _check_body_type(parameter: inspect.Parameter) -> Optional[NoReturn]:
         """Check body type appropriate.
         Body type is either Collection or aiohttp.FormData.
 
@@ -347,7 +343,7 @@ class RequestCore:
         raise TypeError("Body parameter can only have aiohttp.FormData or Collection.")
 
     # Setup
-    def _add_private_key(self):
+    def _add_private_key(self) -> None:
         """Add private component to the request component.
 
         This method used at setup."""
@@ -362,7 +358,7 @@ class RequestCore:
         form_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
-    ):
+    ) -> None:
         """Add the component parameter from function
 
         This method used at setup.
@@ -429,7 +425,7 @@ class RequestCore:
             elif is_subclass_safe(separated_annotation, aiohttp.ClientResponse):
                 self.response_parameter.append(parameter.name)
 
-    def _delete_response_annotation(self):
+    def _delete_response_annotation(self) -> None:
         """Delete the response parameter in signature.
         The response parameter is automatically filled when the request is invoked.
 
@@ -445,10 +441,16 @@ class RequestCore:
         self._signature = self._signature.replace(
             parameters=parameter_without_return_annotation
         )
+        for parameter_name in self.response_parameter:
+            if parameter_name not in self.func.__annotations__.keys():
+                continue
+
+            del self.func.__annotations__[parameter_name]
+        self.__annotations__ = self.func.__annotations__
 
     def _fill_parameter(
         self, bounded_argument: dict[str, Any] | inspect.BoundArguments
-    ):
+    ) -> None:
         """Fill HTTP request component from bounded argument
 
         Parameters
@@ -477,7 +479,7 @@ class RequestCore:
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
 
-    def get_request_kwargs(self):
+    def get_request_kwargs(self) -> dict[str, Any]:
         """Get keyword arguments to call request method"""
         request_kwargs = copy.deepcopy(self.request_kwargs)
 
@@ -554,13 +556,15 @@ class RequestCore:
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj = await self._before_hook(req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(
+                self.session, req_obj, formatted_path
+            )
         response = await self.session._make_request(req_obj, formatted_path)
         if self._after_hook is not None:
-            response = await self._after_hook(response)
+            response = await self._after_hook(self.session, response)
 
         # Detect directly response
-        if self.directly_response and self.session.directly_response:
+        if self.directly_response or self.session.directly_response:
             if isinstance(response, aiohttp.ClientResponse):
                 await response.read()  # Content-Read.
             return response
