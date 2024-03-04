@@ -114,10 +114,10 @@ try:
     import pydantic
 except (ModuleNotFoundError, ImportError):
     is_pydantic = False
-    BaseModelT = TypeVar("BaseModel")
+    BaseModelT = TypeVar("BaseModelT")
 else:
     is_pydantic = True
-    BaseModelT = TypeVar("BaseModel", bound=pydantic.BaseModel)
+    BaseModelT = TypeVar("BaseModelT", bound=type[pydantic.BaseModel])
 
 
 @overload
@@ -160,7 +160,7 @@ def _parsing_json_to_model(
 
 
 def get_pydantic_response_model(
-    model: Optional["pydantic.BaseModel"] = None,
+    model: Optional[BaseModelT] = None,
     /,
     index: Optional[int] = None,
     *,
@@ -168,10 +168,52 @@ def get_pydantic_response_model(
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
 ):
+    """Create a request method to return a model extended by pydantic.BaseModel
+
+    Parameters
+    ----------
+    model: Optional[pydantic.BaseModel]
+        A model extended by pydantic.BaseModel to parse JSON.
+        If directly_response enabled and model parameter is empty, model will followed return annotation.
+        However, model parameter is empty, TypeError("Invalid model type.") will be raised.
+    index: Optional[int]
+        Order of invocation in invoke-hook.
+        The order is recommended to be last after the status check.
+    strict: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named strict.
+    from_attributes: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named from_attributes.
+    context: Optional[dict[str, Any]]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named context.
+
+    Warnings
+    --------
+    This feature is experimental. It might not work as expected.
+    And `pydatnic` pacakge required.
+
+    Examples
+    --------
+    >>> class ResponseModel(pydantic.BaseModel):
+    ...     name: str
+    ...     id: str
+    ...
+    >>> class MetroAPI(Session):
+    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
+    ...        super().__init__("https://api.yhs.kr", loop=loop)
+    ...
+    ...    @get_pydantic_response_model(ResponseModel)
+    ...    @request("GET", "/metro/station")
+    ...    async def station_search_with_query(
+    ...            self,
+    ...            response: aiohttp.ClientResponse,
+    ...            name: Query | str
+    ...    ) -> ResponseModel:
+    ...        pass
+    """
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
 
-    def decorator(func: RequestCore):
+    def decorator(func: RequestCore) -> BaseModelT:
         _model = model
         if model is None and func.directly_response:
             _model = func._signature.return_annotation
