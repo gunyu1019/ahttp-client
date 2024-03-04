@@ -31,12 +31,16 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
+class EmptyComponent:
+    pass
+
+
 class Component:
-    _name_call: Optional[Callable[[str], str]]
+    get_component_name: Optional[Callable[[str], str]]
 
     @classmethod
     def custom_name(cls, name: str) -> type[Self]:
-        cls._name_call = lambda _: name
+        cls.get_component_name = lambda _: name
         return cls
 
     @staticmethod
@@ -51,10 +55,10 @@ class Component:
 
     @classmethod
     def to_camel(cls) -> type[Self]:
-        cls._name_call = lambda original_name: Component._to_camel(original_name)
+        cls.get_component_name = lambda original_name: Component._to_camel(original_name)
         return cls
 
     @classmethod
     def to_pascal(cls) -> type[Self]:
-        cls._name_call = lambda original_name: Component._to_pascal(original_name)
+        cls.get_component_name = lambda original_name: Component._to_pascal(original_name)
         return cls
