@@ -23,13 +23,15 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import aiohttp
 import copy
 import inspect
 from asyncio import iscoroutinefunction
 from typing import TypeVar, TYPE_CHECKING
 
+import aiohttp
+
 from .body import Body
+from .component import Component, EmptyComponent
 from .form import Form
 from .header import Header
 from .path import Path
@@ -350,6 +352,18 @@ class RequestCore:
         self.headers.update(getattr(self.func, Header.DEFAULT_KEY, dict()))
         self.params.update(getattr(self.func, Query.DEFAULT_KEY, dict()))
 
+    @staticmethod
+    def _get_component_name(
+            name: str,
+            component_type: type[Component] | type[EmptyComponent] = EmptyComponent
+    ) -> str:
+        try:
+            component_name = component_type.get_component_name(name)
+        except (AttributeError, TypeError):
+            return name
+        else:
+            return component_name
+
     def _add_parameter_to_component(
         self,
         *,
@@ -384,36 +398,31 @@ class RequestCore:
                 else annotation
             )
             separated_annotation = separate_union_type(metadata)
-            # for annotation in separated_annotation:
-            #     pass
+            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
+            for annotation in make_collection(separated_annotation):
+                if not isinstance(annotation, type):
+                    continue
 
-            if (
-                is_subclass_safe(separated_annotation, Header)
-                or parameter.name in header_parameter
-            ):
-                self.header_parameter[parameter.name] = parameter
-            elif (
-                is_subclass_safe(separated_annotation, Query)
-                or parameter.name in query_parameter
-            ):
-                self.query_parameter[parameter.name] = parameter
-            elif (
-                is_subclass_safe(separated_annotation, Path)
-                or parameter.name in path_parameter
-            ):
-                self.path_parameter[parameter.name] = parameter
-            elif (
-                is_subclass_safe(separated_annotation, Form)
-                or parameter.name in form_parameter
-            ):
+                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
+                    component_type = annotation
+                    break
+
+            if issubclass(component_type, Header) or parameter.name in header_parameter:
+                name = self._get_component_name(parameter.name, component_type)
+                self.header_parameter[name] = parameter
+            elif issubclass(component_type, Query) or parameter.name in query_parameter:
+                name = self._get_component_name(parameter.name, component_type)
+                self.query_parameter[name] = parameter
+            elif issubclass(component_type, Path) or parameter.name in path_parameter:
+                name = self._get_component_name(parameter.name, component_type)
+                self.path_parameter[name] = parameter
+            elif issubclass(component_type, Form) or parameter.name in form_parameter:
                 self._duplicated_check_body_parameter()
                 self.body_parameter_type = "data"
-                self.body_form_parameter[parameter.name] = parameter
+                name = self._get_component_name(parameter.name, component_type)
+                self.body_form_parameter[name] = parameter
                 self._duplicated_check_body()
-            elif (
-                is_subclass_safe(separated_annotation, Body)
-                or parameter.name == body_parameter
-            ):
+            elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._check_body_type(parameter)
                 self._duplicated_check_body_parameter()
                 if is_subclass_safe(separated_annotation, aiohttp.FormData):
@@ -422,7 +431,7 @@ class RequestCore:
                     self.body_parameter_type = "json"
                 self.body_parameter = parameter
                 self._duplicated_check_body()
-            elif is_subclass_safe(separated_annotation, aiohttp.ClientResponse):
+            elif issubclass(component_type, aiohttp.ClientResponse):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
