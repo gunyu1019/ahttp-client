@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import aiohttp
-    from typing import Optional, Callable
+    from typing import Optional, Callable, NoReturn
     from typing_extensions import Self
 
     from .query import Query
@@ -50,7 +50,9 @@ class Component:
         Used to define the name of the component name.
         In default case, it can cause an AttributesError.
     """
-    get_component_name: Optional[Callable[[str], str]]
+
+    def __init__(self):
+        self.get_component_name: Optional[Callable[[str], str]] = None
 
     @classmethod
     def custom_name(cls, name: str) -> type[Self]:
@@ -74,10 +76,11 @@ class Component:
 
         Warnings
         --------
-        The body component didn't allow the custom_name method to be used.
+        The body component and path component didn't allow the custom_name method to be used.
         """
-        cls.get_component_name = lambda _: name
-        return cls
+        new_cls = cls()
+        new_cls.get_component_name = lambda _: name
+        return new_cls
 
     @staticmethod
     def _to_pascal(snake: str) -> str:
@@ -105,12 +108,13 @@ class Component:
 
         Warnings
         --------
-        The body component didn't allow the to_camel method to be used.
+        The body component and path component didn't allow the to_camel method to be used.
         """
-        cls.get_component_name = lambda original_name: Component._to_camel(
+        new_cls = cls()
+        new_cls.get_component_name = lambda original_name: new_cls._to_camel(
             original_name
         )
-        return cls
+        return new_cls
 
     @classmethod
     def to_pascal(cls) -> type[Self]:
@@ -128,9 +132,24 @@ class Component:
 
         Warnings
         --------
-        The body component didn't allow the to_pascal method to be used.
+        The body component and path component didn't allow the to_pascal method to be used.
         """
-        cls.get_component_name = lambda original_name: Component._to_pascal(
+        new_cls = cls()
+        new_cls.get_component_name = lambda original_name: new_cls._to_pascal(
             original_name
         )
-        return cls
+        return new_cls
+
+
+class UnsupportedCustomNameComponent(Component):
+    @classmethod
+    def custom_name(cls, name: str) -> NoReturn:
+        raise NotImplementedError("%s.custom_name is not supported." % cls.__name__)
+
+    @classmethod
+    def to_camel(cls) -> NoReturn:
+        raise NotImplementedError("%s.to_camel is not supported." % cls.__name__)
+
+    @classmethod
+    def to_pascal(cls) -> NoReturn:
+        raise NotImplementedError("%s.to_pascal is not supported." % cls.__name__)

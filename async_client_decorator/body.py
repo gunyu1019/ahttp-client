@@ -21,11 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import NoReturn
-from .component import Component
+from .component import UnsupportedCustomNameComponent
 
 
-class Body(Component):
+class Body(UnsupportedCustomNameComponent):
     """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
 
     Examples
@@ -33,15 +32,4 @@ class Body(Component):
     >>> def function(body: dict | Body):
     ...    pass
     """
-
-    @classmethod
-    def custom_name(cls, name: str) -> NoReturn:
-        raise NotImplementedError("Body.custom_name is not supported.")
-
-    @classmethod
-    def to_camel(cls) -> NoReturn:
-        raise NotImplementedError("Body.to_camel is not supported.")
-
-    @classmethod
-    def to_pascal(cls) -> NoReturn:
-        raise NotImplementedError("Body.to_pascal is not supported.")
+    pass
