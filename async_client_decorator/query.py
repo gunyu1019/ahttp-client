@@ -22,9 +22,10 @@ SOFTWARE.
 """
 
 from typing import Any
+from .component import Component
 
 
-class Query:
+class Query(Component):
     """This class is used when a function's parameters are used as query in an HTTP request.
 
     Examples

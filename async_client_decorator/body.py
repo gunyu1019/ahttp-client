@@ -21,8 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from .component import UnsupportedCustomNameComponent
 
-class Body:
+
+class Body(UnsupportedCustomNameComponent):
     """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
 
     Examples
@@ -30,5 +32,4 @@ class Body:
     >>> def function(body: dict | Body):
     ...    pass
     """
-
     pass

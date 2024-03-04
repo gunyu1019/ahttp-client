@@ -21,8 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from .component import Component
 
-class Form:
+
+class Form(Component):
     """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
 
     Examples

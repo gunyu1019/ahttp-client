@@ -3,21 +3,22 @@ from __future__ import annotations
 import inspect
 from collections.abc import Iterable
 from types import GenericAlias
-from typing import Optional, TYPE_CHECKING
+from typing import overload, TYPE_CHECKING, TypeVar
 
 import aiohttp
+
+T = TypeVar("T")
 
 if TYPE_CHECKING:
     import asyncio
 
     from abc import ABC, abstractmethod
-    from typing import Any, Callable, TypeVar, Generic, overload
+    from typing import Any, Callable, Generic, Optional
     from ._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from .query import Query
     from .request import RequestCore, request
     from .session import Session
 
-    T = TypeVar("T")
     CallableT = TypeVar("CallableT")
     CallableR = TypeVar("CallableR")
 
