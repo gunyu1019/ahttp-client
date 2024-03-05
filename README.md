@@ -7,7 +7,7 @@
 Using `@decorator` to easily request an HTTP Client<br/>
 This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
 
-Use Union Type to describe the elements required in an HTTP request.
+Use Annotated Type to describe the elements required in an HTTP request.
 
 
 ## Installation
@@ -25,7 +25,7 @@ An example is the API provided by the [BUS API](https://github.com/gunyu1019/tra
 import asyncio
 import aiohttp
 from ahttp_client import request, Session, Query
-from typing import Any
+from typing import Annotated, Any
 
 loop = asyncio.get_event_loop()
 
@@ -38,7 +38,7 @@ class MetroAPI(Session):
     async def station_search_with_query(
             self,
             response: aiohttp.ClientResponse,
-            name: Query | str
+            name: Annotated[str, Query]
     ) -> dict[str, Any]:
         return await response.json()
 
