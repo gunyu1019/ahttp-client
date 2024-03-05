@@ -53,4 +53,4 @@ class VersionInfo(NamedTuple):
         return _version_info
 
 
-version_info: VersionInfo = VersionInfo(major=1, minor=0, micro=0, release_level="beta", serial=0)
+version_info: VersionInfo = VersionInfo(major=1, minor=0, micro=0, release_level=None, serial=0)
