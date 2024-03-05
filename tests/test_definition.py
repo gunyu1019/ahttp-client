@@ -114,13 +114,14 @@ def test_component_custom_name(test_method_component_custom_name):
     assert "test_query" not in test_method_component_custom_name.query_parameter
     assert "test_form" not in test_method_component_custom_name.body_form_parameter
 
-    assert test_method_component_custom_name.header_parameter['custom_header_name'].name == "test_header"
-    assert test_method_component_custom_name.query_parameter['TestQuery'].name == "test_query"
-    assert test_method_component_custom_name.body_form_parameter['testForm'].name == "test_form"
+    assert test_method_component_custom_name.header_parameter["custom_header_name"].name == "test_header"
+    assert test_method_component_custom_name.query_parameter["TestQuery"].name == "test_query"
+    assert test_method_component_custom_name.body_form_parameter["testForm"].name == "test_form"
 
 
 def test_body_unsupported_custom_name():
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/test_path")
         async def test_request(
             _: Session,
@@ -131,6 +132,7 @@ def test_body_unsupported_custom_name():
     assert str(error_message.value) == "Body.to_pascal is not supported."
 
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/test_path")
         async def test_request(
             _: Session,
@@ -141,10 +143,11 @@ def test_body_unsupported_custom_name():
     assert str(error_message.value) == "Body.to_camel is not supported."
 
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/test_path")
         async def test_request(
             _: Session,
-            test_body: str | Body.custom_name('another_name'),
+            test_body: str | Body.custom_name("another_name"),
         ) -> None:
             pass
 
@@ -153,6 +156,7 @@ def test_body_unsupported_custom_name():
 
 def test_path_unsupported_custom_name():
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/{TestPath}")
         async def test_request(
             _: Session,
@@ -163,6 +167,7 @@ def test_path_unsupported_custom_name():
     assert str(error_message.value) == "Path.to_pascal is not supported."
 
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/{testPath}")
         async def test_request(
             _: Session,
@@ -173,10 +178,11 @@ def test_path_unsupported_custom_name():
     assert str(error_message.value) == "Path.to_camel is not supported."
 
     with pytest.raises(NotImplementedError) as error_message:
+
         @request("GET", "/{test_path}")
         async def test_request(
             _: Session,
-            test_path: str | Path.custom_name('another_name'),
+            test_path: str | Path.custom_name("another_name"),
         ) -> None:
             pass
 

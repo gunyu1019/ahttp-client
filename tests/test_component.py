@@ -65,10 +65,7 @@ def test_incorrect_body_type():
         ) -> None:
             pass
 
-    assert (
-        str(error_message.value)
-        == "Body parameter can only have aiohttp.FormData or Collection."
-    )
+    assert str(error_message.value) == "Body parameter can only have aiohttp.FormData or Collection."
 
 
 def test_duplicated_body():

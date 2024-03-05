@@ -116,9 +116,7 @@ class Component:
         The body component and path component didn't allow the to_camel method to be used.
         """
         new_cls = cls()
-        new_cls.get_component_name = lambda original_name: new_cls._to_camel(
-            original_name
-        )
+        new_cls.get_component_name = lambda original_name: new_cls._to_camel(original_name)
         return new_cls
 
     @classmethod
@@ -142,9 +140,7 @@ class Component:
         The body component and path component didn't allow the to_pascal method to be used.
         """
         new_cls = cls()
-        new_cls.get_component_name = lambda original_name: new_cls._to_pascal(
-            original_name
-        )
+        new_cls.get_component_name = lambda original_name: new_cls._to_pascal(original_name)
         return new_cls
 
 
