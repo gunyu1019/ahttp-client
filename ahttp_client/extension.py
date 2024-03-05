@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Iterable
+from collections.abc import Sequence
 from types import GenericAlias
 from typing import overload, TYPE_CHECKING, TypeVar
 
@@ -139,7 +139,7 @@ def _parsing_json_to_model(
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
 ) -> BaseModelT:
-    if isinstance(data, Iterable):
+    if isinstance(data, Sequence):
         validated_data = [
             model.model_validate(
                 obj=x,
