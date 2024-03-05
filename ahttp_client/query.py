@@ -22,26 +22,26 @@ SOFTWARE.
 """
 
 from typing import Any
+from .component import Component
 
 
-class Path:
-    """This class is used when a function's parameters are used as path in an HTTP request.
-    The parameters associated with the Path populate a portion of the HTTP URL.
+class Query(Component):
+    """This class is used when a function's parameters are used as query in an HTTP request.
 
     Examples
     --------
-    >>> def function(path: str | Path):
+    >>> def function(query: str | Query):
     ...    pass
     """
 
-    DEFAULT_KEY = "__DEFAULT_PATH__"
+    DEFAULT_KEY = "__DEFAULT_QUERY__"
 
     @staticmethod
-    def default_path(key: str, value: Any):
+    def default_query(key: str, value: Any):
         def decorator(func):
-            if not hasattr(func, Path.DEFAULT_KEY):
-                setattr(func, Path.DEFAULT_KEY, dict())
-            getattr(func, Path.DEFAULT_KEY)[key] = value
+            if not hasattr(func, Query.DEFAULT_KEY):
+                setattr(func, Query.DEFAULT_KEY, dict())
+            getattr(func, Query.DEFAULT_KEY)[key] = value
             return func
 
         return decorator

@@ -1,48 +1,100 @@
+import aiohttp
 import pytest
 
-from async_client_decorator import *
-from async_client_decorator.component import Component
+from typing import Any
+from ahttp_client import *
+
+
+@pytest.fixture
+def test_method_form_data_type_1():
+    @request("GET", "/test_path")
+    async def test_request(
+        session: Session,
+        test_body: str | Form = None,
+    ) -> None:
+        pass
+
+    return test_request
+
+
+@pytest.fixture
+def test_method_form_data_type_2():
+    @request("GET", "/test_path")
+    async def test_request(
+        session: Session,
+        test_body: aiohttp.FormData | Body = None,
+    ) -> None:
+        pass
+
+    return test_request
+
+
+@pytest.fixture
+def test_method_json_data():
+    @request("GET", "/test_path")
+    async def test_request(
+        session: Session,
+        test_body: list[Any] | Body = None,
+    ) -> None:
+        pass
+
+    return test_request
 
 
 def test_duplicated_body_type():
-    sample_component = Component()
-    with pytest.raises(ValueError) as error_message:
-        sample_component.add_form("DUMMY_KEY", "DUMMY_VALUE")
-        sample_component.set_body({"DUMMY_KEY": "DUMMY_VALUE"})
-    assert str(error_message.value) == "Use only one Form Parameter or Body Parameter."
+    with pytest.raises(TypeError) as error_message:
+
+        @request("GET", "/test_path")
+        async def test_request(
+            session: Session,
+            test_body_1: Form | Body = None,
+            test_body_2: list[Any] | Body = None,
+        ) -> None:
+            pass
+
+    assert str(error_message.value) == "Duplicated Form Parameter or Body Parameter."
 
 
 def test_incorrect_body_type():
-    sample_component = Component()
     with pytest.raises(TypeError) as error_message:
-        sample_component.set_body(1)
-    assert (
-        str(error_message.value)
-        == "Body parameter can only have aiohttp.FormData or dict, list."
-    )
+
+        @request("GET", "/test_path")
+        async def test_request(
+            session: Session,
+            test_body: int | Body = None,
+        ) -> None:
+            pass
+
+    assert str(error_message.value) == "Body parameter can only have aiohttp.FormData or Collection."
 
 
 def test_duplicated_body():
-    sample_component = Component()
-    with pytest.raises(ValueError) as error_message:
-        sample_component.set_body({"DUMMY_KEY": "DUMMY_VALUE"})
-        sample_component.set_body({"DUMMY_KEY": "DUMMY_VALUE"})
-    assert str(error_message.value) == "Only one Body Parameter is allowed."
+    sample_body = aiohttp.FormData()
+    with pytest.raises(TypeError) as error_message:
+
+        @request("GET", "/test_path", body=sample_body)
+        async def test_request(
+            session: Session,
+            test_body: aiohttp.FormData | Body = None,
+        ) -> None:
+            pass
+
+    assert str(error_message.value) == "Only one Body Parameter or Body is allowed."
 
 
-def test_form_data():
-    sample_component = Component()
-    sample_component.add_form("DUMMY_KEY", "DUMMY_VALUE")
-
-    assert sample_component.is_formal_form() is True
-    assert sample_component.is_body() is True
-    assert sample_component.body_type == "data"
+def test_form_data_type_1(test_method_form_data_type_1):
+    assert test_method_form_data_type_1.is_formal_form is True
+    assert test_method_form_data_type_1.is_body is True
+    assert test_method_form_data_type_1.body_parameter_type == "data"
 
 
-def test_json_data():
-    sample_component = Component()
-    sample_component.set_body({"DUMMY_KEY": "DUMMY_VALUE"})
+def test_form_data_type_2(test_method_form_data_type_2):
+    assert test_method_form_data_type_2.is_formal_form is False
+    assert test_method_form_data_type_2.is_body is True
+    assert test_method_form_data_type_2.body_parameter_type == "data"
 
-    assert sample_component.is_formal_form() is False
-    assert sample_component.is_body() is True
-    assert sample_component.body_type == "json"
+
+def test_json_data(test_method_json_data):
+    assert test_method_json_data.is_formal_form is False
+    assert test_method_json_data.is_body is True
+    assert test_method_json_data.body_parameter_type == "json"

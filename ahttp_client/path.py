@@ -21,26 +21,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
+from .component import UnsupportedCustomNameComponent
 
 
-class Form:
-    """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
+class Path(UnsupportedCustomNameComponent):
+    """This class is used when a function's parameters are used as path in an HTTP request.
+    The parameters associated with the Path populate a portion of the HTTP URL.
 
     Examples
     --------
-    >>> def function(data: str | Form):
+    >>> def function(path: str | Path):
     ...    pass
     """
 
-    DEFAULT_KEY = "__DEFAULT_FORM__"
-
-    @staticmethod
-    def default_form(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Form.DEFAULT_KEY):
-                setattr(func, Form.DEFAULT_KEY, dict())
-            getattr(func, Form.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+    pass

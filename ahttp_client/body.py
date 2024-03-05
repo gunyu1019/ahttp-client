@@ -1,6 +1,6 @@
 """MIT License
 
-Copyright (c) 2021 gunyu1019
+Copyright (c) 2023 gunyu1019
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
+from .component import UnsupportedCustomNameComponent
 
 
-if TYPE_CHECKING:
-    import aiohttp
-    from .session import Session
+class Body(UnsupportedCustomNameComponent):
+    """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
 
+    Examples
+    --------
+    >>> def function(body: dict | Body):
+    ...    pass
+    """
 
-T = TypeVar("T")
-_Coroutine = Coroutine[Any, Any, T]
-CoroutineFunction = Callable[..., _Coroutine]
-
-RequestFunction = Callable[
-    ["Session", ...],
-    _Coroutine[T | "aiohttp.ClientResponse"],
-]
+    pass

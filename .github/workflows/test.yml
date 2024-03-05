@@ -26,4 +26,4 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[test]
     - name: Test with pytest
-      run: python -m pytest -v -s tests --cov=async_client_decorator --cov-report term-missing:skip-covered
+      run: python -m pytest -v -s tests --cov=ahttp_client --cov-report term-missing:skip-covered

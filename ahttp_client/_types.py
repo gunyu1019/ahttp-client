@@ -1,6 +1,6 @@
 """MIT License
 
-Copyright (c) 2023 gunyu1019
+Copyright (c) 2021 gunyu1019
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,26 +21,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
+from __future__ import annotations
+from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
 
 
-class Query:
-    """This class is used when a function's parameters are used as query in an HTTP request.
+if TYPE_CHECKING:
+    import aiohttp
+    from .session import Session
+    from .request import RequestCore
 
-    Examples
-    --------
-    >>> def function(query: str | Query):
-    ...    pass
-    """
 
-    DEFAULT_KEY = "__DEFAULT_QUERY__"
+T = TypeVar("T")
+_Coroutine = Coroutine[Any, Any, T]
+CoroutineFunction = Callable[..., _Coroutine]
 
-    @staticmethod
-    def default_query(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Query.DEFAULT_KEY):
-                setattr(func, Query.DEFAULT_KEY, dict())
-            getattr(func, Query.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+RequestFunction = Callable[
+    [Session, ...],
+    _Coroutine[T | aiohttp.ClientResponse],
+]
+RequestBeforeHookFunction = Callable[
+    [Session, RequestCore, str],
+    _Coroutine[RequestCore],
+]
+RequestAfterHookFunction = Callable[
+    [Session, T | aiohttp.ClientResponse],
+    _Coroutine[T | aiohttp.ClientResponse],
+]

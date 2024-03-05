@@ -3,23 +3,25 @@ from typing import NamedTuple
 
 import aiohttp
 
-from async_client_decorator import request, Session, Query
+from ahttp_client import request, Session, Query
 
 loop = asyncio.get_event_loop()
 
 
 class StationInfo(NamedTuple):
-    displayId: str
+    arrivalStationId: int
+    code: str
+    displayName: str
     id: str
     name: str
     posX: float
     posY: float
-    stationId: str
-    type: int
+    subway: str
+    subwayId: int
 
 
 @Session.single_session("https://api.yhs.kr")
-@request("GET", "/bus/station")
+@request("GET", "/metro/station")
 async def station_search_with_query(
     session: Session, response: aiohttp.ClientResponse, name: Query | str
 ) -> list[StationInfo]:
@@ -28,7 +30,7 @@ async def station_search_with_query(
 
 
 async def main():
-    data = await station_search_with_query(name="bus-station-name")
+    data = await station_search_with_query(name="metro-station-name")
     print(len(data))
 
 

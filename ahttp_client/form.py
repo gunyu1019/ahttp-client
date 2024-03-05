@@ -21,26 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
+from .component import Component
 
 
-class Header:
-    """This class is used when a function's parameters are used as headers in an HTTP request.
+class Form(Component):
+    """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
 
     Examples
     --------
-    >>> def function(header: str | Header):
+    >>> def function(data: str | Form):
     ...    pass
     """
 
-    DEFAULT_KEY = "__DEFAULT_HEADER__"
-
-    @staticmethod
-    def default_header(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Header.DEFAULT_KEY):
-                setattr(func, Header.DEFAULT_KEY, dict())
-            getattr(func, Header.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+    pass
