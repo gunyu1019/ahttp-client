@@ -36,7 +36,7 @@ __title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-present gunyu1019"
-__version__ = "1.0.0-beta"  # version_info.to_string()
+__version__ = "1.0.0"  # version_info.to_string()
 
 
 class VersionInfo(NamedTuple):
