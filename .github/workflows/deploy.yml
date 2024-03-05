@@ -30,7 +30,7 @@ jobs:
       - build
     environment:
       name: pypi
-      url: https://pypi.org/p/async_client_decorator
+      url: https://pypi.org/p/ahttp_client
     permissions:
       id-token: write
     steps:

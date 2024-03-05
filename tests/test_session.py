@@ -1,7 +1,7 @@
 import pytest
 
-from async_client_decorator import *
-from async_client_decorator.request import RequestCore
+from ahttp_client import *
+from ahttp_client.request import RequestCore
 
 
 @pytest.fixture

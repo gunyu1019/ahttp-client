@@ -1,8 +1,8 @@
- # async-client-decorator
+ # ahttp-client
  
-![PyPI - Version](https://img.shields.io/pypi/v/async-client-decorator?style=flat)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/async-client-decorator?style=flat)
-![PyPI - License](https://img.shields.io/pypi/l/async-client-decorator?style=flat)
+![PyPI - Version](https://img.shields.io/pypi/v/ahttp-client?style=flat)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/ahttp-client?style=flat)
+![PyPI - License](https://img.shields.io/pypi/l/ahttp-client?style=flat)
 
 Using `@decorator` to easily request an HTTP Client<br/>
 This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
@@ -14,7 +14,7 @@ Use Union Type to describe the elements required in an HTTP request.
 **Python 3.10 or higher is required.**
 
 ```pip
-pip install async-client-decorator
+pip install ahttp-client
 ```
 
 ## Quick Example
@@ -24,7 +24,7 @@ An example is the API provided by the [BUS API](https://github.com/gunyu1019/tra
 ```python
 import asyncio
 import aiohttp
-from async_client_decorator import request, Session, Query
+from ahttp_client import request, Session, Query
 from typing import Any
 
 loop = asyncio.get_event_loop()

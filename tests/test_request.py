@@ -3,7 +3,7 @@ from typing import Annotated
 import aiohttp
 import pytest
 
-from async_client_decorator import *
+from ahttp_client import *
 
 
 @pytest.fixture

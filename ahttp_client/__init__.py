@@ -32,7 +32,7 @@ from .request import request, get, post, options, put, delete
 from .session import Session
 
 
-__title__ = "async_client_decorator"
+__title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-present gunyu1019"

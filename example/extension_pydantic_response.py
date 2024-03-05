@@ -3,8 +3,8 @@ import aiohttp
 import pydantic
 import pydantic.alias_generators
 
-from async_client_decorator import request, Session, Query
-from async_client_decorator.extension import get_pydantic_response_model
+from ahttp_client import request, Session, Query
+from ahttp_client.extension import get_pydantic_response_model
 from typing import Annotated
 
 loop = asyncio.get_event_loop()

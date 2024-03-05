@@ -2,7 +2,7 @@ import aiohttp
 import pytest
 
 from typing import Any
-from async_client_decorator import *
+from ahttp_client import *
 
 
 @pytest.fixture

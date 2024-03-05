@@ -3,7 +3,7 @@ import re
 from setuptools import setup
 
 version = ""
-with open("async_client_decorator/__init__.py") as f:
+with open("ahttp_client/__init__.py") as f:
     version = re.search(
         r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', f.read(), re.MULTILINE
     ).group(1)
@@ -18,10 +18,10 @@ extras_require = {
 }
 
 setup(
-    name="async_client_decorator",
+    name="ahttp_client",
     version=version,
-    packages=["async_client_decorator"],
-    url="https://github.com/gunyu1019/async-client-decorator",
+    packages=["ahttp_client"],
+    url="https://github.com/gunyu1019/ahttp-client",
     license="MIT",
     author="gunyu1019",
     author_email="gunyu1019@yhs.kr",
