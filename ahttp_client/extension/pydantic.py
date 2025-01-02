@@ -30,6 +30,8 @@ from collections.abc import Sequence
 from types import GenericAlias
 from typing import overload, TypeVar, TYPE_CHECKING
 
+from .multiple_hook import multiple_hook
+
 if TYPE_CHECKING:
     from typing import Any, Optional
 
