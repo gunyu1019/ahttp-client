@@ -35,6 +35,8 @@ from .multiple_hook import multiple_hook
 if TYPE_CHECKING:
     from typing import Any, Optional
 
+    from ..request import RequestCore
+
 try:
     import pydantic
 except (ModuleNotFoundError, ImportError):
@@ -54,7 +56,7 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
-) -> list[BaseModelT]: ...
+) -> Optional[list[BaseModelT]]: ...
 
 
 def _parsing_json_to_model(
@@ -64,7 +66,7 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
-) -> BaseModelT:
+) -> Optional[BaseModelT]:
     if isinstance(data, Sequence):
         validated_data = [
             model.model_validate(
@@ -75,6 +77,8 @@ def _parsing_json_to_model(
             )
             for x in data
         ]
+    elif isinstance(data, type(None)):
+        return
     else:
         validated_data = model.model_validate(
             obj=data,
@@ -85,8 +89,8 @@ def _parsing_json_to_model(
     return validated_data
 
 
-def get_pydantic_response_model(
-    model: Optional[BaseModelT] = None,
+def pydantic_model(
+    response_model: Optional[BaseModelT] = None,
     /,
     index: Optional[int] = None,
     *,
@@ -127,7 +131,7 @@ def get_pydantic_response_model(
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
-    ...    @get_pydantic_response_model(ResponseModel)
+    ...    @pydantic_model(ResponseModel)
     ...    @request("GET", "/metro/station")
     ...    async def station_search_with_query(
     ...            self,
@@ -140,32 +144,36 @@ def get_pydantic_response_model(
         raise ModuleNotFoundError("pydantic is not installed.")
 
     def decorator(func: RequestCore) -> BaseModelT:
-        _model = model
-        if model is None and func.directly_response:
-            _model = func._signature.return_annotation
+        _response_model = response_model
+        if response_model is None and func.directly_response:
+            _response_model = func._signature.return_annotation
 
-        if _model is inspect.Signature.empty or _model is None:
-            raise TypeError("Invalid model type.")
+        # if _response_model is inspect.Signature.empty or _response_model is None:
+        #     raise TypeError("Invalid model type.")
 
-        if isinstance(_model, GenericAlias):
-            _model = _model.__args__[0]
+        if isinstance(_response_model, GenericAlias):
+            _response_model = _response_model.__args__[0]
+        
+        if _response_model is not inspect.Signature.empty and _response_model is not None:
+            @multiple_hook(func.after_hook, index=index)
+            async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
+                if isinstance(response, aiohttp.ClientResponse):
+                    data = await response.json()
+                else:
+                    data = response
 
-        @multiple_hook(func.after_hook, index=index)
-        async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
-            if isinstance(response, aiohttp.ClientResponse):
-                data = await response.json()
-            else:
-                data = response
-
-            result = _parsing_json_to_model(
-                data,
-                _model,
-                strict=strict,
-                from_attributes=from_attributes,
-                context=context,
-            )
-            return result
+                result = _parsing_json_to_model(
+                    data,
+                    _response_model,
+                    strict=strict,
+                    from_attributes=from_attributes,
+                    context=context,
+                )
+                return result
 
         return func
 
     return decorator
+
+# get_pydantic_response_model name had been changed to pydantic_model
+get_pydantic_response_model = pydantic_model

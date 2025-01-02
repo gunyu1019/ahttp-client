@@ -22,4 +22,4 @@ SOFTWARE.
 """
 
 from .multiple_hook import multiple_hook
-from .pydantic import get_pydantic_response_model
+from .pydantic import get_pydantic_response_model, pydantic_response_model
