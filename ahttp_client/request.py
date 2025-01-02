@@ -454,10 +454,16 @@ class RequestCore:
 
         # Header
         for _name, _parameter in self.header_parameter.items():
+            # When method argument is None, it can cause an exception during the parsing process.
+            if bounded_argument.get(_parameter.name) is None:
+                continue
             self.headers[_name] = bounded_argument.get(_parameter.name)
 
         # Parameter
         for _name, _parameter in self.query_parameter.items():
+            # When method argument is None, it can cause an exception during the parsing process.
+            if bounded_argument.get(_parameter.name) is None:
+                continue
             self.params[_name] = bounded_argument.get(_parameter.name)
 
         # Body
