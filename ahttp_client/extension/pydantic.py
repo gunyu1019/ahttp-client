@@ -89,8 +89,8 @@ def _parsing_json_to_model(
     return validated_data
 
 
-def pydantic_model(
-    response_model: Optional[BaseModelT] = None,
+def pydantic_response_model(
+    model: Optional[BaseModelT] = None,
     /,
     index: Optional[int] = None,
     *,
@@ -131,7 +131,7 @@ def pydantic_model(
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
-    ...    @pydantic_model(ResponseModel)
+    ...    @pydantic_response_model(ResponseModel)
     ...    @request("GET", "/metro/station")
     ...    async def station_search_with_query(
     ...            self,
@@ -144,32 +144,32 @@ def pydantic_model(
         raise ModuleNotFoundError("pydantic is not installed.")
 
     def decorator(func: RequestCore) -> BaseModelT:
-        _response_model = response_model
-        if response_model is None and func.directly_response:
-            _response_model = func._signature.return_annotation
+        _model = model
+        if model is None and func.directly_response:
+            _model = func._signature.return_annotation
 
-        # if _response_model is inspect.Signature.empty or _response_model is None:
-        #     raise TypeError("Invalid model type.")
 
-        if isinstance(_response_model, GenericAlias):
-            _response_model = _response_model.__args__[0]
+        if _model is inspect.Signature.empty or _model is None:
+            raise TypeError("Invalid model type.")
+
+        if isinstance(_model, GenericAlias):
+            _model = _model.__args__[0]
         
-        if _response_model is not inspect.Signature.empty and _response_model is not None:
-            @multiple_hook(func.after_hook, index=index)
-            async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
-                if isinstance(response, aiohttp.ClientResponse):
-                    data = await response.json()
-                else:
-                    data = response
+        @multiple_hook(func.after_hook, index=index)
+        async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
+            if isinstance(response, aiohttp.ClientResponse):
+                data = await response.json()
+            else:
+                data = response
 
-                result = _parsing_json_to_model(
-                    data,
-                    _response_model,
-                    strict=strict,
-                    from_attributes=from_attributes,
-                    context=context,
-                )
-                return result
+            result = _parsing_json_to_model(
+                data,
+                _model,
+                strict=strict,
+                from_attributes=from_attributes,
+                context=context,
+            )
+            return result
 
         return func
 
