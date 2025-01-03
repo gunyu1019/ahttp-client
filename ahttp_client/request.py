@@ -31,6 +31,7 @@ from typing import TypeVar, TYPE_CHECKING
 import aiohttp
 
 from .body import Body
+from .body_json import BodyJson
 from .component import Component, EmptyComponent
 from .form import Form
 from .header import Header
@@ -77,6 +78,8 @@ class RequestCore:
         Function parameters used in the header
     query_parameter: dict[str, inspect.Parameter]
         Function parameters used in the query(parameter)
+    body_json_parameter: dict[str, inspect.Parameter]
+        Function parameters used in body json.
     body_form_parameter: dict[str, inspect.Parameter]
         Function parameters used in body form.
     path_parameter: dict[str, inspect.Parameter]
@@ -144,6 +147,7 @@ class RequestCore:
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
         self.body_form_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_json_parameter: dict[str, inspect.Parameter] = dict()
 
         self.body_parameter_type: Literal["json", "data"] | None = None
         self.body_parameter: Optional[inspect.Parameter] = None
