@@ -1,6 +1,6 @@
 """MIT License
 
-Copyright (c) 2023 gunyu1019
+Copyright (c) 2023-present gunyu1019
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ from .session import Session
 __title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
-__copyright__ = "Copyright 2023-present gunyu1019"
+__copyright__ = "Copyright 2023-present-present gunyu1019"
 __version__ = "1.0.1"  # version_info.to_string()
 
 
