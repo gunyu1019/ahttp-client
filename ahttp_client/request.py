@@ -343,8 +343,8 @@ class RequestCore:
         name: str,
         component_type: Optional[Component] = None,
     ) -> str:
-        if component_type is not None and component_type.get_component_name is not None:
-            component_name = component_type.get_component_name(name)
+        if component_type is not None and component_type.component_name is not None:
+            component_name = component_type.component_name(name)
             return component_name or name
         return name
 
