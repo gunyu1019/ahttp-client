@@ -132,7 +132,11 @@ class RequestCore:
 
         # method is related to Session class.
         if len(self._signature.parameters) < 1:
-            raise TypeError("%s missing 1 required parameter: 'self(extends Session)'".format(self.func.__name__))
+            raise TypeError(
+                "%s missing 1 required parameter: 'self(extends Session)'".format(
+                    self.func.__name__
+                )
+            )
 
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.".format(func.__name__))
@@ -166,6 +170,7 @@ class RequestCore:
         *,
         query_parameter: Optional[list[str]] = None,
         header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
         path_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
@@ -178,6 +183,7 @@ class RequestCore:
             query_parameter=query_parameter or list(),
             header_parameter=header_parameter or list(),
             form_parameter=form_parameter or list(),
+            body_json_parameter=body_json_parameter or list(),
             body_parameter=body_parameter,
             path_parameter=path_parameter or list(),
         )
@@ -260,7 +266,11 @@ class RequestCore:
         -------
         :class:`bool`
         """
-        return self.body_parameter is not None or self.is_formal_form or self.body is not None
+        return (
+            self.body_parameter is not None
+            or self.is_formal_form
+            or self.body is not None
+        )
 
     @property
     def is_formal_form(self) -> bool:
@@ -308,7 +318,11 @@ class RequestCore:
         TypeError
             Body parameter is already filled.
         """
-        if self.body_parameter is not None or len(self.body_form_parameter) > 0:
+        if (
+            self.body_parameter is not None
+            or len(self.body_form_parameter) > 0
+            or len(self.body_json_parameter) > 0
+        ):
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
     # Setup
@@ -334,6 +348,7 @@ class RequestCore:
         *,
         query_parameter: Optional[list[str]] = None,
         header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
@@ -350,6 +365,8 @@ class RequestCore:
             Function parameter names used in the query(parameter)
         form_parameter: list[str]
             Function parameter names used in body form.
+        body_json_parameter: list[str]
+            Function parameter names used in body json.
         path_parameter: list[str]
             Function parameter names used in the path.
         body_parameter: str
@@ -357,10 +374,16 @@ class RequestCore:
         """
         for parameter in self._signature.parameters.values():
             annotation = parameter.annotation
-            metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
+            metadata = (
+                annotation.__metadata__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
+            component_type: (
+                type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse]
+            ) = EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -371,7 +394,9 @@ class RequestCore:
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
+                if issubclass(annotation, Component) or issubclass(
+                    annotation, aiohttp.ClientResponse
+                ):
                     component_type = annotation
                     break
 
@@ -388,6 +413,15 @@ class RequestCore:
                 self.body_parameter_type = "data"
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
+                self._duplicated_check_body()
+            elif (
+                issubclass(component_type, BodyJson)
+                or parameter.name in body_json_parameter
+            ):
+                self._duplicated_check_body_parameter()
+                self.body_parameter_type = "json"
+                name = self._get_component_name(parameter.name, component_instance)
+                self.body_json_parameter[name] = parameter
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter()
@@ -413,7 +447,9 @@ class RequestCore:
 
             parameter_without_return_annotation.append(parameter)
 
-        self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
+        self._signature = self._signature.replace(
+            parameters=parameter_without_return_annotation
+        )
         for parameter_name in self.response_parameter:
             if parameter_name not in self.func.__annotations__.keys():
                 continue
@@ -421,7 +457,9 @@ class RequestCore:
             del self.func.__annotations__[parameter_name]
         self.__annotations__ = self.func.__annotations__
 
-    def _fill_parameter(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
+    def _fill_parameter(
+        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
+    ) -> None:
         """Fill HTTP request component from bounded argument
 
         Parameters
@@ -453,6 +491,11 @@ class RequestCore:
             for _name, _parameter in self.body_form_parameter.items():
                 form_data.add_field(_name, bounded_argument.get(_parameter.name))
             self.body = form_data
+        elif len(self.body_json_parameter) > 0:
+            self.body = {
+                _name: bounded_argument.get(_parameter.name)
+                for _name, _parameter in self.body_json_parameter.items()
+            }
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
 
@@ -474,7 +517,9 @@ class RequestCore:
 
         return request_kwargs
 
-    def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
+    def _get_request_path(
+        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
+    ) -> str:
         """Get final HTTP path from bounded argument
 
         Parameters
@@ -531,7 +576,9 @@ class RequestCore:
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(
+                self.session, req_obj, formatted_path
+            )
         response = await self.session._make_request(req_obj, formatted_path)
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
@@ -567,6 +614,7 @@ def request(
     body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     form_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
@@ -598,6 +646,8 @@ def request(
         Function parameter names used in the query(parameter)
     form_parameter: list[str]
         Function parameter names used in body form.
+    body_json_parameter: list[str]
+        Function parameter names used in body json.
     path_parameter: list[str]
         Function parameter names used in the path.
     body_parameter: str
@@ -625,6 +675,7 @@ def request(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -645,6 +696,7 @@ def get(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -663,6 +715,7 @@ def get(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -683,6 +736,7 @@ def post(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -701,6 +755,7 @@ def post(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -721,6 +776,7 @@ def options(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -740,6 +796,7 @@ def options(
             query_parameter=query_parameter,
             form_parameter=form_parameter,
             path_parameter=path_parameter,
+            body_json_parameter=body_json_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
             **request_kwargs,
@@ -759,6 +816,7 @@ def put(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -777,6 +835,7 @@ def put(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -797,6 +856,7 @@ def delete(
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -815,6 +875,7 @@ def delete(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
