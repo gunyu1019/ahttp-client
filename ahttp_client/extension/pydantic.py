@@ -1,4 +1,3 @@
-
 """MIT License
 
 Copyright (c) 2023 gunyu1019
@@ -21,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import inspect
@@ -148,13 +148,12 @@ def pydantic_response_model(
         if model is None and func.directly_response:
             _model = func._signature.return_annotation
 
-
         if _model is inspect.Signature.empty or _model is None:
             raise TypeError("Invalid model type.")
 
         if isinstance(_model, GenericAlias):
             _model = _model.__args__[0]
-        
+
         @multiple_hook(func.after_hook, index=index)
         async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
             if isinstance(response, aiohttp.ClientResponse):
@@ -174,6 +173,7 @@ def pydantic_response_model(
         return func
 
     return decorator
+
 
 # get_pydantic_response_model name had been changed to pydantic_model
 get_pydantic_response_model = pydantic_model

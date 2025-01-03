@@ -20,6 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 from __future__ import annotations
 
 import aiohttp
@@ -47,7 +48,9 @@ if TYPE_CHECKING:
         @property
         def __func__(self) -> Callable[[T, CallableT], CallableR]: ...
 
-    MultipleHookT = BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    MultipleHookT = (
+        BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    )
 
 
 def multiple_hook(

@@ -26,7 +26,7 @@ from .component import Component
 
 class BodyJson(Component):
     """(TODO)
-    
+
     Examples
     --------
     >>> def function(data: str | BodyJson):
