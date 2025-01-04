@@ -30,9 +30,9 @@ An `user` argument define HTTP-component (Path) through annotation types.
 
         @request("GET", "/users/{user}/repos")
         def list_repositories(
-            user: Annotated[str, Path]
+            self, user: Annotated[str, Path]
         ) -> dict[str, Any]:
-            return 
+            return await response.json()
 
 Using the asynchronous context manager(`async with`), create a GithubService instance.
 
@@ -51,4 +51,5 @@ Client Session in GithubServices are terminated when leave the asynchronous cont
    :caption: Table of Contents
 
    Introduction <self>
+   HTTP Component <component>
    API Reference <api>
