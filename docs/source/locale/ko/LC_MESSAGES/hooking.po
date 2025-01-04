@@ -1,0 +1,126 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/hooking.rst:3
+msgid "Pre Hooking / Post Hooking"
+msgstr ""
+
+#: ../../source/hooking.rst:4
+msgid ""
+"In `ahttp_client`, hooking means refining data before and after receiving"
+" a HTTP request. A hooking supports session unit hooking and request unit"
+" hooking."
+msgstr ""
+
+#: ../../source/hooking.rst:7
+msgid "A hooking is used as follows."
+msgstr ""
+
+#: ../../source/hooking.rst:9
+msgid "Before Hook (Pre-request):"
+msgstr ""
+
+#: ../../source/hooking.rst:10
+msgid "Setup the required HTTP-Compoenent (ex. authorization)"
+msgstr ""
+
+#: ../../source/hooking.rst:11
+msgid "Vaildate that the correct arguments are in."
+msgstr ""
+
+#: ../../source/hooking.rst:12
+msgid "After Hook (Post-request)"
+msgstr ""
+
+#: ../../source/hooking.rst:13
+msgid "Parses data in raw form to a data class."
+msgstr ""
+
+#: ../../source/hooking.rst:14
+msgid "Act based on HTTP status code"
+msgstr ""
+
+#: ../../source/hooking.rst:18
+msgid "Session Hooking"
+msgstr ""
+
+#: ../../source/hooking.rst:19
+msgid "A Session unit hooking is created by overridding a method."
+msgstr ""
+
+#: ../../source/hooking.rst:21
+msgid "Hooking of Session Unit Example"
+msgstr ""
+
+#: ../../source/hooking.rst:48
+msgid ""
+"A `Github Service` object are defined by overriding before_hook and "
+"after_hook."
+msgstr ""
+
+#: ../../source/hooking.rst:50
+msgid ""
+"Store the token required for authentication as a private attribute and "
+"insert it in header in before_hook. When a method on a `GithubService` "
+"object is called, such as `list_repositories` method, `before_hook` "
+"method is called first to insert the necessary HTTP compoenents."
+msgstr ""
+
+#: ../../source/hooking.rst:54
+msgid ""
+"After finishing the HTTP request, the `after_hook` method is called to "
+"check HTTP status code. If the HTTP status code is not 200(OK), a "
+"HTTPException(A predefined exception) is raised."
+msgstr ""
+
+#: ../../source/hooking.rst:58
+msgid "Request Hooking"
+msgstr ""
+
+#: ../../source/hooking.rst:59
+msgid "A request unit hooking is created using the decorating method."
+msgstr ""
+
+#: ../../source/hooking.rst:61
+msgid "Hooking of Request Unit Example"
+msgstr ""
+
+#: ../../source/hooking.rst:89
+msgid ""
+"To get the topic of a repository, `repository_topic` method defined. And "
+"defined the hooking with the before_hook decoration method and after_hook"
+" decoration method of the `repository_topic` method."
+msgstr ""
+
+#: ../../source/hooking.rst:92
+msgid ""
+"The before_hook method inserts the necessary compoenents(authorization "
+"key...etc) before the HTTP request of the repository_topic method is "
+"called."
+msgstr ""
+
+#: ../../source/hooking.rst:94
+msgid ""
+"The after_hook method refines and return the result received in response."
+" It removes unnesscessary keys."
+msgstr ""
+

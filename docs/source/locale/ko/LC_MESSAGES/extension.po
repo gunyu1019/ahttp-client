@@ -1,0 +1,128 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/extension.rst:3
+msgid "Extension"
+msgstr ""
+
+#: ../../source/extension.rst:4
+msgid ""
+"A Extension page describes features that are outside the scope of "
+"ahttp_client's native functionality but may be helpful for development."
+msgstr ""
+
+#: ../../source/extension.rst:7
+msgid "Mulitple Hooking"
+msgstr ""
+
+#: ../../source/extension.rst:9
+msgid ""
+"A decorator method that hook mulitple methods in a HTTP request. In "
+"normal condition, an HTTP request can only have one hooking: before the "
+"request, and after the request."
+msgstr ""
+
+#: ../../source/extension.rst:14
+msgid ""
+"Use this method, if more than one pre-invoke hooks or post-invoke hooks "
+"need."
+msgstr ""
+
+#: ../../source/extension.rst
+#: ahttp_client.extension.pydantic.pydantic_response_model of
+msgid "Parameters"
+msgstr ""
+
+#: ../../source/extension.rst:16
+msgid ""
+"Contains the decorator function used for hooking. This can be "
+"`RequestCore.before_hook()` or `RequestCore.after_hook()`."
+msgstr ""
+
+#: ../../source/extension.rst:19
+msgid "Order of invocation in invoke-hook"
+msgstr ""
+
+#: ../../source/extension.rst:22
+msgid "Example"
+msgstr ""
+
+#: ../../source/extension.rst:49
+msgid "Pydantic Response Model"
+msgstr ""
+
+#: ../../source/extension.rst:51
+msgid "`pydantic` pacakage is required."
+msgstr ""
+
+#: ../../source/extension.rst:57
+msgid ""
+"Returns ths json formatted data from HTTP request, serialized and "
+"returned as a class extended with `pydantic.BaseModel`."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:1 of
+msgid "Create a request method to return a model extended by pydantic.BaseModel"
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:3 of
+msgid ""
+"A model extended by pydantic.BaseModel to parse JSON. If "
+"directly_response enabled and model parameter is empty, model will "
+"followed return annotation. However, model parameter is empty, "
+"TypeError(\"Invalid model type.\") will be raised."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:7 of
+msgid ""
+"Order of invocation in invoke-hook. The order is recommended to be last "
+"after the status check."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:10 of
+msgid ""
+"Same feature as parameter of pydantic.BaseModel.model_validate method "
+"named strict."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:12 of
+msgid ""
+"Same feature as parameter of pydantic.BaseModel.model_validate method "
+"named from_attributes."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:14 of
+msgid ""
+"Same feature as parameter of pydantic.BaseModel.model_validate method "
+"named context."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:19 of
+msgid ""
+"This feature is experimental. It might not work as expected. And "
+"`pydatnic` pacakge required."
+msgstr ""
+
+#: ahttp_client.extension.pydantic.pydantic_response_model:23 of
+msgid "Examples"
+msgstr ""
+

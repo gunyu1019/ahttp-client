@@ -1,0 +1,468 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/api.rst:3
+msgid "API Reference"
+msgstr ""
+
+#: ../../source/api.rst:6
+msgid "Component"
+msgstr ""
+
+#: ../../source/api.rst:8
+msgid "A component for HTTP sending. (Header, Query, Path, Body)"
+msgstr ""
+
+#: ahttp_client.component.Component:1 of
+msgid "Based object on Header, Query, Path, Form and Body"
+msgstr ""
+
+#: ahttp_client.component.Component:5 of
+msgid ""
+"Used to define the name of the component name. In default case, it can "
+"cause an AttributesError."
+msgstr ""
+
+#: ahttp_client.component.Component ahttp_client.request.RequestCore of
+msgid "type"
+msgstr ""
+
+#: ahttp_client.component.Component:8 of
+msgid "Callable[[str], str]"
+msgstr ""
+
+#: ahttp_client.component.Component.custom_name:1 of
+msgid ""
+"Define the name of the component(Header, Query, Form and Path) Used when "
+"the component name must be different from the parameter name."
+msgstr ""
+
+#: ../../source/api.rst
+msgid "Parameters"
+msgstr ""
+
+#: ahttp_client.component.Component.custom_name:4 of
+msgid "The name of the component (Header, Query, Path and Form)"
+msgstr ""
+
+#: ahttp_client.body.Body:4 ahttp_client.body_json.BodyJson:4
+#: ahttp_client.component.Component.custom_name:8
+#: ahttp_client.component.Component.to_camel:4
+#: ahttp_client.component.Component.to_pascal:4 ahttp_client.form.Form:4
+#: ahttp_client.header.Header:4 ahttp_client.path.Path:5
+#: ahttp_client.query.Query:4 of
+msgid "Examples"
+msgstr ""
+
+#: ahttp_client.component.Component.custom_name:19 of
+msgid ""
+"The body component and path component didn't allow the custom_name method"
+" to be used."
+msgstr ""
+
+#: ahttp_client.component.Component.to_camel:1 of
+msgid ""
+"Define the name of the component(Header, Query, Form and Path) to follow "
+"camel case."
+msgstr ""
+
+#: ahttp_client.component.Component.to_camel:15 of
+msgid ""
+"The body component and path component didn't allow the to_camel method to"
+" be used."
+msgstr ""
+
+#: ahttp_client.component.Component.to_pascal:1 of
+msgid ""
+"Define the name of the component(Header, Query, Form and Path) to follow "
+"pascal case."
+msgstr ""
+
+#: ahttp_client.component.Component.to_pascal:15 of
+msgid ""
+"The body component and path component didn't allow the to_pascal method "
+"to be used."
+msgstr ""
+
+#: ahttp_client.body_json.BodyJson:1 ahttp_client.form.Form:1
+#: ahttp_client.header.Header:1 ahttp_client.query.Query:1 of
+msgid "Bases: :py:class:`~ahttp_client.component.Component`"
+msgstr ""
+
+#: ahttp_client.body_json.BodyJson:1 of
+msgid "(TODO)"
+msgstr ""
+
+#: ahttp_client.body.Body:1 ahttp_client.path.Path:1 of
+msgid "Bases: :py:class:`~ahttp_client.component.UnsupportedCustomNameComponent`"
+msgstr ""
+
+#: ahttp_client.body.Body:1 of
+msgid ""
+"This class is used to indicate that a method's parameter is used in the "
+"HTTP Request's Body."
+msgstr ""
+
+#: ahttp_client.form.Form:1 of
+msgid ""
+"This class defines the parameters of a function to be used in the "
+"FormData of an HTTP Request."
+msgstr ""
+
+#: ahttp_client.header.Header:1 of
+msgid ""
+"This class is used when a function's parameters are used as headers in an"
+" HTTP request."
+msgstr ""
+
+#: ahttp_client.path.Path:1 of
+msgid ""
+"This class is used when a function's parameters are used as path in an "
+"HTTP request. The parameters associated with the Path populate a portion "
+"of the HTTP URL."
+msgstr ""
+
+#: ahttp_client.query.Query:1 of
+msgid ""
+"This class is used when a function's parameters are used as query in an "
+"HTTP request."
+msgstr ""
+
+#: ../../source/api.rst:39
+msgid "Request Core"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:1 of
+msgid "A class that implements functions for HTTP requests."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:5 of
+msgid "The name of the request."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:7 ahttp_client.request.RequestCore:19
+#: ahttp_client.request.RequestCore:25 of
+msgid "str"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:11 of
+msgid "The coroutine function that is executed when the request is called."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:13 of
+msgid "Callable[..., Coroutine[Any, Any, T]]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:17 ahttp_client.request.request:6 of
+msgid "HTTP method (example. GET, POST)"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:23 ahttp_client.request.request:8 of
+msgid "Request path. Path connects to the base url."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:29 ahttp_client.request.request:16 of
+msgid ""
+"Returns a `aiohttp.ClientResponse` without executing the function's body "
+"statement."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:31 of
+msgid "bool"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:35 ahttp_client.request.request:10 of
+msgid "Request parameters."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:37 ahttp_client.request.RequestCore:43 of
+msgid "Optional[dict[str, Any]]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:41 ahttp_client.request.request:12 of
+msgid "Request headers."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:47 ahttp_client.request.request:14 of
+msgid "Request body."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:49 of
+msgid "Optional[Any | aiohttp.FormData]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:53 of
+msgid "Function parameters used in the header"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:55 ahttp_client.request.RequestCore:61
+#: ahttp_client.request.RequestCore:67 ahttp_client.request.RequestCore:73
+#: ahttp_client.request.RequestCore:79 of
+msgid "dict[str, inspect.Parameter]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:59 of
+msgid "Function parameters used in the query(parameter)"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:65 of
+msgid "Function parameters used in body json."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:71 of
+msgid "Function parameters used in body form."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:77 of
+msgid "Function parameters used in the path."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:83 of
+msgid ""
+"Function parameter used in the body. The body parameter must take only "
+"Collection, or aiohttp.FormData."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:86 of
+msgid "Optional[inspect.Parameter]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:90 of
+msgid ""
+"The type of body parameter. When body_parameter type is "
+"`aiohttp.FormData`, the `body_parameter_type` is 'data'. Else "
+"`body_parameter_type` is `Collection`, the `body_parameter_type` is "
+"'json'."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:94 of
+msgid "Literal['json', 'data']"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:98 ahttp_client.request.request:31 of
+msgid "Function parameter name to store the HTTP result in."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:100 of
+msgid "list[str]"
+msgstr ""
+
+#: ahttp_client.request.RequestCore:104 of
+msgid "Keyword Arguments are passed directly request method."
+msgstr ""
+
+#: ahttp_client.request.RequestCore:106 of
+msgid "dict[str, Any]"
+msgstr ""
+
+#: ../../source/api.rst:48
+msgid ""
+"A decorator that registers a coroutine as a pre-invoke hook. A pre-invoke"
+" hook is called directly before the HTTP request is called."
+msgstr ""
+
+#: ../../source/api.rst:51
+msgid ""
+"This makes it a useful function to set up authorizations or any type of "
+"set up required."
+msgstr ""
+
+#: ../../source/api.rst:54 ../../source/api.rst:79 ../../source/api.rst:128
+msgid "Example"
+msgstr ""
+
+#: ../../source/api.rst:73
+msgid ""
+"A decorator that registers a coroutine as a post-invoke hook. A post-"
+"invoke hook is called directly after the returned HTTP response."
+msgstr ""
+
+#: ../../source/api.rst:76
+msgid ""
+"This makes it a useful function to check correct response or any type of "
+"clean up response data."
+msgstr ""
+
+#: ahttp_client.request.RequestCore.copy:1 of
+msgid "Creates a copy of this request."
+msgstr ""
+
+#: ../../source/api.rst
+msgid "Returns"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.copy:3 of
+msgid "A new istnace of this request."
+msgstr ""
+
+#: ../../source/api.rst
+msgid "Return type"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.copy:4 of
+msgid ":class:`RequestCore`"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.get_request_kwargs:1 of
+msgid "Get keyword arguments to call request method"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.body_type:1 of
+msgid "Returns the final body type"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.body_type:3 of
+msgid ":class:`Literal`['json', 'data']"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.is_body:1 of
+msgid "Returns whether the HTTP request has a body element."
+msgstr ""
+
+#: ahttp_client.request.RequestCore.is_body:3
+#: ahttp_client.request.RequestCore.is_formal_form:3 of
+msgid ":class:`bool`"
+msgstr ""
+
+#: ahttp_client.request.RequestCore.is_formal_form:1 of
+msgid "Returns whether the body element in the HTTP request is of type Form."
+msgstr ""
+
+#: ahttp_client.request.request:1 of
+msgid ""
+"A decoration for making request. Create an HTTP client-request, when "
+"decorated function is called."
+msgstr ""
+
+#: ahttp_client.request.request:4 of
+msgid "The name of the Request"
+msgstr ""
+
+#: ahttp_client.request.request:18 of
+msgid "Function parameter names used in the header"
+msgstr ""
+
+#: ahttp_client.request.request:20 of
+msgid "Function parameter names used in the query(parameter)"
+msgstr ""
+
+#: ahttp_client.request.request:22 of
+msgid "Function parameter names used in body form."
+msgstr ""
+
+#: ahttp_client.request.request:24 of
+msgid "Function parameter names used in body json."
+msgstr ""
+
+#: ahttp_client.request.request:26 of
+msgid "Function parameter names used in the path."
+msgstr ""
+
+#: ahttp_client.request.request:28 of
+msgid ""
+"Function parameter name used in the body. The body parameter must take "
+"only Collection, or aiohttp.FormData."
+msgstr ""
+
+#: ahttp_client.request.request:35 of
+msgid "Form_parameter and Body Parameter can only be used with one or the other."
+msgstr ""
+
+#: ../../source/api.rst:108
+msgid "Same feature as `ahttp_client.request`."
+msgstr ""
+
+#: ../../source/api.rst:112
+msgid "Session"
+msgstr ""
+
+#: ahttp_client.session.Session:1 of
+msgid "A class to manage session for managing decoration functions."
+msgstr ""
+
+#: ../../source/api.rst:121
+msgid "A single session for one request."
+msgstr ""
+
+#: ../../source/api.rst:123
+msgid "base url of the API."
+msgstr ""
+
+#: ../../source/api.rst:124
+msgid "event loop used for processing HTTP requests."
+msgstr ""
+
+#: ../../source/api.rst:125
+msgid "Keyword argument used in `aiohttp.ClientSession`"
+msgstr ""
+
+#: ../../source/api.rst:129
+msgid "The session is defined through the function's decoration."
+msgstr ""
+
+#: ahttp_client.session.Session.after_request:1 of
+msgid ""
+"A special method that acts as a session local post-invoke. This is "
+"similar to :meth:`RequestCore.after_request`."
+msgstr ""
+
+#: ahttp_client.session.Session.after_request:4 of
+msgid ""
+"When :meth:`RequestCore.after_request` exists, this method is called "
+"before :meth:`RequestCore.after_request` called."
+msgstr ""
+
+#: ahttp_client.session.Session.after_request:7 of
+msgid "The result of HTTP request."
+msgstr ""
+
+#: ahttp_client.session.Session.after_request:10 of
+msgid ""
+"Cleanup response HTTP results. If RequestCore.after_request exists, the "
+"response type of :meth:`RequestCore.after_request` will follow the type "
+"of this method."
+msgstr ""
+
+#: ahttp_client.session.Session.before_request:1 of
+msgid ""
+"A special method that acts as a session local pre-invoke hook. This is "
+"similar to :meth:`RequestCore.before_request`."
+msgstr ""
+
+#: ahttp_client.session.Session.before_request:4 of
+msgid ""
+"When :meth:`RequestCore.before_request` exists, this method is called "
+"after :meth:`RequestCore.before_request` called."
+msgstr ""
+
+#: ahttp_client.session.Session.before_request:7 of
+msgid "The instance of RequestCore."
+msgstr ""
+
+#: ahttp_client.session.Session.before_request:9 of
+msgid "The final string of the request url."
+msgstr ""
+
+#: ahttp_client.session.Session.before_request:12 of
+msgid "The return type must be the same as the parameter."
+msgstr ""
+

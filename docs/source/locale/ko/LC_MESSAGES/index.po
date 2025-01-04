@@ -1,0 +1,96 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/index.rst:3 ../../source/index.rst:47
+msgid "Introduction"
+msgstr ""
+
+#: ../../source/index.rst:47
+msgid "HTTP Component"
+msgstr ""
+
+#: ../../source/index.rst:47
+msgid "Pre-Hooking / Post-Hooking"
+msgstr ""
+
+#: ../../source/index.rst:47
+msgid "API Reference"
+msgstr ""
+
+#: ../../source/index.rst:47
+msgid "Extension"
+msgstr ""
+
+#: ../../source/index.rst:47
+msgid "Table of Contents"
+msgstr ""
+
+#: ../../source/index.rst:9
+msgid ""
+"An ahttp-client is Python package that provides concise and aintuitive "
+"asynchronous HTTP request using `annotated type "
+"<https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated>`_ "
+"and `@decorator`."
+msgstr ""
+
+#: ../../source/index.rst:11
+msgid "**Key Feautre**"
+msgstr ""
+
+#: ../../source/index.rst:13
+msgid "Defining a simple request method with decoration."
+msgstr ""
+
+#: ../../source/index.rst:14
+msgid "Managing HTTP Compoents using Annotated Types."
+msgstr ""
+
+#: ../../source/index.rst:15
+msgid "Providing Hooks before and after HTTP calls."
+msgstr ""
+
+#: ../../source/index.rst:18
+msgid "Getting Started"
+msgstr ""
+
+#: ../../source/index.rst:20
+msgid ""
+"Implement a `GithubService` class extended with `ahttp_client.Session`. "
+"Then, create a `list_repositories` method using a request decorator."
+msgstr ""
+
+#: ../../source/index.rst:23
+msgid "An `user` argument define HTTP-component (Path) through annotation types."
+msgstr ""
+
+#: ../../source/index.rst:37
+msgid ""
+"Using the asynchronous context manager(`async with`), create a "
+"GithubService instance."
+msgstr ""
+
+#: ../../source/index.rst:45
+msgid ""
+"Client Session in GithubServices are terminated when leave the "
+"asynchronous context manager."
+msgstr ""
+

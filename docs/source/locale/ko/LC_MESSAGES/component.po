@@ -1,0 +1,134 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/component.rst:3
+msgid "HTTP Component"
+msgstr ""
+
+#: ../../source/component.rst:4
+msgid ""
+"A component used in `ahttp_client` are Query, Header, Path, and Body. In "
+"the HTTP request process in `ahttp_client`, a component defines as "
+"`typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
+msgstr ""
+
+#: ../../source/component.rst:7
+msgid ""
+"When a `list_repository_activites` method is called, the request is "
+"called as shown below."
+msgstr ""
+
+#: ../../source/component.rst:34
+msgid ""
+"An HTTP Component can be defined as `typing.Union "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ "
+"instead of `typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
+msgstr ""
+
+#: ../../source/component.rst:49
+msgid ""
+"However, using typing.Annotated is recommended to follow correct Python "
+"syntax."
+msgstr ""
+
+#: ../../source/component.rst:52
+msgid "Usage by Component"
+msgstr ""
+
+#: ../../source/component.rst:54
+msgid "**Header** - Configure the header for the HTTP component."
+msgstr ""
+
+#: ../../source/component.rst:55
+msgid "**Body** - Configure the body for the HTTP component."
+msgstr ""
+
+#: ../../source/component.rst:56
+msgid ""
+"**Form** - Configure the body with `aiohttp.FormData "
+"<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+msgstr ""
+
+#: ../../source/component.rst:57
+msgid ""
+"**BodyJson** - Configure the body with `Dictionaries "
+"<https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_"
+msgstr ""
+
+#: ../../source/component.rst:58
+msgid "**Query** - Insert a value inside the URL parameter."
+msgstr ""
+
+#: ../../source/component.rst:59
+msgid ""
+"**Path** - Insert the specified value(s) inside the path placeholder. The"
+" path placeholder is using curly brackets: `{}`"
+msgstr ""
+
+#: ../../source/component.rst:61
+msgid ""
+"Defining the Body parameter at HTTP request decoration can only be of one"
+" of the following types: Body, BodyJson, or Form. If more than one "
+"Component is used, a `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_ can be "
+"thrown."
+msgstr ""
+
+#: ../../source/component.rst:65
+msgid "Custom Component Name"
+msgstr ""
+
+#: ../../source/component.rst:66
+msgid ""
+"According to PEP 8 rules, the parameter names of method must be "
+"lowercase, with words separated by underscores. `(reference) "
+"<https://peps.python.org/pep-0008/#function-and-variable-names>`_"
+msgstr ""
+
+#: ../../source/component.rst:68
+msgid ""
+"The queries or headers in an API can be named in Camel Case, or Pascal "
+"Case."
+msgstr ""
+
+#: ../../source/component.rst:70
+msgid ""
+"To follow the PEP 8 rules as described, an `ahttp_client` package "
+"provides a custom component name."
+msgstr ""
+
+#: ../../source/component.rst:97
+msgid ""
+"As in the example above, insert the `GITHUB API TOKEN` in token argument "
+"of `list_repository_activites` method. During the calling process, the "
+"key of Header has been overridden to \"Authorization\"."
+msgstr ""
+
+#: ../../source/component.rst:100
+msgid ""
+"The custom component name feature only supports Header, Query, BodyJson, "
+"and Form. Using it in other components may cause a `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_."
+msgstr ""
+
