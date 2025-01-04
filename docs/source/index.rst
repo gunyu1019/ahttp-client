@@ -52,4 +52,6 @@ Client Session in GithubServices are terminated when leave the asynchronous cont
 
    Introduction <self>
    HTTP Component <component>
+   Pre-Hooking / Post-Hooking <hooking>
    API Reference <api>
+   Extension <extension>
