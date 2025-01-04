@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ahttp-client'
-copyright = '2024, gunyu1019'
+copyright = '2024-2025, gunyu1019'
 author = 'gunyu1019'
 release = 'v1.0.1'
 
