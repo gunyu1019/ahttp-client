@@ -4,50 +4,41 @@
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/ahttp-client?style=flat)
 ![PyPI - License](https://img.shields.io/pypi/l/ahttp-client?style=flat)
 
-Using `@decorator` to easily request an HTTP Client<br/>
-This framework based on [aiohttp](https://github.com/aio-libs/aiohttp)'s http client framework.<br/>
+An ahttp-client is Python package that provides concise and aintuitive asynchronous HTTP request using [annotated type](https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated) and `@decorator`. 
 
-Use Annotated Type to describe the elements required in an HTTP request.
+**Key Feautre**
+- Defining a simple request method with decoration.
+- Managing HTTP Compoents using Annotated Types.
+- Providing Hooks before and after HTTP calls.
 
+## Getting Started
 
-## Installation
-**Python 3.10 or higher is required.**
+Implement a `GithubService` class extended with `ahttp_client.Session`. 
+Then, create a `list_repositories` method using a request decorator.
 
-```pip
-pip install ahttp-client
-```
-
-## Quick Example
-
-An example is the API provided by the [BUS API](https://github.com/gunyu1019/trafficAPI).
+An `user` argument define HTTP-component (Path) through annotation types.
 
 ```python
-import asyncio
-import aiohttp
-from ahttp_client import request, Session, Query
-from typing import Annotated, Any
+class GithubService(Session):
+    def __init__(self):
+        super().__init__("https://api.github.com")
 
-loop = asyncio.get_event_loop()
-
-
-class MetroAPI(Session):
-    def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop=loop)
-
-    @request("GET", "/metro/station")
-    async def station_search_with_query(
-            self,
-            response: aiohttp.ClientResponse,
-            name: Annotated[str, Query]
+    @request("GET", "/users/{user}/repos")
+    def list_repositories(
+        user: Annotated[str, Path]
     ) -> dict[str, Any]:
-        return await response.json()
-
-
-async def main():
-    async with MetroAPI(loop) as client:
-        data = await client.station_search_with_query(name="metro-station-name")
-        print(len(data))
-
-
-loop.run_until_complete(main())
+        return 
 ```
+
+Using the asynchronous context manager(`async with`), create a GithubService instance.
+
+```python
+async with GithubService() as service:
+    result = await service.list_repoisitories(user = "gunyu1019")
+    print(result)
+```
+
+Client Session in GithubServices are terminated when leave the asynchronous context manager.
+
+## Documentaion
+(Working on Process)

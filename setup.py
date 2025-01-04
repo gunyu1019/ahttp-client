@@ -21,7 +21,7 @@ extras_require = {
 setup(
     name="ahttp_client",
     version=version,
-    packages=["ahttp_client"],
+    packages=["ahttp_client", "ahttp_client.extension"],
     url="https://github.com/gunyu1019/ahttp-client",
     license="MIT",
     author="gunyu1019",
