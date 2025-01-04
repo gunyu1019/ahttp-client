@@ -65,7 +65,7 @@ Custom Component Name
 ---------------------
 According to PEP 8 rules, the parameter names of method must be lowercase, with words separated by underscores. `(reference) <https://peps.python.org/pep-0008/#function-and-variable-names>`_
 
-Queries or headers in an API can be named in Camel Case, or Pascal Case.
+The queries or headers in an API can be named in Camel Case, or Pascal Case.
 
 To follow the PEP 8 rules as described, an `ahttp_client` package provides a custom component name.
 
@@ -96,3 +96,6 @@ To follow the PEP 8 rules as described, an `ahttp_client` package provides a cus
 
 As in the example above, insert the `GITHUB API TOKEN` in token argument of `list_repository_activites` method.
 During the calling process, the key of Header has been overridden to "Authorization".
+
+.. warning:: The custom component name feature only supports Header, Query, BodyJson, and Form. 
+    Using it in other components may cause a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_.
