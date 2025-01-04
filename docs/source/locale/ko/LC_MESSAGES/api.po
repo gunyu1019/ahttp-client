@@ -22,47 +22,51 @@ msgstr ""
 
 #: ../../source/api.rst:3
 msgid "API Reference"
-msgstr ""
+msgstr "API Reference"
 
 #: ../../source/api.rst:6
 msgid "Component"
-msgstr ""
+msgstr "Component"
 
 #: ../../source/api.rst:8
 msgid "A component for HTTP sending. (Header, Query, Path, Body)"
-msgstr ""
+msgstr "HTTP 요청에 필요한 구성 요소입니다. 구성요소에는 Header, Query, Path, Body 등이 있습니다."
 
 #: ahttp_client.component.Component:1 of
 msgid "Based object on Header, Query, Path, Form and Body"
-msgstr ""
+msgstr "HTTP 구성요소의 기본이 되는 객체입니다."
 
 #: ahttp_client.component.Component:5 of
 msgid ""
 "Used to define the name of the component name. In default case, it can "
 "cause an AttributesError."
 msgstr ""
+"component 이름을 정의하는 데 사용되는 인수입니다."
+"일반적인 상황에서는 AttributesError 예외를 발생합니다."
 
 #: ahttp_client.component.Component ahttp_client.request.RequestCore of
 msgid "type"
-msgstr ""
+msgstr "type"
 
 #: ahttp_client.component.Component:8 of
 msgid "Callable[[str], str]"
-msgstr ""
+msgstr "Callable[[str], str]"
 
 #: ahttp_client.component.Component.custom_name:1 of
 msgid ""
 "Define the name of the component(Header, Query, Form and Path) Used when "
 "the component name must be different from the parameter name."
 msgstr ""
+"HTTP 구성요소의 이름을 새롭게 정의합니다."
+"구성요소의 키는 메소드의 매개변수 이름을 정의하지만, 다른 이름을 적용하려고 할때 사용합니다."
 
 #: ../../source/api.rst
 msgid "Parameters"
-msgstr ""
+msgstr "Parameters"
 
 #: ahttp_client.component.Component.custom_name:4 of
 msgid "The name of the component (Header, Query, Path and Form)"
-msgstr ""
+msgstr "구성요소의 이름입니다."
 
 #: ahttp_client.body.Body:4 ahttp_client.body_json.BodyJson:4
 #: ahttp_client.component.Component.custom_name:8
@@ -71,68 +75,76 @@ msgstr ""
 #: ahttp_client.header.Header:4 ahttp_client.path.Path:5
 #: ahttp_client.query.Query:4 of
 msgid "Examples"
-msgstr ""
+msgstr "Examples"
 
 #: ahttp_client.component.Component.custom_name:19 of
 msgid ""
 "The body component and path component didn't allow the custom_name method"
 " to be used."
 msgstr ""
+"Body component와 Path component는 custom_name 메소드를 이용하는 것을 허용하지 않습니다."
 
 #: ahttp_client.component.Component.to_camel:1 of
 msgid ""
 "Define the name of the component(Header, Query, Form and Path) to follow "
 "camel case."
 msgstr ""
+"HTTP 구성요소(Header, Query, Form, Path)의 키 값이 camel case에 따르도록 하도록 정의합니다."
 
 #: ahttp_client.component.Component.to_camel:15 of
 msgid ""
 "The body component and path component didn't allow the to_camel method to"
 " be used."
 msgstr ""
+"Body component와 Path component는 to_camel 메소드를 이용하는 것을 허용하지 않습니다."
 
 #: ahttp_client.component.Component.to_pascal:1 of
 msgid ""
 "Define the name of the component(Header, Query, Form and Path) to follow "
 "pascal case."
 msgstr ""
+"HTTP 구성요소(Header, Query, Form, Path)의 키 값이 pascal case에 따르도록 하도록 정의합니다."
 
 #: ahttp_client.component.Component.to_pascal:15 of
 msgid ""
 "The body component and path component didn't allow the to_pascal method "
 "to be used."
 msgstr ""
+"Body component와 Path component는 to_pascal 메소드를 이용하는 것을 허용하지 않습니다."
 
 #: ahttp_client.body_json.BodyJson:1 ahttp_client.form.Form:1
 #: ahttp_client.header.Header:1 ahttp_client.query.Query:1 of
 msgid "Bases: :py:class:`~ahttp_client.component.Component`"
-msgstr ""
+msgstr "상위 객체: :py:class:`~ahttp_client.component.Component`"
 
 #: ahttp_client.body_json.BodyJson:1 of
 msgid "(TODO)"
-msgstr ""
+msgstr "(작성 예정)"
 
 #: ahttp_client.body.Body:1 ahttp_client.path.Path:1 of
 msgid "Bases: :py:class:`~ahttp_client.component.UnsupportedCustomNameComponent`"
-msgstr ""
+msgstr "상위 객체: :py:class:`~ahttp_client.component.UnsupportedCustomNameComponent`"
 
 #: ahttp_client.body.Body:1 of
 msgid ""
 "This class is used to indicate that a method's parameter is used in the "
 "HTTP Request's Body."
 msgstr ""
+"메소드의 매게변수가 HTTP 요청의 Body 값으로 이용되도록 정의할 수 있는 클래스입니다."
 
 #: ahttp_client.form.Form:1 of
 msgid ""
 "This class defines the parameters of a function to be used in the "
 "FormData of an HTTP Request."
 msgstr ""
+"메소드의 매게변수가 HTTP 요청의 Body Form 데이터 값으로 이용되도록 정의할 수 있는 클래스입니다."
 
 #: ahttp_client.header.Header:1 of
 msgid ""
 "This class is used when a function's parameters are used as headers in an"
 " HTTP request."
 msgstr ""
+"메소드의 매게변수가 HTTP 요청의 Header 값으로 이용되도록 정의할 수 있는 클래스입니다."
 
 #: ahttp_client.path.Path:1 of
 msgid ""
