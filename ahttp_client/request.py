@@ -216,6 +216,7 @@ class RequestCore:
         new_cls.query_parameter = self.query_parameter
         new_cls.path_parameter = self.path_parameter
         new_cls.body_form_parameter = self.body_form_parameter
+        new_cls.body_json_parameter = self.body_json_parameter
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
@@ -269,6 +270,7 @@ class RequestCore:
         return (
             self.body_parameter is not None
             or self.is_formal_form
+            or len(self.body_json_parameter) > 0
             or self.body is not None
         )
 
@@ -486,12 +488,12 @@ class RequestCore:
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is not None:  # self.is_body
+        if self.is_formal_form and self.body_parameter is None:  # self.is_body
             form_data = aiohttp.FormData()
             for _name, _parameter in self.body_form_parameter.items():
                 form_data.add_field(_name, bounded_argument.get(_parameter.name))
             self.body = form_data
-        elif len(self.body_json_parameter) > 0:
+        elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
             self.body = {
                 _name: bounded_argument.get(_parameter.name)
                 for _name, _parameter in self.body_json_parameter.items()
@@ -551,6 +553,7 @@ class RequestCore:
             and other.query_parameter == self.query_parameter
             and other.path_parameter == self.path_parameter
             and other.body_form_parameter == self.body_form_parameter
+            and other.body_json_parameter == self.body_json_parameter
             and other.body_parameter_type == self.body_parameter_type
             and other.body_parameter == self.body_parameter
             and other._before_hook == self._before_hook
