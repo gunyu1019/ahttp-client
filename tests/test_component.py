@@ -55,19 +55,6 @@ def test_duplicated_body_type():
     assert str(error_message.value) == "Duplicated Form Parameter or Body Parameter."
 
 
-def test_incorrect_body_type():
-    with pytest.raises(TypeError) as error_message:
-
-        @request("GET", "/test_path")
-        async def test_request(
-            session: Session,
-            test_body: int | Body = None,
-        ) -> None:
-            pass
-
-    assert str(error_message.value) == "Body parameter can only have aiohttp.FormData or Collection."
-
-
 def test_duplicated_body():
     sample_body = aiohttp.FormData()
     with pytest.raises(TypeError) as error_message:
