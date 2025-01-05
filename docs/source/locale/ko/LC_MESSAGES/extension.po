@@ -11,7 +11,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-04 14:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
@@ -29,10 +29,12 @@ msgid ""
 "A Extension page describes features that are outside the scope of "
 "ahttp_client's native functionality but may be helpful for development."
 msgstr ""
+"Extension 페이지는 `ahttp_client`의 고유적인 기능은 벗어나지만, 개발에 도움이 될 수 있는 기능을 서술합니다."
 
 #: ../../source/extension.rst:7
 msgid "Mulitple Hooking"
 msgstr ""
+"다중 후킹(Mulitple Hooking)"
 
 #: ../../source/extension.rst:9
 msgid ""
@@ -40,49 +42,56 @@ msgid ""
 "normal condition, an HTTP request can only have one hooking: before the "
 "request, and after the request."
 msgstr ""
+"여러 메소드에서 후킹을 할 수있도록 해주는 데코레이터 메소드 입니다. "
+"일반적인 상황에서 `ahttp_client` 의 후킹 기능은 요청 전과 후로 하나의 메소드만 정의할 수 있습니다."
 
 #: ../../source/extension.rst:14
 msgid ""
 "Use this method, if more than one pre-invoke hooks or post-invoke hooks "
 "need."
 msgstr ""
+"이 데코레이터 메소드를 이용하여 HTTP 요청 전과 HTTP 요청 후의 후킹을 하나 이상 설정할 수 있습니다."
 
 #: ../../source/extension.rst
 #: ahttp_client.extension.pydantic.pydantic_response_model of
 msgid "Parameters"
-msgstr ""
+msgstr "Parameters"
 
 #: ../../source/extension.rst:16
 msgid ""
 "Contains the decorator function used for hooking. This can be "
 "`RequestCore.before_hook()` or `RequestCore.after_hook()`."
 msgstr ""
+"hooking에 사용되는 데코레이터 함수가 입력됩니다."
+"`RequestCore.before_hook()` 또는 `RequestCore.after_hook()` 가 될 수 있습니다."
 
 #: ../../source/extension.rst:19
 msgid "Order of invocation in invoke-hook"
-msgstr ""
+msgstr "후킹 할 순서를 정의합니다."
 
 #: ../../source/extension.rst:22
 msgid "Example"
-msgstr ""
+msgstr "Example"
 
 #: ../../source/extension.rst:49
 msgid "Pydantic Response Model"
-msgstr ""
+msgstr "Pydantic Response Model"
 
 #: ../../source/extension.rst:51
 msgid "`pydantic` pacakage is required."
-msgstr ""
+msgstr "이 기능을 이용하기 위해서는 `pydantic` 패키지가 필요합니다."
 
 #: ../../source/extension.rst:57
 msgid ""
 "Returns ths json formatted data from HTTP request, serialized and "
 "returned as a class extended with `pydantic.BaseModel`."
 msgstr ""
+"json 형태로 반환받은 데이터를 직렬화하여, "
+"`pydantic.BaseModel` 에 확장된 데이터 클래스로 반환힙니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:1 of
 msgid "Create a request method to return a model extended by pydantic.BaseModel"
-msgstr ""
+msgstr "request method가 pydantic.BaseModel로 상속된 데이터 클래스로 반환할 수 있도록 만듭니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:3 of
 msgid ""
@@ -91,38 +100,46 @@ msgid ""
 "followed return annotation. However, model parameter is empty, "
 "TypeError(\"Invalid model type.\") will be raised."
 msgstr ""
+"API에서 불러온 값을 파싱할 `pydantic.BaseModel` 에 상속된 데이터 클래스입니다. "
+"만약에 directly_response 기능이 켜져있고, model 인수가 값이 비어있다면, "
+"반환 주석을 따라가게 설정될 것입니다."
+"하지만, 반환 주석도 비어있다면 TypeError(\"Invalid model type.\") 를 발생시킬 것입니다."
+
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:7 of
 msgid ""
 "Order of invocation in invoke-hook. The order is recommended to be last "
 "after the status check."
 msgstr ""
+"`mulitple_hook` 을 이용하여 데이터를 파싱할 순서를 정의합니다. "
+"보통 HTTP 상태 코드를 확인하고, 마지막 과정에서 사용됩니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:10 of
 msgid ""
 "Same feature as parameter of pydantic.BaseModel.model_validate method "
 "named strict."
-msgstr ""
+msgstr "pydantic.BaseModel.model_validate 메소드의 strict 기능과 같은 기능을 합니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:12 of
 msgid ""
 "Same feature as parameter of pydantic.BaseModel.model_validate method "
 "named from_attributes."
-msgstr ""
+msgstr "pydantic.BaseModel.model_validate 메소드의 from_attributes 기능과 같은 기능을 합니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:14 of
 msgid ""
 "Same feature as parameter of pydantic.BaseModel.model_validate method "
 "named context."
-msgstr ""
+msgstr "pydantic.BaseModel.model_validate 메소드의 context 기능과 같은 기능을 합니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:19 of
 msgid ""
 "This feature is experimental. It might not work as expected. And "
 "`pydatnic` pacakge required."
-msgstr ""
+msgstr "이 기능은 실험적인 기능입니다. 예상대로 작동하지 않을 수도 있습니다. "
+"그리고 `pydantic` 패키지를 설치해야합니다."
 
 #: ahttp_client.extension.pydantic.pydantic_response_model:23 of
 msgid "Examples"
-msgstr ""
+msgstr "Examples"
 
