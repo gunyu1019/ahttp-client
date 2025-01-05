@@ -299,7 +299,7 @@ class RequestCore:
             return "json"
         elif self.body is not None:
             return "data"
-        return 
+        return
 
     def _duplicated_check_body(self) -> Optional[NoReturn]:
         """Check if body is already in fill.
@@ -398,7 +398,7 @@ class RequestCore:
                     component_instance = annotation
                     component_type = type(annotation)
                     break
-                
+
                 # Generic Alias // ex.) dict[Any], list[Any], type[Any] ... etc
                 if not isinstance(annotation, type):
                     continue
@@ -409,7 +409,9 @@ class RequestCore:
                     component_type = annotation
                     break
 
-            intace_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
+            intace_origin = [
+                get_origin_for_generic(t) for t in make_collection(separated_origin)
+            ]
 
             if issubclass(component_type, Header) or parameter.name in header_parameter:
                 name = self._get_component_name(parameter.name, component_instance)
@@ -442,7 +444,9 @@ class RequestCore:
                     self.body_parameter_type = "data"
                 self.body_parameter = parameter
                 self._duplicated_check_body()
-            elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(intace_origin, aiohttp.ClientResponse):
+            elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
+                intace_origin, aiohttp.ClientResponse
+            ):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
