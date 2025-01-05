@@ -24,11 +24,12 @@ SOFTWARE.
 from typing import NamedTuple, Literal, Optional
 
 from .body import Body
+from .body_json import BodyJson
 from .form import Form
 from .header import Header
 from .path import Path
 from .query import Query
-from .request import request, get, post, options, put, delete
+from .request import RequestCore, request, get, post, options, put, delete
 from .session import Session
 
 
