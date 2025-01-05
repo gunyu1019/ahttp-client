@@ -11,7 +11,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-04 14:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
@@ -152,111 +152,114 @@ msgid ""
 "HTTP request. The parameters associated with the Path populate a portion "
 "of the HTTP URL."
 msgstr ""
+"메소드의 매게변수의 값이 URL 주소의 자리표시자 일부분을 대신해서 채울 수 있도록 정의하는 클래스입니다."
 
 #: ahttp_client.query.Query:1 of
 msgid ""
 "This class is used when a function's parameters are used as query in an "
 "HTTP request."
 msgstr ""
+"메소드의 매게변수가 HTTP 요청의 Query 값으로 이용되도록 정의할 수 있는 클래스입니다."
 
 #: ../../source/api.rst:39
 msgid "Request Core"
-msgstr ""
+msgstr "Request Core"
 
 #: ahttp_client.request.RequestCore:1 of
 msgid "A class that implements functions for HTTP requests."
-msgstr ""
+msgstr "함수에서 HTTP 요청을 할 수 있도록 구현하는 객체입니다."
 
 #: ahttp_client.request.RequestCore:5 of
 msgid "The name of the request."
-msgstr ""
+msgstr "request의 이름입니다."
 
 #: ahttp_client.request.RequestCore:7 ahttp_client.request.RequestCore:19
 #: ahttp_client.request.RequestCore:25 of
 msgid "str"
-msgstr ""
+msgstr "str"
 
 #: ahttp_client.request.RequestCore:11 of
 msgid "The coroutine function that is executed when the request is called."
-msgstr ""
+msgstr "request가 호출되어 결과를 받았을 때, 실행할 코루틴 함수입니다."
 
 #: ahttp_client.request.RequestCore:13 of
 msgid "Callable[..., Coroutine[Any, Any, T]]"
-msgstr ""
+msgstr "Callable[..., Coroutine[Any, Any, T]]"
 
 #: ahttp_client.request.RequestCore:17 ahttp_client.request.request:6 of
 msgid "HTTP method (example. GET, POST)"
-msgstr ""
+msgstr "HTTP 메소드입니다. (예: GET, POST)"
 
 #: ahttp_client.request.RequestCore:23 ahttp_client.request.request:8 of
 msgid "Request path. Path connects to the base url."
-msgstr ""
+msgstr "Path 주소입니다. Path는 `Sessoin.base_url` 와 결합되어 HTTP 호출을 합니다."
 
 #: ahttp_client.request.RequestCore:29 ahttp_client.request.request:16 of
 msgid ""
 "Returns a `aiohttp.ClientResponse` without executing the function's body "
 "statement."
 msgstr ""
+"함수의 본문을 실행하지 않고, 반환할 수 있도록 설정합니다. 특별한 설정이 없다면 :class:`aiohttp.ClientResponse` 를 반환합니다."
 
 #: ahttp_client.request.RequestCore:31 of
 msgid "bool"
-msgstr ""
+msgstr "bool"
 
 #: ahttp_client.request.RequestCore:35 ahttp_client.request.request:10 of
 msgid "Request parameters."
-msgstr ""
+msgstr "HTTP 호출에 사용되는 Query(parameter) 입니다."
 
 #: ahttp_client.request.RequestCore:37 ahttp_client.request.RequestCore:43 of
 msgid "Optional[dict[str, Any]]"
-msgstr ""
+msgstr "Optional[dict[str, Any]]"
 
 #: ahttp_client.request.RequestCore:41 ahttp_client.request.request:12 of
 msgid "Request headers."
-msgstr ""
+msgstr "HTTP 호출에 사용되는 header 입니다."
 
 #: ahttp_client.request.RequestCore:47 ahttp_client.request.request:14 of
 msgid "Request body."
-msgstr ""
+msgstr "HTTP 호출에 사용되는 body 입니다."
 
 #: ahttp_client.request.RequestCore:49 of
 msgid "Optional[Any | aiohttp.FormData]"
-msgstr ""
+msgstr "Optional[Any | aiohttp.FormData]"
 
 #: ahttp_client.request.RequestCore:53 of
 msgid "Function parameters used in the header"
-msgstr ""
+msgstr "HTTP 호출에서 header로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:55 ahttp_client.request.RequestCore:61
 #: ahttp_client.request.RequestCore:67 ahttp_client.request.RequestCore:73
 #: ahttp_client.request.RequestCore:79 of
 msgid "dict[str, inspect.Parameter]"
-msgstr ""
+msgstr "dict[str, inspect.Parameter]"
 
 #: ahttp_client.request.RequestCore:59 of
 msgid "Function parameters used in the query(parameter)"
-msgstr ""
+msgstr "HTTP 호출에서 query(parameter)로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:65 of
 msgid "Function parameters used in body json."
-msgstr ""
+msgstr "HTTP 호출에서 json 형태의 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:71 of
 msgid "Function parameters used in body form."
-msgstr ""
+msgstr "HTTP 호출에서 :class:`aiohttp.FormData` 형태의 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:77 of
 msgid "Function parameters used in the path."
-msgstr ""
+msgstr "HTTP 호출에서 path로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:83 of
 msgid ""
 "Function parameter used in the body. The body parameter must take only "
 "Collection, or aiohttp.FormData."
-msgstr ""
+msgstr "HTTP 호출에서 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.RequestCore:86 of
 msgid "Optional[inspect.Parameter]"
-msgstr ""
+msgstr "Optional[inspect.Parameter]"
 
 #: ahttp_client.request.RequestCore:90 of
 msgid ""
@@ -265,143 +268,149 @@ msgid ""
 "`body_parameter_type` is `Collection`, the `body_parameter_type` is "
 "'json'."
 msgstr ""
+"body parameter의 유형입니다. "
+"만약 body_parameter 값이 :class:`aiohttp.FormData` 또는 이외에 유형이라면 `body_parameter_type` 값은 'data'가 됩니다."
+"이외에 body_parameter 값이 `Collection` 이 될 수 있다면, `body_parameter_type` 값은 'json'이 됩니다."
 
 #: ahttp_client.request.RequestCore:94 of
 msgid "Literal['json', 'data']"
-msgstr ""
+msgstr "Literal['json', 'data']"
 
 #: ahttp_client.request.RequestCore:98 ahttp_client.request.request:31 of
 msgid "Function parameter name to store the HTTP result in."
-msgstr ""
+msgstr "HTTP 호출에서 응답받은 결과를 담아낼 함수의 매개변수입니다."
 
 #: ahttp_client.request.RequestCore:100 of
 msgid "list[str]"
-msgstr ""
+msgstr "list[str]"
 
 #: ahttp_client.request.RequestCore:104 of
 msgid "Keyword Arguments are passed directly request method."
-msgstr ""
+msgstr ":meth:`aiohttp.ClientSession.request` 에서 사용되는 HTTP 호출에 사용되는 Keyword Arguments를 정의합니다."
 
 #: ahttp_client.request.RequestCore:106 of
 msgid "dict[str, Any]"
-msgstr ""
+msgstr "dict[str, Any]"
 
 #: ../../source/api.rst:48
 msgid ""
 "A decorator that registers a coroutine as a pre-invoke hook. A pre-invoke"
 " hook is called directly before the HTTP request is called."
 msgstr ""
+"HTTP 호출이 이루어지기 전에 실행되는 함수를 정의하는 데코레이터 메소드입니다."
 
 #: ../../source/api.rst:51
 msgid ""
 "This makes it a useful function to set up authorizations or any type of "
 "set up required."
-msgstr ""
+msgstr "주로 HTTP 호출 전에 필수적으로 입력되는 구성요소를 입력하는 함수로 구성합니다."
 
 #: ../../source/api.rst:54 ../../source/api.rst:79 ../../source/api.rst:128
 msgid "Example"
-msgstr ""
+msgstr "Example"
 
 #: ../../source/api.rst:73
 msgid ""
 "A decorator that registers a coroutine as a post-invoke hook. A post-"
 "invoke hook is called directly after the returned HTTP response."
-msgstr ""
+msgstr "HTTP 호출이 이루어진 후에 실행되는 함수를 정의하는 데코레이터 메소드입니다."
 
 #: ../../source/api.rst:76
 msgid ""
 "This makes it a useful function to check correct response or any type of "
 "clean up response data."
-msgstr ""
+msgstr "주로 응답받은 결과가 올바른지 검증하거나, HTTP 호출에서 받은 원본 데이터를 올바르게 정리합니다."
 
 #: ahttp_client.request.RequestCore.copy:1 of
 msgid "Creates a copy of this request."
-msgstr ""
+msgstr "이 RequestCore 클래스를 복사합니다."
 
 #: ../../source/api.rst
 msgid "Returns"
-msgstr ""
+msgstr "Returns"
 
 #: ahttp_client.request.RequestCore.copy:3 of
 msgid "A new istnace of this request."
-msgstr ""
+msgstr "새로운 request 정보가 담긴 인스턴스를 반환합니다."
 
 #: ../../source/api.rst
 msgid "Return type"
-msgstr ""
+msgstr "Return type"
 
 #: ahttp_client.request.RequestCore.copy:4 of
 msgid ":class:`RequestCore`"
-msgstr ""
+msgstr ":class:`RequestCore`"
 
 #: ahttp_client.request.RequestCore.get_request_kwargs:1 of
 msgid "Get keyword arguments to call request method"
-msgstr ""
+msgstr ":meth:`aiohttp.ClientSession.request` 에서 사용되는 HTTP 호출에 사용되는 Keyword Arguments를 반환합니다."
 
 #: ahttp_client.request.RequestCore.body_type:1 of
 msgid "Returns the final body type"
-msgstr ""
+msgstr "최종 body 유형을 반환합니다."
 
 #: ahttp_client.request.RequestCore.body_type:3 of
 msgid ":class:`Literal`['json', 'data']"
-msgstr ""
+msgstr ":class:`Literal`['json', 'data']"
 
 #: ahttp_client.request.RequestCore.is_body:1 of
 msgid "Returns whether the HTTP request has a body element."
-msgstr ""
+msgstr "HTTP request에서 body 요소를 가지고 있는지 반환합니다."
 
 #: ahttp_client.request.RequestCore.is_body:3
 #: ahttp_client.request.RequestCore.is_formal_form:3 of
 msgid ":class:`bool`"
-msgstr ""
+msgstr ":class:`bool`"
 
 #: ahttp_client.request.RequestCore.is_formal_form:1 of
 msgid "Returns whether the body element in the HTTP request is of type Form."
-msgstr ""
+msgstr "HTTP request에서 body가 형식적인 form으로 구성되어 있는지 확인하고 반환합니다."
 
 #: ahttp_client.request.request:1 of
 msgid ""
 "A decoration for making request. Create an HTTP client-request, when "
 "decorated function is called."
 msgstr ""
+"함수가 HTTP request 과정을 거칠 수 있도록 만드는 데코레이터 메소드입니다."
+"데코레이터로 정의된 메소드가 호출된다면, HTTP 호출도 동시에 이루어집니다."
 
 #: ahttp_client.request.request:4 of
 msgid "The name of the Request"
-msgstr ""
+msgstr "Request의 이름입니다."
 
 #: ahttp_client.request.request:18 of
 msgid "Function parameter names used in the header"
-msgstr ""
+msgstr "HTTP 호출에서 header로 사용될 메소드의 매게변수입니다."
 
 #: ahttp_client.request.request:20 of
 msgid "Function parameter names used in the query(parameter)"
-msgstr ""
+msgstr "HTTP 호출에서 query(parameter)로 사용될 메소드의 매게변수입니다."
 
 #: ahttp_client.request.request:22 of
 msgid "Function parameter names used in body form."
-msgstr ""
+msgstr "HTTP 호출에서 :class:`aiohttp.FormData` 형태의 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.request:24 of
 msgid "Function parameter names used in body json."
-msgstr ""
+msgstr "HTTP 호출에서 Json 형태의 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.request:26 of
 msgid "Function parameter names used in the path."
-msgstr ""
+msgstr "HTTP 호출에서 path로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.request:28 of
 msgid ""
 "Function parameter name used in the body. The body parameter must take "
 "only Collection, or aiohttp.FormData."
-msgstr ""
+msgstr "HTTP 호출에서 body로 사용할 수 있는 함수의 매게변수입니다."
 
 #: ahttp_client.request.request:35 of
 msgid "Form_parameter and Body Parameter can only be used with one or the other."
-msgstr ""
+msgstr "Form 매개변수와 Body 매개변수 중에서는 하나만 정의할 수 있습니다."
 
 #: ../../source/api.rst:108
 msgid "Same feature as `ahttp_client.request`."
-msgstr ""
+msgstr "`ahttp_client.request` 와 동일한 기능을 합니다."
 
 #: ../../source/api.rst:112
 msgid "Session"

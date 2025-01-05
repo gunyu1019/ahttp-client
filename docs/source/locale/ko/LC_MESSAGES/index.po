@@ -79,8 +79,8 @@ msgid ""
 "Implement a `GithubService` class extended with `ahttp_client.Session`. "
 "Then, create a `list_repositories` method using a request decorator."
 msgstr ""
-"`ahttp_client.Session`으로 확장한 `GithubSerivce` 클래스를 구현합니다."
-"그리고, `request decorator`를 이용하여 `list_repositories` 메소드를 만들어줍니다."
+"`ahttp_client.Session` 으로 확장한 `GithubSerivce` 클래스를 구현합니다."
+"그리고, `request decorator` 를 이용하여 `list_repositories` 메소드를 만들어줍니다."
 
 #: ../../source/index.rst:23
 msgid "An `user` argument define HTTP-component (Path) through annotation types."
@@ -91,7 +91,7 @@ msgid ""
 "Using the asynchronous context manager(`async with`), create a "
 "GithubService instance."
 msgstr ""
-"Asynchronous Context Manage(`async with`)를 이용하여 `GithubService` 객체를 생성합니다."
+"Asynchronous Context Manage( `async with` )를 이용하여 `GithubService` 객체를 생성합니다."
 
 #: ../../source/index.rst:45
 msgid ""
