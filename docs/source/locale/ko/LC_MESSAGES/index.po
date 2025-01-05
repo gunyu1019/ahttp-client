@@ -11,7 +11,7 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-04 14:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
@@ -22,27 +22,27 @@ msgstr ""
 
 #: ../../source/index.rst:3 ../../source/index.rst:47
 msgid "Introduction"
-msgstr ""
+msgstr "Introduction"
 
 #: ../../source/index.rst:47
 msgid "HTTP Component"
-msgstr ""
+msgstr "HTTP 구성요소 (Component)"
 
 #: ../../source/index.rst:47
 msgid "Pre-Hooking / Post-Hooking"
-msgstr ""
+msgstr "Hooking 기능"
 
 #: ../../source/index.rst:47
 msgid "API Reference"
-msgstr ""
+msgstr "API Refernece"
 
 #: ../../source/index.rst:47
 msgid "Extension"
-msgstr ""
+msgstr "Extension"
 
 #: ../../source/index.rst:47
 msgid "Table of Contents"
-msgstr ""
+msgstr "목차"
 
 #: ../../source/index.rst:9
 msgid ""
@@ -51,46 +51,51 @@ msgid ""
 "<https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated>`_ "
 "and `@decorator`."
 msgstr ""
+"`Annotated Type <https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated>`_ 과 `@decorator` 를 사용하여 "
+"간결하고 직관적인 비동기 HTTP 요청을 제공하는 파이썬 패키지입니다."
 
 #: ../../source/index.rst:11
 msgid "**Key Feautre**"
-msgstr ""
+msgstr "**주요 특징**"
 
 #: ../../source/index.rst:13
 msgid "Defining a simple request method with decoration."
-msgstr ""
+msgstr "HTTP 요청을 데코레이터(decorator)로 정의할 수 있습니다."
 
 #: ../../source/index.rst:14
 msgid "Managing HTTP Compoents using Annotated Types."
-msgstr ""
+msgstr "Annotated Type으로 HTTP Component를 관리할 수 있습니다."
 
 #: ../../source/index.rst:15
 msgid "Providing Hooks before and after HTTP calls."
-msgstr ""
+msgstr "HTTP 요청이 있기 전과 후에 후킹 기능을 제공합니다."
 
 #: ../../source/index.rst:18
 msgid "Getting Started"
-msgstr ""
+msgstr "시작하기"
 
 #: ../../source/index.rst:20
 msgid ""
 "Implement a `GithubService` class extended with `ahttp_client.Session`. "
 "Then, create a `list_repositories` method using a request decorator."
 msgstr ""
+"`ahttp_client.Session`으로 확장한 `GithubSerivce` 클래스를 구현합니다."
+"그리고, `request decorator`를 이용하여 `list_repositories` 메소드를 만들어줍니다."
 
 #: ../../source/index.rst:23
 msgid "An `user` argument define HTTP-component (Path) through annotation types."
-msgstr ""
+msgstr "Annotated Type을 이용하여 `user` 인수를 HTTP-구성요소(Path)로 사용할 수 있도록 정의합니다."
 
 #: ../../source/index.rst:37
 msgid ""
 "Using the asynchronous context manager(`async with`), create a "
 "GithubService instance."
 msgstr ""
+"Asynchronous Context Manage(`async with`)를 이용하여 `GithubService` 객체를 생성합니다."
 
 #: ../../source/index.rst:45
 msgid ""
 "Client Session in GithubServices are terminated when leave the "
 "asynchronous context manager."
 msgstr ""
-
+"GithubSerivce 객체에 있는 Client Session은 Asynchronous Context Manage를 벗어나면 자동으로 종료됩니다."
