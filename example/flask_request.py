@@ -12,7 +12,9 @@ loop = asyncio.get_event_loop()
 @app.get("/station/<name>")
 @Session.single_session("https://api.yhs.kr")
 @request("GET", "/metro/station")
-async def station_search_with_query(session: Session, response: aiohttp.ClientResponse, name: Query | str):
+async def station_search_with_query(
+    session: Session, response: aiohttp.ClientResponse, name: Query | str
+):
     return await response.json()
 
 
