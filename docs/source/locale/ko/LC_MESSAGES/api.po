@@ -414,47 +414,51 @@ msgstr "`ahttp_client.request` 와 동일한 기능을 합니다."
 
 #: ../../source/api.rst:112
 msgid "Session"
-msgstr ""
+msgstr "Session"
 
 #: ahttp_client.session.Session:1 of
 msgid "A class to manage session for managing decoration functions."
-msgstr ""
+msgstr "request decoration으로 정의된 함수를 관리하고, 세션을 관리하는 클래스입니다."
 
 #: ../../source/api.rst:121
 msgid "A single session for one request."
-msgstr ""
+msgstr "하나의 request만 사용하는 경우, 단독 세션을 정의할 수 있습니다."
 
 #: ../../source/api.rst:123
 msgid "base url of the API."
-msgstr ""
+msgstr "API의 기본 주소입니다."
 
 #: ../../source/api.rst:124
 msgid "event loop used for processing HTTP requests."
-msgstr ""
+msgstr "HTTP request 처리 과정에서 사용되는 Event Loop입니다."
 
 #: ../../source/api.rst:125
 msgid "Keyword argument used in `aiohttp.ClientSession`"
-msgstr ""
+msgstr ":class:`aiohttp.ClientSession` 에서 사용되는 keyword argument입니다."
 
 #: ../../source/api.rst:129
 msgid "The session is defined through the function's decoration."
-msgstr ""
+msgstr "메소드를 데코레이팅하는 방식으로 단독 세션을 정의할 수 있습니다."
 
 #: ahttp_client.session.Session.after_request:1 of
 msgid ""
 "A special method that acts as a session local post-invoke. This is "
 "similar to :meth:`RequestCore.after_request`."
 msgstr ""
+"HTTP 호출 후에 실행되는 함수입니다. "
+":meth:`RequestCore.after_hook()` 와 비슷한 기능을 합니다."
 
 #: ahttp_client.session.Session.after_request:4 of
 msgid ""
 "When :meth:`RequestCore.after_request` exists, this method is called "
 "before :meth:`RequestCore.after_request` called."
 msgstr ""
+"만약 :meth:`RequestCore.after_hook` 가 정의되어 있다면, "
+":meth:`RequestCore.after_hook` 이전에 호출됩니다."
 
 #: ahttp_client.session.Session.after_request:7 of
 msgid "The result of HTTP request."
-msgstr ""
+msgstr "HTTP 요청에서 얻은 결과입니다."
 
 #: ahttp_client.session.Session.after_request:10 of
 msgid ""
@@ -462,28 +466,34 @@ msgid ""
 "response type of :meth:`RequestCore.after_request` will follow the type "
 "of this method."
 msgstr ""
+"정리된 HTTP 결과를 반환하면 됩니다. 만약 RequestCore.after_hook 사용하고 있다면,"
+":meth:`RequestCore.after_hook` 에도 같은 응답 결과를 따를 것입니다."
 
 #: ahttp_client.session.Session.before_request:1 of
 msgid ""
 "A special method that acts as a session local pre-invoke hook. This is "
 "similar to :meth:`RequestCore.before_request`."
 msgstr ""
+"HTTP 호출 전에 실행되는 함수입니다. "
+":meth:`RequestCore.before_hook()` 와 비슷한 기능을 합니다."
 
 #: ahttp_client.session.Session.before_request:4 of
 msgid ""
 "When :meth:`RequestCore.before_request` exists, this method is called "
 "after :meth:`RequestCore.before_request` called."
 msgstr ""
+"만약 :meth:`RequestCore.before_hook` 가 정의되어 있다면, "
+":meth:`RequestCore.before_hook` 이전에 호출됩니다."
 
 #: ahttp_client.session.Session.before_request:7 of
 msgid "The instance of RequestCore."
-msgstr ""
+msgstr "HTTP 요청 정보를 담고 있는 인스턴스 입니다."
 
 #: ahttp_client.session.Session.before_request:9 of
 msgid "The final string of the request url."
-msgstr ""
+msgstr "HTTP 요청에 사용되는 최종 URL 입니다."
 
 #: ahttp_client.session.Session.before_request:12 of
 msgid "The return type must be the same as the parameter."
-msgstr ""
+msgstr "매개변수로 입력받은 유형을 그대로 반환해주면 됩니다."
 
