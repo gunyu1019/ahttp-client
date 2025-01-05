@@ -25,11 +25,11 @@ from .component import Component
 
 
 class BodyJson(Component):
-    """(TODO)
+    """This class defines the parameters of a function used in Body of the HTTP request in dictionary format.
 
     Examples
     --------
-    >>> def function(data: str | BodyJson):
+    >>> def function(data: typing.Annotated[str, BodyJson]):
     ...    pass
     """
 
