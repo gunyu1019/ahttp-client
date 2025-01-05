@@ -14,7 +14,8 @@ if not version:
 
 extras_require = {
     "test": ["pytest", "pytest-cov"],
-    "lint": ["pycodestyle", "black"]
+    "lint": ["pycodestyle", "black"],
+    "docs": ["Sphinx", "sphinxawesome-theme", "sphinx-intl"],
 }
 
 setup(

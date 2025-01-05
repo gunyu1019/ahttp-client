@@ -1,0 +1,157 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/component.rst:3
+msgid "HTTP Component"
+msgstr "HTTP 구성요소(Compoenent)"
+
+#: ../../source/component.rst:4
+msgid ""
+"A component used in `ahttp_client` are Query, Header, Path, and Body. In "
+"the HTTP request process in `ahttp_client`, a component defines as "
+"`typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
+msgstr ""
+"`ahttp_client` 의 구성요소는 Query, Header, Path, 그리고 Body가 있으며,"
+"HTTP 요청을 처리하는 과정에서 사용합니다. 구성요소는 "
+"`typing.Annotated <https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ 를 이용하여 정의합니다."
+
+#: ../../source/component.rst:7
+msgid ""
+"When a `list_repository_activites` method is called, the request is "
+"called as shown below."
+msgstr "`list_repository_activites` 메소드 같은 경우, 요청은 아래와 같이 이루어집니다."
+
+#: ../../source/component.rst:34
+msgid ""
+"An HTTP Component can be defined as `typing.Union "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ "
+"instead of `typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
+msgstr ""
+"HTTP 구성요소(Component)는 `typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ 대신에 `typing.Union "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ "
+"으로 정의할 수 있습니다."
+
+#: ../../source/component.rst:49
+msgid ""
+"However, using typing.Annotated is recommended to follow correct Python "
+"syntax."
+msgstr "하지만, `typing.Anntoated` 를 이용하는 것을 권장합니다."
+
+#: ../../source/component.rst:52
+msgid "Usage by Component"
+msgstr "구성 요소(Compoenent)의 용도"
+
+#: ../../source/component.rst:54
+msgid "**Header** - Configure the header for the HTTP component."
+msgstr "**Header** - HTTP 요청에서 header를 정의합니다."
+
+#: ../../source/component.rst:55
+msgid "**Body** - Configure the body for the HTTP component."
+msgstr "**Body** - HTTP 요청에서 body를 정의합니다."
+
+#: ../../source/component.rst:56
+msgid ""
+"**Form** - Configure the body with `aiohttp.FormData "
+"<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+msgstr ""
+"**Form** - `aiohttp.FormData <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_ 를 이용하여 "
+"HTTP 요청에서 body 부분으로 정의합니다."
+
+#: ../../source/component.rst:57
+msgid ""
+"**BodyJson** - Configure the body with `Dictionaries "
+"<https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_"
+msgstr ""
+"**BodyJson** - `Dictionaries <https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_ 를 이용하여 "
+"HTTP 요청에서 body 부분으로 정의합니다."
+
+#: ../../source/component.rst:58
+msgid "**Query** - Insert a value inside the URL parameter."
+msgstr "**Query** - URL 매게변수의 값을 삽입하는 용도로 정의됩니다."
+
+#: ../../source/component.rst:59
+msgid ""
+"**Path** - Insert the specified value(s) inside the path placeholder. The"
+" path placeholder is using curly brackets: `{}`"
+msgstr ""
+"**Path** - URL에 지정된 값을 삽입하는 용도로 사용됩니다."
+
+#: ../../source/component.rst:61
+msgid ""
+"Defining the Body parameter at HTTP request decoration can only be of one"
+" of the following types: Body, BodyJson, or Form. If more than one "
+"Component is used, a `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_ can be "
+"thrown."
+msgstr ""
+"HTTP request deccoration에서 Body 매개변수를 정의하는 것은 Body, BodyJson, Form 중에서 하나만 사용할 수 있습니다. "
+"하나 이상의 Body 매게변수를 정의한다면, `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ 예외를 발생시킬 수 있습니다."
+
+#: ../../source/component.rst:65
+msgid "Custom Component Name"
+msgstr "Custom Component Name"
+
+#: ../../source/component.rst:66
+msgid ""
+"According to PEP 8 rules, the parameter names of method must be "
+"lowercase, with words separated by underscores. `(reference) "
+"<https://peps.python.org/pep-0008/#function-and-variable-names>`_"
+msgstr ""
+"PEP 8 규칙에 따르면, 매개변수는 반드시 밑줄을 사용한 lowercase를 따르도록 하고 있습니다. "
+"`(참조 문서) <https://peps.python.org/pep-0008/#function-and-variable-names>`_"
+
+#: ../../source/component.rst:68
+msgid ""
+"The queries or headers in an API can be named in Camel Case, or Pascal "
+"Case."
+msgstr ""
+"하지만 API에서 parameter 또는 header의 이름은 Camel Case 또는 Pascal Case 일 수 있습니다."
+
+#: ../../source/component.rst:70
+msgid ""
+"To follow the PEP 8 rules as described, an `ahttp_client` package "
+"provides a custom component name."
+msgstr ""
+"PEP 8 규칙을 따르기 위해, `ahttp_client` 패키지는 custom component name 기능을 지원합니다."
+
+#: ../../source/component.rst:97
+msgid ""
+"As in the example above, insert the `GITHUB API TOKEN` in token argument "
+"of `list_repository_activites` method. During the calling process, the "
+"key of Header has been overridden to \"Authorization\"."
+msgstr ""
+"위에 작성된 예제와 같이, `GITHUB API TOKEN` 값은 `list_repository_activites` 의 token 인수로 삽입하였습니다. "
+"HTTP 호출 처리 과정에서 token 인수의 값은 매개변수의 이름을 따른 것이 아닌, \"Authorization\" 를 가지고 header에 삽입되었습니다."
+
+#: ../../source/component.rst:100
+msgid ""
+"The custom component name feature only supports Header, Query, BodyJson, "
+"and Form. Using it in other components may cause a `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_."
+msgstr ""
+"Custom Compoenent Name 기능은 Header, Query, BodyForm, 그리고 Form에만 사용할 수 있습니다. "
+"다른 구성요소에서는 `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ 예외를"
+"유발할 수 있습니다."
+
