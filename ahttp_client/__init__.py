@@ -24,11 +24,12 @@ SOFTWARE.
 from typing import NamedTuple, Literal, Optional
 
 from .body import Body
+from .body_json import BodyJson
 from .form import Form
 from .header import Header
 from .path import Path
 from .query import Query
-from .request import request, get, post, options, put, delete
+from .request import RequestCore, request, get, post, options, put, delete
 from .session import Session
 
 
@@ -36,7 +37,7 @@ __title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-present-present gunyu1019"
-__version__ = "1.0.1"  # version_info.to_string()
+__version__ = "1.0.2"  # version_info.to_string()
 
 
 class VersionInfo(NamedTuple):
@@ -53,6 +54,4 @@ class VersionInfo(NamedTuple):
         return _version_info
 
 
-version_info: VersionInfo = VersionInfo(
-    major=1, minor=0, micro=1, release_level=None, serial=0
-)
+version_info: VersionInfo = VersionInfo(major=1, minor=0, micro=2, release_level=None, serial=0)
