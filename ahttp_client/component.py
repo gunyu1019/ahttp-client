@@ -1,6 +1,6 @@
 """MIT License
 
-Copyright (c) 2023 gunyu1019
+Copyright (c) 2023-present gunyu1019
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,13 +47,13 @@ class Component:
 
     Attributes
     ----------
-    get_component_name: Callable[[str], str]
+    component_name: Callable[[str], str]
         Used to define the name of the component name.
         In default case, it can cause an AttributesError.
     """
 
     def __init__(self):
-        self.get_component_name: Optional[Callable[[str], str]] = None
+        self.component_name: Optional[Callable[[str], str]] = None
 
     @classmethod
     def custom_name(cls, name: str) -> type[Self]:
@@ -82,7 +82,7 @@ class Component:
         The body component and path component didn't allow the custom_name method to be used.
         """
         new_cls = cls()
-        new_cls.get_component_name = lambda _: name
+        new_cls.component_name = lambda _: name
         return new_cls
 
     @staticmethod
@@ -116,7 +116,7 @@ class Component:
         The body component and path component didn't allow the to_camel method to be used.
         """
         new_cls = cls()
-        new_cls.get_component_name = lambda original_name: new_cls._to_camel(original_name)
+        new_cls.component_name = lambda original_name: new_cls._to_camel(original_name)
         return new_cls
 
     @classmethod
@@ -140,7 +140,7 @@ class Component:
         The body component and path component didn't allow the to_pascal method to be used.
         """
         new_cls = cls()
-        new_cls.get_component_name = lambda original_name: new_cls._to_pascal(original_name)
+        new_cls.component_name = lambda original_name: new_cls._to_pascal(original_name)
         return new_cls
 
 

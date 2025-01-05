@@ -1,6 +1,6 @@
 """MIT License
 
-Copyright (c) 2023 gunyu1019
+Copyright (c) 2023-present gunyu1019
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@ from typing import TypeVar, TYPE_CHECKING
 import aiohttp
 
 from .body import Body
+from .body_json import BodyJson
 from .component import Component, EmptyComponent
 from .form import Form
 from .header import Header
@@ -71,12 +72,14 @@ class RequestCore:
         Request parameters.
     headers: Optional[dict[str, Any]]
         Request headers.
-    body: Optional[Collection[Any] | aiohttp.FormData]
+    body: Optional[Any | aiohttp.FormData]
         Request body.
     header_parameter: dict[str, inspect.Parameter]
         Function parameters used in the header
     query_parameter: dict[str, inspect.Parameter]
         Function parameters used in the query(parameter)
+    body_json_parameter: dict[str, inspect.Parameter]
+        Function parameters used in body json.
     body_form_parameter: dict[str, inspect.Parameter]
         Function parameters used in body form.
     path_parameter: dict[str, inspect.Parameter]
@@ -104,7 +107,7 @@ class RequestCore:
         directly_response: bool = False,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, Any]] = None,
-        body: Optional[Collection[Any] | aiohttp.FormData] = None,
+        body: Optional[Any | aiohttp.FormData] = None,
         response_parameter: Optional[list[str]] = None,
         **kwargs,
     ):
@@ -137,13 +140,14 @@ class RequestCore:
         # Components
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
-        self.body: Optional[aiohttp.FormData | Collection[Any]] = body
+        self.body: Optional[aiohttp.FormData | Any] = body
 
         # Components (Function Parameter)
         self.header_parameter: dict[str, inspect.Parameter] = dict()
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
         self.body_form_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_json_parameter: dict[str, inspect.Parameter] = dict()
 
         self.body_parameter_type: Literal["json", "data"] | None = None
         self.body_parameter: Optional[inspect.Parameter] = None
@@ -162,6 +166,7 @@ class RequestCore:
         *,
         query_parameter: Optional[list[str]] = None,
         header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
         path_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
@@ -174,6 +179,7 @@ class RequestCore:
             query_parameter=query_parameter or list(),
             header_parameter=header_parameter or list(),
             form_parameter=form_parameter or list(),
+            body_json_parameter=body_json_parameter or list(),
             body_parameter=body_parameter,
             path_parameter=path_parameter or list(),
         )
@@ -206,6 +212,7 @@ class RequestCore:
         new_cls.query_parameter = self.query_parameter
         new_cls.path_parameter = self.path_parameter
         new_cls.body_form_parameter = self.body_form_parameter
+        new_cls.body_json_parameter = self.body_json_parameter
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
@@ -256,7 +263,12 @@ class RequestCore:
         -------
         :class:`bool`
         """
-        return self.body_parameter is not None or self.is_formal_form or self.body is not None
+        return (
+            self.body_parameter is not None
+            or self.is_formal_form
+            or len(self.body_json_parameter) > 0
+            or self.body is not None
+        )
 
     @property
     def is_formal_form(self) -> bool:
@@ -276,13 +288,14 @@ class RequestCore:
         -------
         :class:`Literal`['json', 'data']
         """
-        if isinstance(self.body, aiohttp.FormData):
-            return "data"
-        elif self.body is None:
-            return
         if self.body_parameter_type is not None:
             return self.body_parameter_type
-        return "json"
+
+        if isinstance(self.body, Collection):
+            return "json"
+        elif self.body is not None:
+            return "data"
+        return
 
     def _duplicated_check_body(self) -> Optional[NoReturn]:
         """Check if body is already in fill.
@@ -303,32 +316,8 @@ class RequestCore:
         TypeError
             Body parameter is already filled.
         """
-        if self.body_parameter is not None or len(self.body_form_parameter) > 0:
+        if self.body_parameter is not None or len(self.body_form_parameter) > 0 or len(self.body_json_parameter) > 0:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
-
-    @staticmethod
-    def _check_body_type(parameter: inspect.Parameter) -> Optional[NoReturn]:
-        """Check body type appropriate.
-        Body type is either Collection or aiohttp.FormData.
-
-        Parameters
-        ----------
-        parameter: inspect.Parameter
-            The parameter of the body of the HTTP request.
-
-        Raises
-        ------
-        TypeError
-            Invalid Body type
-        """
-        body_annotation = parameter.annotation
-        argument = body_annotation.__args__ if is_annotated_parameter(body_annotation) else body_annotation
-        separated_argument = separate_union_type(argument)
-        origin_argument = [get_origin_for_generic(x) for x in make_collection(separated_argument)]
-
-        if is_subclass_safe(origin_argument, (Collection, aiohttp.FormData)):
-            return
-        raise TypeError("Body parameter can only have aiohttp.FormData or Collection.")
 
     # Setup
     def _add_private_key(self) -> None:
@@ -343,8 +332,8 @@ class RequestCore:
         name: str,
         component_type: Optional[Component] = None,
     ) -> str:
-        if component_type is not None and component_type.get_component_name is not None:
-            component_name = component_type.get_component_name(name)
+        if component_type is not None and component_type.component_name is not None:
+            component_name = component_type.component_name(name)
             return component_name or name
         return name
 
@@ -353,6 +342,7 @@ class RequestCore:
         *,
         query_parameter: Optional[list[str]] = None,
         header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
@@ -369,6 +359,8 @@ class RequestCore:
             Function parameter names used in the query(parameter)
         form_parameter: list[str]
             Function parameter names used in body form.
+        body_json_parameter: list[str]
+            Function parameter names used in body json.
         path_parameter: list[str]
             Function parameter names used in the path.
         body_parameter: str
@@ -376,7 +368,9 @@ class RequestCore:
         """
         for parameter in self._signature.parameters.values():
             annotation = parameter.annotation
+            origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
             metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
+            separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
             component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
@@ -387,12 +381,15 @@ class RequestCore:
                     component_type = type(annotation)
                     break
 
+                # Generic Alias // ex.) dict[Any], list[Any], type[Any] ... etc
                 if not isinstance(annotation, type):
                     continue
 
                 if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
                     component_type = annotation
                     break
+
+            intace_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
 
             if issubclass(component_type, Header) or parameter.name in header_parameter:
                 name = self._get_component_name(parameter.name, component_instance)
@@ -408,16 +405,23 @@ class RequestCore:
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
                 self._duplicated_check_body()
-            elif issubclass(component_type, Body) or parameter.name == body_parameter:
-                self._check_body_type(parameter)
+            elif issubclass(component_type, BodyJson) or parameter.name in body_json_parameter:
                 self._duplicated_check_body_parameter()
-                if is_subclass_safe(separated_annotation, aiohttp.FormData):
-                    self.body_parameter_type = "data"
-                else:
+                self.body_parameter_type = "json"
+                name = self._get_component_name(parameter.name, component_instance)
+                self.body_json_parameter[name] = parameter
+                self._duplicated_check_body()
+            elif issubclass(component_type, Body) or parameter.name == body_parameter:
+                self._duplicated_check_body_parameter()
+                if is_subclass_safe(intace_origin, Collection):
                     self.body_parameter_type = "json"
+                else:
+                    self.body_parameter_type = "data"
                 self.body_parameter = parameter
                 self._duplicated_check_body()
-            elif issubclass(component_type, aiohttp.ClientResponse):
+            elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
+                intace_origin, aiohttp.ClientResponse
+            ):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
@@ -454,19 +458,29 @@ class RequestCore:
 
         # Header
         for _name, _parameter in self.header_parameter.items():
+            # When method argument is None, it can cause an exception during the parsing process.
+            if bounded_argument.get(_parameter.name) is None:
+                continue
             self.headers[_name] = bounded_argument.get(_parameter.name)
 
         # Parameter
         for _name, _parameter in self.query_parameter.items():
+            # When method argument is None, it can cause an exception during the parsing process.
+            if bounded_argument.get(_parameter.name) is None:
+                continue
             self.params[_name] = bounded_argument.get(_parameter.name)
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is not None:  # self.is_body
+        if self.is_formal_form and self.body_parameter is None:  # self.is_body
             form_data = aiohttp.FormData()
             for _name, _parameter in self.body_form_parameter.items():
                 form_data.add_field(_name, bounded_argument.get(_parameter.name))
             self.body = form_data
+        elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
+            self.body = {
+                _name: bounded_argument.get(_parameter.name) for _name, _parameter in self.body_json_parameter.items()
+            }
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
 
@@ -520,6 +534,7 @@ class RequestCore:
             and other.query_parameter == self.query_parameter
             and other.path_parameter == self.path_parameter
             and other.body_form_parameter == self.body_form_parameter
+            and other.body_json_parameter == self.body_json_parameter
             and other.body_parameter_type == self.body_parameter_type
             and other.body_parameter == self.body_parameter
             and other._before_hook == self._before_hook
@@ -578,9 +593,10 @@ def request(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     form_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
@@ -602,7 +618,7 @@ def request(
         Request parameters.
     headers: Optional[dict[str, Any]]
         Request headers.
-    body: Optional[Collection[Any] | aiohttp.FormData]
+    body: Optional[Any | aiohttp.FormData]
         Request body.
     directly_response: bool
         Returns a `aiohttp.ClientResponse` without executing the function's body statement.
@@ -612,6 +628,8 @@ def request(
         Function parameter names used in the query(parameter)
     form_parameter: list[str]
         Function parameter names used in body form.
+    body_json_parameter: list[str]
+        Function parameter names used in body json.
     path_parameter: list[str]
         Function parameter names used in the path.
     body_parameter: str
@@ -639,6 +657,7 @@ def request(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -655,10 +674,11 @@ def get(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -677,6 +697,7 @@ def get(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -693,10 +714,11 @@ def post(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -715,6 +737,7 @@ def post(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -731,10 +754,11 @@ def options(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -754,6 +778,7 @@ def options(
             query_parameter=query_parameter,
             form_parameter=form_parameter,
             path_parameter=path_parameter,
+            body_json_parameter=body_json_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
             **request_kwargs,
@@ -769,10 +794,11 @@ def put(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -791,6 +817,7 @@ def put(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
@@ -807,10 +834,11 @@ def delete(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Collection[Any]] = None,
+    body: Optional[aiohttp.FormData | Any] = None,
     header_parameter: list[str] = None,
     query_parameter: list[str] = None,
     form_parameter: list[str] = None,
+    body_json_parameter: list[str] = None,
     path_parameter: list[str] = None,
     body_parameter: Optional[str] = None,
     response_parameter: list[str] = None,
@@ -829,6 +857,7 @@ def delete(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
