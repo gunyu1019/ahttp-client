@@ -176,4 +176,4 @@ def pydantic_response_model(
 
 
 # get_pydantic_response_model name had been changed to pydantic_model
-get_pydantic_response_model = pydantic_model
+get_pydantic_response_model = pydantic_response_model
