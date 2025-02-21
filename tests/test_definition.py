@@ -114,9 +114,18 @@ def test_component_custom_name(test_method_component_custom_name):
     assert "test_query" not in test_method_component_custom_name.query_parameter
     assert "test_form" not in test_method_component_custom_name.body_form_parameter
 
-    assert test_method_component_custom_name.header_parameter["custom_header_name"].name == "test_header"
-    assert test_method_component_custom_name.query_parameter["TestQuery"].name == "test_query"
-    assert test_method_component_custom_name.body_form_parameter["testForm"].name == "test_form"
+    assert (
+        test_method_component_custom_name.header_parameter["custom_header_name"].name
+        == "test_header"
+    )
+    assert (
+        test_method_component_custom_name.query_parameter["TestQuery"].name
+        == "test_query"
+    )
+    assert (
+        test_method_component_custom_name.body_form_parameter["testForm"].name
+        == "test_form"
+    )
 
 
 def test_body_unsupported_custom_name():

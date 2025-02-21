@@ -48,7 +48,9 @@ if TYPE_CHECKING:
         @property
         def __func__(self) -> Callable[[T, CallableT], CallableR]: ...
 
-    MultipleHookT = BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    MultipleHookT = (
+        BoundedMethod[T, CallableT, CallableR] | Callable[[CallableT], CallableR]
+    )
 
 
 def multiple_hook(

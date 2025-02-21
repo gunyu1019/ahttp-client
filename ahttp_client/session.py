@@ -128,7 +128,9 @@ class Session:
         return response
 
     @_special_method
-    async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+    async def before_request(
+        self, request: RequestCore, path: str
+    ) -> tuple[RequestCore, str]:
         """A special method that acts as a session local pre-invoke hook.
         This is similar to :meth:`RequestCore.before_request`.
 
@@ -150,7 +152,9 @@ class Session:
         pass
 
     @_special_method
-    async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse | T:
+    async def after_request(
+        self, response: aiohttp.ClientResponse
+    ) -> aiohttp.ClientResponse | T:
         """A special method that acts as a session local post-invoke.
         This is similar to :meth:`RequestCore.after_request`.
 
@@ -172,7 +176,9 @@ class Session:
         pass
 
     @classmethod
-    def single_session(cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs):
+    def single_session(
+        cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs
+    ):
         """A single session for one request.
 
         Parameters
@@ -197,7 +203,9 @@ class Session:
         def decorator(func: RequestFunction):
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, loop=loop, _is_single_session=True, **session_kwargs)
+                client = cls(
+                    base_url, loop=loop, _is_single_session=True, **session_kwargs
+                )
                 func.session = client
                 response = await func(*args, **kwargs)
                 if not client.closed:

@@ -21,7 +21,9 @@ class PydanticModel(pydantic.BaseModel):
     subway: str
     subway_id: int
 
-    model_config = pydantic.ConfigDict(alias_generator=pydantic.alias_generators.to_camel)
+    model_config = pydantic.ConfigDict(
+        alias_generator=pydantic.alias_generators.to_camel
+    )
 
 
 class MetroAPI(Session):
