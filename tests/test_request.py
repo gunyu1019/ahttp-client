@@ -78,11 +78,5 @@ def test_private_component(test_method_for_private_parameter):
     assert "private_header" in test_method_for_private_parameter.headers
     assert "private_query" in test_method_for_private_parameter.params
 
-    assert (
-        test_method_for_private_parameter.headers.get("private_header")
-        == "__PRIVATE_HEADER__"
-    )
-    assert (
-        test_method_for_private_parameter.params.get("private_query")
-        == "__PRIVATE_QUERY__"
-    )
+    assert test_method_for_private_parameter.headers.get("private_header") == "__PRIVATE_HEADER__"
+    assert test_method_for_private_parameter.params.get("private_query") == "__PRIVATE_QUERY__"

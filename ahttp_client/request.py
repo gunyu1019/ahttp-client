@@ -132,11 +132,7 @@ class RequestCore:
 
         # method is related to Session class.
         if len(self._signature.parameters) < 1:
-            raise TypeError(
-                "%s missing 1 required parameter: 'self(extends Session)'".format(
-                    self.func.__name__
-                )
-            )
+            raise TypeError("%s missing 1 required parameter: 'self(extends Session)'".format(self.func.__name__))
 
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.".format(func.__name__))
@@ -379,22 +375,12 @@ class RequestCore:
         """
         for parameter in self._signature.parameters.values():
             annotation = parameter.annotation
-            origin_type = (
-                annotation.__origin__
-                if is_annotated_parameter(annotation)
-                else annotation
-            )
-            metadata = (
-                annotation.__metadata__
-                if is_annotated_parameter(annotation)
-                else annotation
-            )
+            origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
+            metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: (
-                type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse]
-            ) = EmptyComponent
+            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -406,15 +392,11 @@ class RequestCore:
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(
-                    annotation, aiohttp.ClientResponse
-                ):
+                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
                     component_type = annotation
                     break
 
-            intace_origin = [
-                get_origin_for_generic(t) for t in make_collection(separated_origin)
-            ]
+            intace_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
 
             if issubclass(component_type, Header) or parameter.name in header_parameter:
                 name = self._get_component_name(parameter.name, component_instance)
@@ -430,10 +412,7 @@ class RequestCore:
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
                 self._duplicated_check_body()
-            elif (
-                issubclass(component_type, BodyJson)
-                or parameter.name in body_json_parameter
-            ):
+            elif issubclass(component_type, BodyJson) or parameter.name in body_json_parameter:
                 self._duplicated_check_body_parameter()
                 self.body_parameter_type = "json"
                 name = self._get_component_name(parameter.name, component_instance)
@@ -465,9 +444,7 @@ class RequestCore:
 
             parameter_without_return_annotation.append(parameter)
 
-        self._signature = self._signature.replace(
-            parameters=parameter_without_return_annotation
-        )
+        self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
         for parameter_name in self.response_parameter:
             if parameter_name not in self.func.__annotations__.keys():
                 continue
@@ -475,9 +452,7 @@ class RequestCore:
             del self.func.__annotations__[parameter_name]
         self.__annotations__ = self.func.__annotations__
 
-    def _fill_parameter(
-        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
-    ) -> None:
+    def _fill_parameter(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
         """Fill HTTP request component from bounded argument
 
         Parameters
@@ -511,8 +486,7 @@ class RequestCore:
             self.body = form_data
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
             self.body = {
-                _name: bounded_argument.get(_parameter.name)
-                for _name, _parameter in self.body_json_parameter.items()
+                _name: bounded_argument.get(_parameter.name) for _name, _parameter in self.body_json_parameter.items()
             }
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
@@ -535,9 +509,7 @@ class RequestCore:
 
         return request_kwargs
 
-    def _get_request_path(
-        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
-    ) -> str:
+    def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
         """Get final HTTP path from bounded argument
 
         Parameters
@@ -595,9 +567,7 @@ class RequestCore:
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(
-                self.session, req_obj, formatted_path
-            )
+            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
         response = await self.session._make_request(req_obj, formatted_path)
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)

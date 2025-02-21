@@ -18,11 +18,5 @@ def test_single_session(test_method_for_single_session):
     assert hasattr(test_method_for_single_session, "__core__")
     assert isinstance(test_method_for_single_session.__core__, RequestCore)
 
-    assert (
-        test_method_for_single_session.before_hook
-        == test_method_for_single_session.__core__.before_hook
-    )
-    assert (
-        test_method_for_single_session.after_hook
-        == test_method_for_single_session.__core__.after_hook
-    )
+    assert test_method_for_single_session.before_hook == test_method_for_single_session.__core__.before_hook
+    assert test_method_for_single_session.after_hook == test_method_for_single_session.__core__.after_hook
