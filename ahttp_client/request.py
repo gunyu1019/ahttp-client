@@ -320,7 +320,7 @@ class RequestCore:
             self.body_parameter is not None
             or sum(
                 [
-                    self.body_parameter,
+                    self.body_parameter is not None,
                     len(self.body_form_parameter) > 0,
                     len(self.body_json_parameter) > 0,
                 ]
