@@ -316,7 +316,7 @@ class RequestCore:
         TypeError
             Body parameter is already filled.
         """
-        if self.body_parameter is not None or len(self.body_form_parameter) > 0 or len(self.body_json_parameter) > 0:
+        if sum(self.body_parameter is not None, len(self.body_form_parameter) > 0, len(self.body_json_parameter) > 0) > 1:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
     # Setup
