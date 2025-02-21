@@ -317,9 +317,10 @@ class RequestCore:
             Body parameter is already filled.
         """
         if (
-            sum(
+            self.body_parameter is not None
+            or sum(
                 [
-                    self.body_parameter is not None,
+                    self.body_parameter,
                     len(self.body_form_parameter) > 0,
                     len(self.body_json_parameter) > 0,
                 ]
