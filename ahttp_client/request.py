@@ -308,7 +308,7 @@ class RequestCore:
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
 
-    def _duplicated_check_body_parameter(self) -> Optional[NoReturn]:
+    def _duplicated_check_body_parameter(self, filled: bool = False) -> Optional[NoReturn]:
         """Check if body parameter is already in fill.
 
         Raises
@@ -316,7 +316,22 @@ class RequestCore:
         TypeError
             Body parameter is already filled.
         """
-        if self.body_parameter is not None or len(self.body_form_parameter) > 0 or len(self.body_json_parameter) > 0:
+        if filled and self.body_parameter is not None:
+            raise TypeError("Duplicated Form Parameter or Body Parameter.")
+
+        if all(
+            [
+                not filled,
+                sum(
+                    [
+                        self.body_parameter is not None,
+                        len(self.body_form_parameter) > 0,
+                        len(self.body_json_parameter) > 0,
+                    ]
+                )
+                > 1,
+            ]
+        ):
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
     # Setup
@@ -400,24 +415,25 @@ class RequestCore:
             elif issubclass(component_type, Path) or parameter.name in path_parameter:
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, Form) or parameter.name in form_parameter:
-                self._duplicated_check_body_parameter()
                 self.body_parameter_type = "data"
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
+                self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or parameter.name in body_json_parameter:
-                self._duplicated_check_body_parameter()
                 self.body_parameter_type = "json"
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_json_parameter[name] = parameter
+                self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
-                self._duplicated_check_body_parameter()
+                self._duplicated_check_body_parameter(True)
                 if is_subclass_safe(intace_origin, Collection):
                     self.body_parameter_type = "json"
                 else:
                     self.body_parameter_type = "data"
                 self.body_parameter = parameter
+                self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
                 intace_origin, aiohttp.ClientResponse

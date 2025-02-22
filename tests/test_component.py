@@ -55,6 +55,18 @@ def test_duplicated_body_type():
     assert str(error_message.value) == "Duplicated Form Parameter or Body Parameter."
 
 
+def test_not_duplicated_body_type():
+    @request("GET", "/test_path")
+    async def test_request(
+        session: Session,
+        test_body_1: int | BodyJson = None,
+        test_body_2: list[Any] | BodyJson = None,
+    ) -> None:
+        pass
+
+    assert len(test_request.body_json_parameter) == 2
+
+
 def test_duplicated_body():
     sample_body = aiohttp.FormData()
     with pytest.raises(TypeError) as error_message:
