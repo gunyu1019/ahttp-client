@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ahttp_client"
+dynamic = ["version", "dependencies"]
+description = "A framework for easy asynchronous HTTP request calling with decorations"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    {name = "gunyu1019", email = "gunyu1019@yhs.kr"}
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Natural Language :: Korean",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov"
+]
+lint = [
+    "pycodestyle",
+    "black"
+]
+docs = [
+    "Sphinx",
+    "sphinxawesome-theme",
+    "sphinx-intl"
+]
+
+[project.urls]
+Homepage = "https://github.com/gunyu1019/ahttp-client"
+"Issue Tracker" = "https://github.com/gunyu1019/ahttp-client/issues"
+
+[tool.setuptools]
+packages = [
+    "ahttp_client",
+    "ahttp_client.extension"
+]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "ahttp_client.__version__"}
+dependencies = { file = "requirements.txt"}
