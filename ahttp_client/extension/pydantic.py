@@ -31,10 +31,13 @@ from types import GenericAlias
 from typing import overload, TypeVar, TYPE_CHECKING
 
 from .multiple_hook import multiple_hook
+from ..component import EmptyComponent
+from ..utils import *
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any, Optional, Literal, Callable
 
+    from ..component import Component
     from ..request import RequestCore
 
 try:
@@ -59,14 +62,26 @@ def _parsing_json_to_model(
 ) -> Optional[list[BaseModelT]]: ...
 
 
+@overload
 def _parsing_json_to_model(
     data: dict[Any, ...],
+    model: type[BaseModelT],
+    /,
+    *,
+    strict: Optional[bool] = None,
+    from_attributes: Optional[bool] = None,
+    context: Optional[dict[str, Any]] = None,
+) -> Optional[BaseModelT]: ...
+
+
+def _parsing_json_to_model(
+    data: dict[Any, ...] | list[Any],
     model: type[BaseModelT],
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
-) -> Optional[BaseModelT]:
+) -> Optional[BaseModelT | list[BaseModelT]]:
     if isinstance(data, Sequence):
         validated_data = [
             model.model_validate(
@@ -78,7 +93,7 @@ def _parsing_json_to_model(
             for x in data
         ]
     elif isinstance(data, type(None)):
-        return
+        return None
     else:
         validated_data = model.model_validate(
             obj=data,
@@ -87,6 +102,91 @@ def _parsing_json_to_model(
             context=context,
         )
     return validated_data
+
+
+@overload
+def _parsing_model_to_json(
+    data: Optional[list[BaseModelT]],
+    /,
+    *,
+    context: Optional[dict[str, Any]] = None,
+    fallback: Optional[Callable[[Any], Any]] = None,
+) -> Optional[list[dict[str, Any]]]:
+    ...
+
+
+@overload
+def _parsing_model_to_json(
+        data: Optional[BaseModelT],
+        /,
+        *,
+        context: Optional[dict[str, Any]] = None,
+        fallback: Optional[Callable[[Any], Any]] = None,
+) -> Optional[dict[str, Any]]:
+    ...
+
+
+def _parsing_model_to_json(
+    data: Optional[BaseModelT | list[BaseModelT]],
+    /,
+    *,
+   context: Optional[dict[str, Any]] = None,
+   fallback: Optional[Callable[[Any], Any]] = None,
+) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
+    if isinstance(data, Sequence):
+        dumped_data = [
+            _parsing_model_to_json(
+                x,
+                context=context,
+                fallback=fallback,
+            )
+            for x in data
+        ]
+    elif isinstance(data, type(None)):
+        return None
+    else:
+        dumped_data = data.model_dump(
+            context=context,
+            fallback=fallback,
+        )
+    return dumped_data
+
+
+def is_pydantic_model(data: Any) -> bool:
+    if isinstance(data, Sequence):
+        return is_pydantic_model(data[0])
+    return isinstance(data, pydantic.BaseModel)
+
+
+def pydantic_request_model(
+    index: Optional[int] = None,
+    *,
+    context: Optional[Any] = None,
+    fallback: Optional[Callable[[Any], Any]] = None,
+):
+    if not is_pydantic:
+        raise ModuleNotFoundError("pydantic is not installed.")
+
+    def decorator(func: RequestCore) -> RequestCore:
+        @multiple_hook(func.before_hook, index=index)
+        async def wrapper(_, request: RequestCore, path: str):
+            for name, value in request.headers.items():
+                if not is_pydantic_model(value):
+                    continue
+                request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
+
+            for name, value in request.params.items():
+                if not is_pydantic_model(value):
+                    continue
+                request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
+
+            if is_pydantic_model(request.body):
+                request.body = _parsing_model_to_json(request.body, context=context, fallback=fallback)
+            return request, path
+
+        return func
+
+    return decorator
 
 
 def pydantic_response_model(
