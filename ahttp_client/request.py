@@ -293,9 +293,7 @@ class RequestCore:
 
         if isinstance(self.body, Collection):
             return "json"
-        elif self.body is not None:
-            return "data"
-        return
+        return "data"
 
     def _duplicated_check_body(self) -> Optional[NoReturn]:
         """Check if body is already in fill.

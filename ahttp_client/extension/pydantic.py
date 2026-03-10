@@ -164,26 +164,41 @@ def pydantic_request_model(
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ):
+    """A decorator that the `request` objects to provide parsing from raw data into a pydantic model.
+
+    Parameters
+    ----------
+    index : Optional[int]
+        Order of invocation in invoke-hook.
+        The order is recommended to be last after the status check.
+    context : Optional[Any]
+        Same feature as parameter of pydantic.BaseModel.model_dump method named context.
+    fallback : Optional[Callable[[Any], Any]]
+        Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
+    """
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
 
     def decorator(func: RequestCore) -> RequestCore:
+        # If the Pydantic model is serialized, the body parameter type must be json, and all others must be data.
+        # Therefore, as the argument state is abstract, it was defined as None.
+        if func.body_parameter is not None:
+            func.body_parameter_type = None
+
         @multiple_hook(func.before_hook, index=index)
         async def wrapper(_, request: RequestCore, path: str):
             for name, value in request.headers.items():
-                print(value)
                 if not is_pydantic_model(value):
                     continue
                 request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
 
             for name, value in request.params.items():
-                print(value)
                 if not is_pydantic_model(value):
                     continue
                 request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
 
-            print(request.body)
             if is_pydantic_model(request.body):
+                request.body_parameter_type = "json"
                 request.body = _parsing_model_to_json(request.body, context=context, fallback=fallback)
             return request, path
 
