@@ -70,7 +70,7 @@ def test_method_component_custom_name():
         _: Session,
         test_header: Annotated[str, Header.custom_name("custom_header_name")],
         test_query: Annotated[int, Query.to_pascal()],
-        test_form: Annotated[str, Form.to_camel()],
+        test_form: Annotated[str, BodyForm.to_camel()],
     ) -> None:
         pass
 

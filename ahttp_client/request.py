@@ -33,7 +33,7 @@ import aiohttp
 from .body import Body
 from .body_json import BodyJson
 from .component import Component, EmptyComponent
-from .form import Form
+from .body_form import BodyForm
 from .header import Header
 from .path import Path
 from .query import Query
@@ -137,7 +137,7 @@ class RequestCore:
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.".format(func.__name__))
 
-        # Components
+        # Static HTTP Components
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
         self.body: Optional[aiohttp.FormData | Any] = body
@@ -414,7 +414,7 @@ class RequestCore:
                 self.query_parameter[name] = parameter
             elif issubclass(component_type, Path) or parameter.name in path_parameter:
                 self.path_parameter[parameter.name] = parameter
-            elif issubclass(component_type, Form) or parameter.name in form_parameter:
+            elif issubclass(component_type, BodyForm) or parameter.name in form_parameter:
                 self.body_parameter_type = "data"
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter

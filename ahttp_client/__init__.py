@@ -25,7 +25,7 @@ from typing import NamedTuple, Literal, Optional
 
 from .body import Body
 from .body_json import BodyJson
-from .form import Form
+from .body_form import BodyForm
 from .header import Header
 from .path import Path
 from .query import Query
