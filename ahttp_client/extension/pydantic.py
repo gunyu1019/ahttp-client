@@ -133,7 +133,7 @@ def _parsing_model_to_json(
    context: Optional[dict[str, Any]] = None,
    fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
-    if isinstance(data, Sequence):
+    if isinstance(data, (list, tuple)):
         dumped_data = [
             _parsing_model_to_json(
                 x,
@@ -153,7 +153,7 @@ def _parsing_model_to_json(
 
 
 def is_pydantic_model(data: Any) -> bool:
-    if isinstance(data, Sequence):
+    if isinstance(data, (list, tuple)):
         return is_pydantic_model(data[0])
     return isinstance(data, pydantic.BaseModel)
 
@@ -171,15 +171,18 @@ def pydantic_request_model(
         @multiple_hook(func.before_hook, index=index)
         async def wrapper(_, request: RequestCore, path: str):
             for name, value in request.headers.items():
+                print(value)
                 if not is_pydantic_model(value):
                     continue
                 request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
 
             for name, value in request.params.items():
+                print(value)
                 if not is_pydantic_model(value):
                     continue
                 request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
 
+            print(request.body)
             if is_pydantic_model(request.body):
                 request.body = _parsing_model_to_json(request.body, context=context, fallback=fallback)
             return request, path
