@@ -174,13 +174,13 @@ def pydantic_request_model(
                 print(value)
                 if not is_pydantic_model(value):
                     continue
-                request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
+                request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
 
             for name, value in request.params.items():
                 print(value)
                 if not is_pydantic_model(value):
                     continue
-                request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback)
+                request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
 
             print(request.body)
             if is_pydantic_model(request.body):
