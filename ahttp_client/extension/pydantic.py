@@ -24,20 +24,17 @@ SOFTWARE.
 from __future__ import annotations
 
 import inspect
-import aiohttp
-
 from collections.abc import Sequence
-from types import GenericAlias
 from typing import overload, TypeVar, TYPE_CHECKING
 
+import aiohttp
+
 from .multiple_hook import multiple_hook
-from ..component import EmptyComponent
 from ..utils import *
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Literal, Callable
+    from typing import Any, Optional, Callable
 
-    from ..component import Component
     from ..request import RequestCore
 
 try:
@@ -111,27 +108,25 @@ def _parsing_model_to_json(
     *,
     context: Optional[dict[str, Any]] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
-) -> Optional[list[dict[str, Any]]]:
-    ...
+) -> Optional[list[dict[str, Any]]]: ...
 
 
 @overload
 def _parsing_model_to_json(
-        data: Optional[BaseModelT],
-        /,
-        *,
-        context: Optional[dict[str, Any]] = None,
-        fallback: Optional[Callable[[Any], Any]] = None,
-) -> Optional[dict[str, Any]]:
-    ...
+    data: Optional[BaseModelT],
+    /,
+    *,
+    context: Optional[dict[str, Any]] = None,
+    fallback: Optional[Callable[[Any], Any]] = None,
+) -> Optional[dict[str, Any]]: ...
 
 
 def _parsing_model_to_json(
     data: Optional[BaseModelT | list[BaseModelT]],
     /,
     *,
-   context: Optional[dict[str, Any]] = None,
-   fallback: Optional[Callable[[Any], Any]] = None,
+    context: Optional[dict[str, Any]] = None,
+    fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
     if isinstance(data, (list, tuple)):
         dumped_data = [

@@ -434,7 +434,7 @@ class RequestCore:
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
-                    instance_origin, aiohttp.ClientResponse
+                instance_origin, aiohttp.ClientResponse
             ):
                 self.response_parameter.append(parameter.name)
 
