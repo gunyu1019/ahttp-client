@@ -4,8 +4,6 @@ import aiohttp
 from ahttp_client import request, Session, Query
 from typing import Any, Annotated
 
-loop = asyncio.get_event_loop()
-
 
 class MetroAPI(Session):
     def __init__(self, loop: asyncio.AbstractEventLoop):
@@ -21,10 +19,10 @@ class MetroAPI(Session):
 
 
 async def main():
-    async with MetroAPI(loop) as client:
+    async with MetroAPI() as client:
         response = await client.station_search_with_query(station_name="강남")
         data = await response.json()
         print(data)
 
 
-loop.run_until_complete(main())
+asyncio.run(main())
