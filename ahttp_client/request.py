@@ -33,7 +33,7 @@ import aiohttp
 from .body import Body
 from .body_json import BodyJson
 from .component import Component, EmptyComponent
-from .form import Form
+from .body_form import BodyForm
 from .header import Header
 from .path import Path
 from .query import Query
@@ -137,7 +137,7 @@ class RequestCore:
         if not iscoroutinefunction(func):
             raise TypeError("function %s must be coroutine.".format(func.__name__))
 
-        # Components
+        # Static HTTP Components
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
         self.body: Optional[aiohttp.FormData | Any] = body
@@ -293,9 +293,7 @@ class RequestCore:
 
         if isinstance(self.body, Collection):
             return "json"
-        elif self.body is not None:
-            return "data"
-        return
+        return "data"
 
     def _duplicated_check_body(self) -> Optional[NoReturn]:
         """Check if body is already in fill.
@@ -404,7 +402,7 @@ class RequestCore:
                     component_type = annotation
                     break
 
-            intace_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
+            instance_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
 
             if issubclass(component_type, Header) or parameter.name in header_parameter:
                 name = self._get_component_name(parameter.name, component_instance)
@@ -414,7 +412,7 @@ class RequestCore:
                 self.query_parameter[name] = parameter
             elif issubclass(component_type, Path) or parameter.name in path_parameter:
                 self.path_parameter[parameter.name] = parameter
-            elif issubclass(component_type, Form) or parameter.name in form_parameter:
+            elif issubclass(component_type, BodyForm) or parameter.name in form_parameter:
                 self.body_parameter_type = "data"
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
@@ -428,7 +426,7 @@ class RequestCore:
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
-                if is_subclass_safe(intace_origin, Collection):
+                if is_subclass_safe(instance_origin, Collection):
                     self.body_parameter_type = "json"
                 else:
                     self.body_parameter_type = "data"
@@ -436,7 +434,7 @@ class RequestCore:
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
-                intace_origin, aiohttp.ClientResponse
+                instance_origin, aiohttp.ClientResponse
             ):
                 self.response_parameter.append(parameter.name)
 

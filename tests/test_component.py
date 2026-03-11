@@ -10,7 +10,7 @@ def test_method_form_data_type_1():
     @request("GET", "/test_path")
     async def test_request(
         session: Session,
-        test_body: str | Form = None,
+        test_body: str | BodyForm = None,
     ) -> None:
         pass
 
@@ -47,7 +47,7 @@ def test_duplicated_body_type():
         @request("GET", "/test_path")
         async def test_request(
             session: Session,
-            test_body_1: Form | Body = None,
+            test_body_1: BodyForm | Body = None,
             test_body_2: list[Any] | Body = None,
         ) -> None:
             pass

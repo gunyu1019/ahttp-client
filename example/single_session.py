@@ -1,11 +1,8 @@
 import asyncio
-from typing import NamedTuple
-
 import aiohttp
 
 from ahttp_client import request, Session, Query
-
-loop = asyncio.get_event_loop()
+from typing import NamedTuple
 
 
 class StationInfo(NamedTuple):
@@ -34,4 +31,4 @@ async def main():
     print(len(data))
 
 
-loop.run_until_complete(main())
+asyncio.run(main())

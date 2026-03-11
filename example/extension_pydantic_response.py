@@ -1,13 +1,11 @@
 import asyncio
 import aiohttp
 import pydantic
-import pydantic.alias_generators
 
-from ahttp_client import request, Session, Query
-from ahttp_client.extension import get_pydantic_response_model
+from ahttp_client import request, Session, Query, Body
+from ahttp_client.extension import pydantic_response_model
+from pydantic.alias_generators import to_camel
 from typing import Annotated
-
-loop = asyncio.get_event_loop()
 
 
 class PydanticModel(pydantic.BaseModel):
@@ -21,25 +19,25 @@ class PydanticModel(pydantic.BaseModel):
     subway: str
     subway_id: int
 
-    model_config = pydantic.ConfigDict(alias_generator=pydantic.alias_generators.to_camel)
+    model_config = pydantic.ConfigDict(alias_generator=to_camel)
 
 
 class MetroAPI(Session):
-    def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop=loop)
+    def __init__(self):
+        super().__init__("https://api.yhs.kr")
 
-    @get_pydantic_response_model()
+    @pydantic_response_model()
     @request("GET", "/metro/station", directly_response=True)
     async def station_search_with_query(
-        self, response: aiohttp.ClientResponse, name: Annotated[str, Query()]
+        self, response: aiohttp.ClientResponse, name: Annotated[str, Query]
     ) -> PydanticModel:
         pass
 
 
 async def main():
-    async with MetroAPI(loop) as client:
+    async with MetroAPI() as client:
         data = await client.station_search_with_query(name="강남")
         print(data)
 
 
-loop.run_until_complete(main())
+asyncio.run(main())

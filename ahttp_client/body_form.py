@@ -24,12 +24,12 @@ SOFTWARE.
 from .component import Component
 
 
-class Form(Component):
+class BodyForm(Component):
     """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
 
     Examples
     --------
-    >>> def function(data: str | Form):
+    >>> def function(data: str | BodyForm):
     ...    pass
     """
 
