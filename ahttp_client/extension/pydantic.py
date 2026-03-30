@@ -33,9 +33,13 @@ from .multiple_hook import multiple_hook
 from ..utils import *
 
 if TYPE_CHECKING:
+    import asyncio
+
     from typing import Any, Optional, Callable
 
-    from ..request import RequestCore
+    from ..query import Query
+    from ..request import RequestCore, request
+    from ..session import Session
 
 try:
     import pydantic
@@ -330,7 +334,7 @@ def pydantic_response_model(
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
-    ...    @pydantic_response_model(ResponseModel)
+    ...    @pydantic_response_model()
     ...    @request("GET", "/metro/station")
     ...    async def station_search_with_query(
     ...            self,
