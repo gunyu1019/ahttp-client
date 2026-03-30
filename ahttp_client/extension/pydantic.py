@@ -24,20 +24,17 @@ SOFTWARE.
 from __future__ import annotations
 
 import inspect
-import aiohttp
-
 from collections.abc import Sequence
-from types import GenericAlias
 from typing import overload, TypeVar, TYPE_CHECKING
 
+import aiohttp
+
 from .multiple_hook import multiple_hook
-from ..component import EmptyComponent
 from ..utils import *
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Literal, Callable
+    from typing import Any, Optional, Callable
 
-    from ..component import Component
     from ..request import RequestCore
 
 try:
