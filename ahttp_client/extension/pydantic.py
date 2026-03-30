@@ -58,7 +58,9 @@ def _parsing_json_to_model(
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[list[BaseModelT]]: ...
 
 
@@ -70,7 +72,9 @@ def _parsing_json_to_model(
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[BaseModelT]: ...
 
 
@@ -80,7 +84,9 @@ def _parsing_json_to_model(
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
     if isinstance(data, Sequence):
         validated_data = [
@@ -89,6 +95,8 @@ def _parsing_json_to_model(
                 strict=strict,
                 from_attributes=from_attributes,
                 context=context,
+                by_alias=by_alias,
+                by_name=by_name,
             )
             for x in data
         ]
@@ -100,6 +108,8 @@ def _parsing_json_to_model(
             strict=strict,
             from_attributes=from_attributes,
             context=context,
+            by_alias=by_alias,
+            by_name=by_name,
         )
     return validated_data
 
@@ -114,7 +124,7 @@ def _parsing_model_to_json(
     exclude_defaults: bool = False,
     exclude_none: bool = False,
     exclude_computed_fields: bool = False,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[list[dict[str, Any]]]:
     ...
@@ -130,7 +140,7 @@ def _parsing_model_to_json(
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         exclude_computed_fields: bool = False,
-        context: Optional[dict[str, Any]] = None,
+        context: Optional[Any] = None,
         fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any]]:
     ...
@@ -145,7 +155,7 @@ def _parsing_model_to_json(
     exclude_defaults: bool = False,
     exclude_none: bool = False,
     exclude_computed_fields: bool = False,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
     if isinstance(data, (list, tuple)):
@@ -211,7 +221,7 @@ def pydantic_request_model(
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_none.
     exclude_computed_fields : bool
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_computed_fields.
-    context : Optional[Any]
+    context : Optional[dict[str, Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named context.
     fallback : Optional[Callable[[Any], Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
@@ -259,7 +269,7 @@ def pydantic_request_model(
             if is_pydantic_model(request.body):
                 request.body_parameter_type = "json"
                 request.body = _parsing_model_to_json(
-                    value,
+                    request.body,
                     by_alias=by_alias,
                     exclude_unset=exclude_unset,
                     exclude_defaults=exclude_defaults,
@@ -282,7 +292,9 @@ def pydantic_response_model(
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
-    context: Optional[dict[str, Any]] = None,
+    context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ):
     """Create a request method to return a model extended by pydantic.BaseModel
 
@@ -299,8 +311,12 @@ def pydantic_response_model(
         Same feature as parameter of pydantic.BaseModel.model_validate method named strict.
     from_attributes: Optional[bool]
         Same feature as parameter of pydantic.BaseModel.model_validate method named from_attributes.
-    context: Optional[dict[str, Any]]
+    context: Optional[Any]
         Same feature as parameter of pydantic.BaseModel.model_validate method named context.
+    by_alias: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named by_alias.
+    by_name: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named by_name.
 
     Warnings
     --------
@@ -353,6 +369,8 @@ def pydantic_response_model(
                 strict=strict,
                 from_attributes=from_attributes,
                 context=context,
+                by_alias=by_alias,
+                by_name=by_name,
             )
             return result
 
