@@ -24,10 +24,10 @@ SOFTWARE.
 from __future__ import annotations
 
 import inspect
+import aiohttp
+
 from collections.abc import Sequence
 from typing import overload, TypeVar, TYPE_CHECKING
-
-import aiohttp
 
 from .multiple_hook import multiple_hook
 from ..utils import *
@@ -127,8 +127,7 @@ def _parsing_model_to_json(
     exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
-) -> Optional[list[dict[str, Any]]]:
-    ...
+) -> Optional[list[dict[str, Any]]]: ...
 
 
 @overload

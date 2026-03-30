@@ -32,7 +32,6 @@ from .query import Query
 from .request import RequestCore, request, get, post, options, put, delete
 from .session import Session
 
-
 __title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
