@@ -132,18 +132,17 @@ def _parsing_model_to_json(
 
 @overload
 def _parsing_model_to_json(
-        data: Optional[BaseModelT],
-        /,
-        *,
-        by_alias: bool | None = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-        exclude_computed_fields: bool = False,
-        context: Optional[Any] = None,
-        fallback: Optional[Callable[[Any], Any]] = None,
-) -> Optional[dict[str, Any]]:
-    ...
+    data: Optional[BaseModelT],
+    /,
+    *,
+    by_alias: bool | None = None,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    exclude_computed_fields: bool = False,
+    context: Optional[Any] = None,
+    fallback: Optional[Callable[[Any], Any]] = None,
+) -> Optional[dict[str, Any]]: ...
 
 
 def _parsing_model_to_json(
@@ -249,7 +248,7 @@ def pydantic_request_model(
                     exclude_none=exclude_none,
                     exclude_computed_fields=exclude_computed_fields,
                     context=context,
-                    fallback=fallback
+                    fallback=fallback,
                 ).__str__()  # noqa
 
             for name, value in request.params.items():
@@ -263,7 +262,7 @@ def pydantic_request_model(
                     exclude_none=exclude_none,
                     exclude_computed_fields=exclude_computed_fields,
                     context=context,
-                    fallback=fallback
+                    fallback=fallback,
                 ).__str__()
 
             if is_pydantic_model(request.body):
@@ -276,7 +275,7 @@ def pydantic_request_model(
                     exclude_none=exclude_none,
                     exclude_computed_fields=exclude_computed_fields,
                     context=context,
-                    fallback=fallback
+                    fallback=fallback,
                 )
             return request, path
 
