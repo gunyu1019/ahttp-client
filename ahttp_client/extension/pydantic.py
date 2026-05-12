@@ -333,7 +333,7 @@ def pydantic_response_model(
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
     ...    @pydantic_response_model()
-    ...    @request("GET", "/metro/station")
+    ...    @request("GET", "/metro/station", directly_response=True)
     ...    async def station_search_with_query(
     ...            self,
     ...            response: aiohttp.ClientResponse,
