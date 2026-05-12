@@ -221,6 +221,8 @@ class RequestCore:
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook
 
+        new_cls.validation_parameter = self.validation_parameter
+
         new_cls._delete_response_annotation()
         return new_cls
 
@@ -472,11 +474,12 @@ class RequestCore:
             bounded_argument = bounded_argument.arguments
 
         # Validation
+        print(self.validation_parameter)
         for _name, _parameter in bounded_argument.items():
-            if _name in self.validation_parameter:
+            if _name in self.validation_parameter.keys():
                 value = bounded_argument[_name]
                 for func in self.validation_parameter[_name]:
-                    value = func(value)
+                    value = func(self.session, value)
                 bounded_argument[_name] = value
 
         # Header
