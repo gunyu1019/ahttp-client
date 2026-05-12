@@ -60,8 +60,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[list[BaseModelT]]: ...
 
 
@@ -74,8 +74,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[BaseModelT]: ...
 
 
@@ -86,8 +86,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
     if isinstance(data, (list, tuple)):
         validated_data = [
@@ -292,8 +292,8 @@ def pydantic_response_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ):
     """Create a request method to return a model extended by pydantic.BaseModel
 
