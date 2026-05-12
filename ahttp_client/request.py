@@ -619,6 +619,7 @@ class RequestCore:
                 self.validation_parameter[parameter_name] = []
             self.validation_parameter[parameter_name].append(func)
             return func
+
         return decorator
 
 
