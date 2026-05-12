@@ -220,7 +220,7 @@ def pydantic_request_model(
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_none.
     exclude_computed_fields : bool
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_computed_fields.
-    context : Optional[dict[str, Any]]
+    context : Optional[Any]
         Same feature as parameter of pydantic.BaseModel.model_dump method named context.
     fallback : Optional[Callable[[Any], Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
