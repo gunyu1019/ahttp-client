@@ -26,7 +26,7 @@ from __future__ import annotations
 import copy
 import inspect
 from asyncio import iscoroutinefunction
-from typing import TypeVar, TYPE_CHECKING
+from typing import TypeVar, TYPE_CHECKING, Callable
 
 import aiohttp
 
@@ -152,6 +152,7 @@ class RequestCore:
         self.body_parameter_type: Literal["json", "data"] | None = None
         self.body_parameter: Optional[inspect.Parameter] = None
 
+        self.validation_parameter: dict[str, list[Callable[..., Any]]] = dict()
         self.response_parameter: list[str] = response_parameter or list()
 
         self._before_hook: Optional[RequestBeforeHookFunction] = None
@@ -470,6 +471,14 @@ class RequestCore:
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
 
+        # Validation
+        for _name, _parameter in bounded_argument.items():
+            if _name in self.validation_parameter:
+                value = bounded_argument[_name]
+                for func in self.validation_parameter[_name]:
+                    value = func(value)
+                bounded_argument[_name] = value
+
         # Header
         for _name, _parameter in self.header_parameter.items():
             # When method argument is None, it can cause an exception during the parsing process.
@@ -575,7 +584,7 @@ class RequestCore:
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
-        response = await self.session._make_request(req_obj, formatted_path)
+        response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
 
@@ -597,6 +606,17 @@ class RequestCore:
     @property
     def __core__(self) -> Self:
         return self
+
+    def validation(self, parameter_name: str):
+        if not parameter_name:
+            raise SyntaxError("Parameter name is required")
+
+        def decorator(func):
+            if parameter_name not in self.validation_parameter:
+                self.validation_parameter[parameter_name] = []
+            self.validation_parameter[parameter_name].append(func)
+            return func
+        return decorator
 
 
 def request(
