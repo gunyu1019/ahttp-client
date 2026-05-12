@@ -79,7 +79,7 @@ def _parsing_json_to_model(
     from_attributes: Optional[bool] = None,
     context: Optional[dict[str, Any]] = None,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
-    if isinstance(data, Sequence):
+    if isinstance(data, (list, tuple)):
         validated_data = [
             model.model_validate(
                 obj=x,
