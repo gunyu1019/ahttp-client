@@ -24,18 +24,22 @@ SOFTWARE.
 from __future__ import annotations
 
 import inspect
+import aiohttp
+
 from collections.abc import Sequence
 from typing import overload, TypeVar, TYPE_CHECKING
-
-import aiohttp
 
 from .multiple_hook import multiple_hook
 from ..utils import *
 
 if TYPE_CHECKING:
+    import asyncio
+
     from typing import Any, Optional, Callable
 
-    from ..request import RequestCore
+    from ..query import Query
+    from ..request import RequestCore, request
+    from ..session import Session
 
 try:
     import pydantic
@@ -56,6 +60,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[list[BaseModelT]]: ...
 
 
@@ -68,6 +74,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[BaseModelT]: ...
 
 
@@ -78,6 +86,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
     if isinstance(data, (list, tuple)):
         validated_data = [
@@ -86,6 +96,8 @@ def _parsing_json_to_model(
                 strict=strict,
                 from_attributes=from_attributes,
                 context=context,
+                by_alias=by_alias,
+                by_name=by_name,
             )
             for x in data
         ]
@@ -97,6 +109,8 @@ def _parsing_json_to_model(
             strict=strict,
             from_attributes=from_attributes,
             context=context,
+            by_alias=by_alias,
+            by_name=by_name,
         )
     return validated_data
 
@@ -106,6 +120,11 @@ def _parsing_model_to_json(
     data: Optional[list[BaseModelT]],
     /,
     *,
+    by_alias: bool | None = None,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[list[dict[str, Any]]]: ...
@@ -116,6 +135,11 @@ def _parsing_model_to_json(
     data: Optional[BaseModelT],
     /,
     *,
+    by_alias: bool | None = None,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any]]: ...
@@ -125,6 +149,11 @@ def _parsing_model_to_json(
     data: Optional[BaseModelT | list[BaseModelT]],
     /,
     *,
+    by_alias: bool | None = None,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
@@ -132,6 +161,11 @@ def _parsing_model_to_json(
         dumped_data = [
             _parsing_model_to_json(
                 x,
+                by_alias=by_alias,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
+                exclude_computed_fields=exclude_computed_fields,
                 context=context,
                 fallback=fallback,
             )
@@ -141,6 +175,11 @@ def _parsing_model_to_json(
         return None
     else:
         dumped_data = data.model_dump(
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            exclude_computed_fields=exclude_computed_fields,
             context=context,
             fallback=fallback,
         )
@@ -156,6 +195,11 @@ def is_pydantic_model(data: Any) -> bool:
 def pydantic_request_model(
     index: Optional[int] = None,
     *,
+    by_alias: bool | None = None,
+    exclude_unset: bool = False,
+    exclude_defaults: bool = False,
+    exclude_none: bool = False,
+    exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ):
@@ -166,7 +210,17 @@ def pydantic_request_model(
     index : Optional[int]
         Order of invocation in invoke-hook.
         The order is recommended to be last after the status check.
-    context : Optional[Any]
+    by_alias : bool | None
+        Same feature as parameter of pydantic.BaseModel.model_dump method named by_alias.
+    exclude_unset : bool
+        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_unset.
+    exclude_defaults : bool
+        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_defaults.
+    exclude_none : bool
+        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_none.
+    exclude_computed_fields : bool
+        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_computed_fields.
+    context : Optional[dict[str, Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named context.
     fallback : Optional[Callable[[Any], Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
@@ -185,16 +239,44 @@ def pydantic_request_model(
             for name, value in request.headers.items():
                 if not is_pydantic_model(value):
                     continue
-                request.headers[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
+
+                request.headers[name] = _parsing_model_to_json(
+                    value,
+                    by_alias=by_alias,
+                    exclude_unset=exclude_unset,
+                    exclude_defaults=exclude_defaults,
+                    exclude_none=exclude_none,
+                    exclude_computed_fields=exclude_computed_fields,
+                    context=context,
+                    fallback=fallback,
+                ).__str__()  # noqa
 
             for name, value in request.params.items():
                 if not is_pydantic_model(value):
                     continue
-                request.params[name] = _parsing_model_to_json(value, context=context, fallback=fallback).__str__()
+                request.params[name] = _parsing_model_to_json(
+                    value,
+                    by_alias=by_alias,
+                    exclude_unset=exclude_unset,
+                    exclude_defaults=exclude_defaults,
+                    exclude_none=exclude_none,
+                    exclude_computed_fields=exclude_computed_fields,
+                    context=context,
+                    fallback=fallback,
+                ).__str__()
 
             if is_pydantic_model(request.body):
                 request.body_parameter_type = "json"
-                request.body = _parsing_model_to_json(request.body, context=context, fallback=fallback)
+                request.body = _parsing_model_to_json(
+                    request.body,
+                    by_alias=by_alias,
+                    exclude_unset=exclude_unset,
+                    exclude_defaults=exclude_defaults,
+                    exclude_none=exclude_none,
+                    exclude_computed_fields=exclude_computed_fields,
+                    context=context,
+                    fallback=fallback,
+                )
             return request, path
 
         return func
@@ -210,6 +292,8 @@ def pydantic_response_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
+    by_alias: Optional[bool] = False,
+    by_name: Optional[bool] = False,
 ):
     """Create a request method to return a model extended by pydantic.BaseModel
 
@@ -228,6 +312,10 @@ def pydantic_response_model(
         Same feature as parameter of pydantic.BaseModel.model_validate method named from_attributes.
     context: Optional[Any]
         Same feature as parameter of pydantic.BaseModel.model_validate method named context.
+    by_alias: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named by_alias.
+    by_name: Optional[bool]
+        Same feature as parameter of pydantic.BaseModel.model_validate method named by_name.
 
     Warnings
     --------
@@ -244,7 +332,7 @@ def pydantic_response_model(
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
-    ...    @pydantic_response_model(ResponseModel)
+    ...    @pydantic_response_model()
     ...    @request("GET", "/metro/station")
     ...    async def station_search_with_query(
     ...            self,
@@ -280,6 +368,8 @@ def pydantic_response_model(
                 strict=strict,
                 from_attributes=from_attributes,
                 context=context,
+                by_alias=by_alias,
+                by_name=by_name,
             )
             return result
 
