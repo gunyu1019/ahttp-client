@@ -473,12 +473,16 @@ class RequestCore:
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
 
+        effective_session = self.session
+        if effective_session is NotImplemented:
+            effective_session = getattr(self.func, "__self__", NotImplemented)
+
         # Validation
         for _name, _parameter in bounded_argument.items():
             if _name in self.validation_parameter.keys():
                 value = bounded_argument[_name]
                 for func in self.validation_parameter[_name]:
-                    value = func(self.session, value)
+                    value = func(effective_session, value)
                 bounded_argument[_name] = value
 
         # Header
