@@ -26,7 +26,6 @@ from __future__ import annotations
 import inspect
 import aiohttp
 
-from collections.abc import Sequence
 from typing import overload, TypeVar, TYPE_CHECKING
 
 from .multiple_hook import multiple_hook
@@ -60,8 +59,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[list[BaseModelT]]: ...
 
 
@@ -74,8 +73,8 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[BaseModelT]: ...
 
 
@@ -86,10 +85,10 @@ def _parsing_json_to_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
-    if isinstance(data, Sequence):
+    if isinstance(data, (list, tuple)):
         validated_data = [
             model.model_validate(
                 obj=x,
@@ -220,7 +219,7 @@ def pydantic_request_model(
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_none.
     exclude_computed_fields : bool
         Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_computed_fields.
-    context : Optional[dict[str, Any]]
+    context : Optional[Any]
         Same feature as parameter of pydantic.BaseModel.model_dump method named context.
     fallback : Optional[Callable[[Any], Any]]
         Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
@@ -292,8 +291,8 @@ def pydantic_response_model(
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
     context: Optional[Any] = None,
-    by_alias: Optional[bool] = False,
-    by_name: Optional[bool] = False,
+    by_alias: Optional[bool] = None,
+    by_name: Optional[bool] = None,
 ):
     """Create a request method to return a model extended by pydantic.BaseModel
 
@@ -333,7 +332,7 @@ def pydantic_response_model(
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...
     ...    @pydantic_response_model()
-    ...    @request("GET", "/metro/station")
+    ...    @request("GET", "/metro/station", directly_response=True)
     ...    async def station_search_with_query(
     ...            self,
     ...            response: aiohttp.ClientResponse,
