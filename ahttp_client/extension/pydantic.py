@@ -26,7 +26,6 @@ from __future__ import annotations
 import inspect
 import aiohttp
 
-from collections.abc import Sequence
 from typing import overload, TypeVar, TYPE_CHECKING
 
 from .multiple_hook import multiple_hook
