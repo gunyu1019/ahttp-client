@@ -611,7 +611,7 @@ class RequestCore:
 
     def validation(self, parameter_name: str):
         if not parameter_name:
-            raise SyntaxError("Parameter name is required")
+            raise ValueError("Parameter name is required")
 
         def decorator(func):
             if parameter_name not in self.validation_parameter:
