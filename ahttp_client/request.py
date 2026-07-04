@@ -222,6 +222,7 @@ class RequestCore:
         new_cls._after_hook = self._after_hook
 
         new_cls.validation_parameter = self.validation_parameter
+        new_cls.session = self.session
 
         new_cls._delete_response_annotation()
         return new_cls
@@ -616,6 +617,8 @@ class RequestCore:
     def validation(self, parameter_name: str):
         if not parameter_name:
             raise ValueError("Parameter name is required")
+        if parameter_name not in self._signature.parameters:
+            raise ValueError(f"'{parameter_name}' is not a parameter of '{self.name}'")
 
         def decorator(func):
             if parameter_name not in self.validation_parameter:
