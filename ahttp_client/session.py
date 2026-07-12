@@ -170,7 +170,7 @@ class AsyncSession(BaseSession, ABC):
         return request, path
 
     @BaseSession._special_method
-    async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
+    def after_request(self, response: Any) -> Any:
         """A special method that acts as a session local post-invoke.
         This is similar to :meth:`RequestCore.after_request`.
 
@@ -179,12 +179,12 @@ class AsyncSession(BaseSession, ABC):
 
         Parameters
         ----------
-        response: aiohttp.ClientResponse
+        response: Any
             The result of HTTP request.
 
         Returns
         -------
-        aiohttp.ClientResponse | T
+        Any | T
             Cleanup response HTTP results.
             If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
             the type of this method.
@@ -206,7 +206,148 @@ class AsyncSession(BaseSession, ABC):
 
         >>> @Session.single_session("https://api.yhs.kr")
         ... @request("GET", "/bus/station")
-        ... async def station_query(session: Session, name: Query | str) -> aiohttp.ClientResponse:
+        ... def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
+        ...     pass
+
+        """
+
+        def decorator(func: "_RequestCore") -> RequestFunction:
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                client = cls(base_url, _is_single_session=True, **session_kwargs)
+                func.session = client
+                response = func(*args, **kwargs)
+                if not client.closed:
+                    client.close()
+                return response
+
+            wrapper.__core__ = func  # type: ignore[attr-defined]
+            wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
+            wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
+            return wrapper
+
+        return decorator
+
+
+class SyncSession(BaseSession, ABC):
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ):
+        self.close()
+
+    @abstractmethod
+    def close(self):
+        pass
+
+    @abstractmethod
+    def request(self, method: str, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def get(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def post(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def options(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def delete(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def patch(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def put(self, path: str, **kwargs):
+        pass
+
+    def _make_request(self, request: RequestCore, path: str):
+        _req_obj = request
+        _path = path
+
+        if self._has_overridden_method(self.before_request):
+            _req_obj, _path = self.before_request(request, path)
+
+        request_kwargs = _req_obj.get_request_kwargs()
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
+        response = self.session.request(_req_obj.method, _path, **request_kwargs)
+
+        if self._has_overridden_method(self.after_request):
+            response = self.after_request(response)
+        return response
+
+    @BaseSession._special_method
+    def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+        """A special method that acts as a session local pre-invoke hook.
+        This is similar to :meth:`RequestCore.before_request`.
+
+        When :meth:`RequestCore.before_request` exists, this method is called after
+        :meth:`RequestCore.before_request` called.
+
+        Parameters
+        ----------
+        request: RequestCore
+            The instance of RequestCore.
+        path: str
+            The final string of the request url.
+
+        Returns
+        -------
+        Tuple[RequestCore, str]
+            The return type must be the same as the parameter.
+        """
+        return request, path
+
+    @BaseSession._special_method
+    def after_request(self, response: Any) -> Any:
+        """A special method that acts as a session local post-invoke.
+        This is similar to :meth:`RequestCore.after_request`.
+
+        When :meth:`RequestCore.after_request` exists, this method is called before
+        :meth:`RequestCore.after_request` called.
+
+        Parameters
+        ----------
+        response: Any
+            The result of HTTP request.
+
+        Returns
+        -------
+        Any | T
+            Cleanup response HTTP results.
+            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
+            the type of this method.
+        """
+        return response
+
+    @classmethod
+    def single_session(cls, base_url: str, **session_kwargs):
+        """A single session for one request.
+
+        Parameters
+        ----------
+        base_url: str
+            base url of the API. (for example, https://api.yhs.kr)
+
+        Examples
+        --------
+        The session is defined through the function's decoration.
+
+        >>> @Session.single_session("https://api.yhs.kr")
+        ... @request("GET", "/bus/station")
+        ... async def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
 
         """
