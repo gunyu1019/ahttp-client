@@ -23,20 +23,19 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import logging
-from typing import TYPE_CHECKING, TypeVar
 
-import aiohttp
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, TypeVar
 
 from .request import RequestCore
 
 if TYPE_CHECKING:
     from typing_extensions import Self
     from types import TracebackType
-    from typing import Optional
+    from typing import Any, Optional
 
     from ._types import RequestFunction
     from .request import RequestCore as _RequestCore
@@ -45,7 +44,7 @@ T = TypeVar("T")
 _log = logging.getLogger(__name__)
 
 
-class Session:
+class BaseSession(ABC):
     """A class to manage session for managing decoration functions."""
 
     def __init__(
@@ -53,15 +52,13 @@ class Session:
         base_url: str,
         *,
         directly_response: bool = False,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
         _is_single_session: bool = False,
         **kwargs,
     ):
         self.directly_response = directly_response
         self.base_url = base_url
-        self.loop = loop
 
-        self.session = aiohttp.ClientSession(self.base_url, loop=self.loop, **kwargs)
+        # self.session = aiohttp.ClientSession(self.base_url, loop=self.loop, **kwargs)
 
         if not _is_single_session:
             for name, func in inspect.getmembers(self):
@@ -70,16 +67,10 @@ class Session:
 
                 func.session = self
 
-    async def __aenter__(self) -> Self:
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ):
-        await self.close()
+    @property
+    @abstractmethod
+    def session(self) -> Any:
+        pass
 
     @staticmethod
     def _has_overridden_method(method):
@@ -92,28 +83,56 @@ class Session:
         return func
 
     @property
+    @abstractmethod
     def closed(self) -> bool:
-        return self.session.closed
+        pass
 
+
+class AsyncSession(BaseSession, ABC):
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ):
+        await self.close()
+
+    @abstractmethod
     async def close(self):
-        return await self.session.close()
+        pass
 
+    @abstractmethod
     async def request(self, method: str, path: str, **kwargs):
-        return await self.session.request(method, path, **kwargs)
+        pass
 
+    @abstractmethod
     async def get(self, path: str, **kwargs):
-        return await self.session.get(path, **kwargs)
+        pass
 
+    @abstractmethod
     async def post(self, path: str, **kwargs):
-        return await self.session.post(path, **kwargs)
+        pass
 
+    @abstractmethod
     async def options(self, path: str, **kwargs):
-        return await self.session.options(path, **kwargs)
+        pass
 
+    @abstractmethod
     async def delete(self, path: str, **kwargs):
-        return await self.session.delete(path, **kwargs)
+        pass
 
-    async def _make_request(self, request: RequestCore, path: str, **kwargs):
+    @abstractmethod
+    async def patch(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    async def put(self, path: str, **kwargs):
+        pass
+
+    async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
         _path = path
 
@@ -128,7 +147,7 @@ class Session:
             response = await self.after_request(response)
         return response
 
-    @_special_method
+    @BaseSession._special_method
     async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
         """A special method that acts as a session local pre-invoke hook.
         This is similar to :meth:`RequestCore.before_request`.
@@ -150,7 +169,7 @@ class Session:
         """
         return request, path
 
-    @_special_method
+    @BaseSession._special_method
     async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
         """A special method that acts as a session local post-invoke.
         This is similar to :meth:`RequestCore.after_request`.
@@ -173,16 +192,13 @@ class Session:
         return response
 
     @classmethod
-    def single_session(cls, base_url: str, loop: Optional[asyncio.AbstractEventLoop] = None, **session_kwargs):
+    def single_session(cls, base_url: str, **session_kwargs):
         """A single session for one request.
 
         Parameters
         ----------
         base_url: str
             base url of the API. (for example, https://api.yhs.kr)
-        loop: asyncio.AbstractEventLoop
-            [event loop](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio-event-loop)
-             used for processing HTTP requests.
 
         Examples
         --------
@@ -198,7 +214,7 @@ class Session:
         def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, loop=loop, _is_single_session=True, **session_kwargs)
+                client = cls(base_url, _is_single_session=True, **session_kwargs)
                 func.session = client
                 response = await func(*args, **kwargs)
                 if not client.closed:
