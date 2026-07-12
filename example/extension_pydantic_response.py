@@ -28,7 +28,7 @@ class MetroAPI(Session):
 
     @pydantic_response_model()
     @request("GET", "/metro/station", directly_response=True)
-    async def station_search_with_query(
+    async def station_search_with_query(  # type: ignore[empty-body]
         self, response: aiohttp.ClientResponse, name: Annotated[str, Query]
     ) -> PydanticModel:
         pass

@@ -6,11 +6,11 @@ from typing import Any, Annotated
 
 
 class MetroAPI(Session):
-    def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop=loop)
+    def __init__(self):
+        super().__init__("https://api.yhs.kr")
 
     @request("GET", "/metro/station", directly_response=True)
-    async def station_search_with_query(
+    async def station_search_with_query(  # type: ignore[empty-body]
         self,
         response: aiohttp.ClientResponse,
         station_name: Annotated[str, Query.custom_name("name")],

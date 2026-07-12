@@ -1,12 +1,9 @@
-import asyncio
-
 import aiohttp
 
 from flask import Flask
 from ahttp_client import request, Session, Query
 
 app = Flask(__name__)
-loop = asyncio.get_event_loop()
 
 
 @app.get("/station/<name>")
