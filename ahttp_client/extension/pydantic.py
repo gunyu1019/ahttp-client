@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
     from typing import Any, Optional, Callable
 
-    from ..query import Query
+    from ..component import Query
     from ..request import RequestCore, request
     from ..session import Session
 
