@@ -42,7 +42,7 @@ if TYPE_CHECKING:
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
-    from .session import Session
+    from .session import BaseSession, AsyncSession, SyncSession
 
 T = TypeVar("T")
 
@@ -106,7 +106,7 @@ class RequestCore(ABC):
         **kwargs,
     ):
         self.func = func
-        self.session: Optional["Session"] = None
+        self.session: Optional["BaseSession"] = None
         self.method = method
 
         # Function Wrapper
@@ -182,7 +182,7 @@ class RequestCore(ABC):
         new_cls._delete_response_annotation()
         return new_cls
 
-    def copy(self) -> "RequestCore":
+    def copy(self) -> Self:
         """Creates a copy of this request.
 
         Returns
@@ -231,9 +231,6 @@ class RequestCore(ABC):
         func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
             The coroutine to register as the pre-invoke hook.
         """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("The pre-invoke hook must be a coroutine.")
-
         self._before_hook = func
         return func
 
@@ -247,9 +244,6 @@ class RequestCore(ABC):
         func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
             The coroutine to register as the pre-invoke hook.
         """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("The post-invoke hook must be a coroutine.")
-
         self._after_hook = func
         return func
 
@@ -568,8 +562,68 @@ class RequestCore(ABC):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __copy__(self) -> "RequestCore":
+    def __copy__(self) -> Self:
         return self.copy()
+
+    @property
+    def __request_path__(self) -> str:
+        return self.path
+
+    @property
+    def __core__(self) -> Self:
+        return self
+
+    def validation(self, parameter_name: str):
+        if not parameter_name:
+            raise ValueError("Parameter name is required")
+        if parameter_name not in self._signature.parameters:
+            raise ValueError(f"'{parameter_name}' is not a parameter of '{self.name}'")
+
+        def decorator(func):
+            if parameter_name not in self.validation_parameter:
+                self.validation_parameter[parameter_name] = []
+            self.validation_parameter[parameter_name].append(func)
+            return func
+
+        return decorator
+
+    @abstractmethod
+    def __call__(self, *args, **kwargs) -> Any:
+        pass
+
+
+class AsyncRequestCore(RequestCore):
+    session: AsyncSession
+
+    def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
+        """A decorator that registers a coroutine as a pre-invoke hook.
+        A pre-invoke hook is called directly before the HTTP request is called.
+        This makes it a useful function to set up authorizations or any type of set up required.
+
+        Parameters
+        ----------
+        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
+            The coroutine to register as the pre-invoke hook.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("The pre-invoke hook must be a coroutine.")
+
+        return super(AsyncRequestCore, self).before_hook(func)
+
+    def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
+        """A decorator that registers a coroutine as a post-invoke hook.
+        A post-invoke hook is called directly after the returned HTTP response.
+        This makes it a useful function to check correct response or any type of clean up response data.
+
+        Parameters
+        ----------
+        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
+            The coroutine to register as the pre-invoke hook.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("The post-invoke hook must be a coroutine.")
+
+        return super(AsyncRequestCore, self).after_hook(func)
 
     async def __call__(self, *args, **kwargs):
         if self.session is None:
@@ -600,27 +654,68 @@ class RequestCore(ABC):
         kwargs.update(bound_argument.arguments)
         return await self.func(**kwargs)
 
-    @property
-    def __request_path__(self) -> str:
-        return self.path
 
-    @property
-    def __core__(self) -> Self:
-        return self
+class SyncRequestCore(RequestCore):
+    session: SyncSession
 
-    def validation(self, parameter_name: str):
-        if not parameter_name:
-            raise ValueError("Parameter name is required")
-        if parameter_name not in self._signature.parameters:
-            raise ValueError(f"'{parameter_name}' is not a parameter of '{self.name}'")
+    def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
+        """A decorator that registers a method as a pre-invoke hook.
+        A pre-invoke hook is called directly before the HTTP request is called.
+        This makes it a useful function to set up authorizations or any type of set up required.
 
-        def decorator(func):
-            if parameter_name not in self.validation_parameter:
-                self.validation_parameter[parameter_name] = []
-            self.validation_parameter[parameter_name].append(func)
-            return func
+        Parameters
+        ----------
+        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
+            The coroutine to register as the pre-invoke hook.
+        """
+        if inspect.iscoroutinefunction(func):
+            raise TypeError("The pre-invoke hook must not be a coroutine.")
 
-        return decorator
+        return super(SyncRequestCore, self).before_hook(func)
+
+    def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
+        """A decorator that registers a method as a post-invoke hook.
+        A post-invoke hook is called directly after the returned HTTP response.
+        This makes it a useful function to check correct response or any type of clean up response data.
+
+        Parameters
+        ----------
+        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
+            The coroutine to register as the pre-invoke hook.
+        """
+        if inspect.iscoroutinefunction(func):
+            raise TypeError("The post-invoke hook must not be a coroutine.")
+
+        return super(SyncRequestCore, self).after_hook(func)
+
+    def __call__(self, *args, **kwargs):
+        if self.session is None:
+            raise TypeError("Class must inherit from class Session")
+
+        bound_argument = self._signature.bind(self.session, *args, **kwargs)
+        bound_argument.apply_defaults()
+
+        req_obj = self.copy()
+
+        req_obj._fill_parameter(bound_argument)
+        formatted_path = req_obj._get_request_path(bound_argument)
+
+        if self._before_hook is not None:
+            req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
+        response = self.session._make_request(req_obj, formatted_path)  # type: ignore
+        if self._after_hook is not None:
+            response = self._after_hook(self.session, response)
+
+        # Detect directly response
+        if self.directly_response or self.session.directly_response:
+            if isinstance(response, aiohttp.ClientResponse):
+                response.read()  # Content-Read.
+            return response
+
+        for _parameter in self.response_parameter:
+            kwargs[_parameter] = response
+        kwargs.update(bound_argument.arguments)
+        return self.func(**kwargs)
 
 
 def request(
@@ -631,7 +726,7 @@ def request(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     body_json_parameter: Optional[list[str]] = None,
@@ -712,7 +807,7 @@ def get(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
@@ -752,7 +847,7 @@ def post(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
@@ -792,7 +887,7 @@ def options(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
@@ -832,7 +927,7 @@ def put(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
@@ -872,7 +967,7 @@ def delete(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
