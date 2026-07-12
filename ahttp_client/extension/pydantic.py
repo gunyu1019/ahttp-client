@@ -42,12 +42,15 @@ if TYPE_CHECKING:
 
 try:
     import pydantic
+    is_pydantic = True
 except (ModuleNotFoundError, ImportError):
     is_pydantic = False
-    BaseModelT = TypeVar("BaseModelT")
+
+if TYPE_CHECKING:
+    import pydantic
+    BaseModelT = TypeVar("BaseModelT", bound=pydantic.BaseModel)
 else:
-    is_pydantic = True
-    BaseModelT = TypeVar("BaseModelT", bound=type[pydantic.BaseModel])
+    BaseModelT = TypeVar("BaseModelT")
 
 
 @overload
@@ -61,12 +64,12 @@ def _parsing_json_to_model(
     context: Optional[Any] = None,
     by_alias: Optional[bool] = None,
     by_name: Optional[bool] = None,
-) -> Optional[list[BaseModelT]]: ...
+) -> list[BaseModelT]: ...
 
 
-@overload
+@overload  # type: ignore[overload-overlap]
 def _parsing_json_to_model(
-    data: dict[Any, ...],
+    data: dict[Any, Any],
     model: type[BaseModelT],
     /,
     *,
@@ -79,8 +82,9 @@ def _parsing_json_to_model(
 
 
 def _parsing_json_to_model(
-    data: dict[Any, ...] | list[Any],
+    data: dict[Any, Any] | list[Any],
     model: type[BaseModelT],
+    /,
     *,
     strict: Optional[bool] = None,
     from_attributes: Optional[bool] = None,
@@ -89,7 +93,7 @@ def _parsing_json_to_model(
     by_name: Optional[bool] = None,
 ) -> Optional[BaseModelT | list[BaseModelT]]:
     if isinstance(data, (list, tuple)):
-        validated_data = [
+        return [
             model.model_validate(
                 obj=x,
                 strict=strict,
@@ -103,7 +107,7 @@ def _parsing_json_to_model(
     elif isinstance(data, type(None)):
         return None
     else:
-        validated_data = model.model_validate(
+        return model.model_validate(
             obj=data,
             strict=strict,
             from_attributes=from_attributes,
@@ -111,12 +115,11 @@ def _parsing_json_to_model(
             by_alias=by_alias,
             by_name=by_name,
         )
-    return validated_data
 
 
 @overload
 def _parsing_model_to_json(
-    data: Optional[list[BaseModelT]],
+    data: list[BaseModelT],
     /,
     *,
     by_alias: bool | None = None,
@@ -126,7 +129,7 @@ def _parsing_model_to_json(
     exclude_computed_fields: bool = False,
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
-) -> Optional[list[dict[str, Any]]]: ...
+) -> list[dict[str, Any]]: ...
 
 
 @overload
@@ -157,9 +160,8 @@ def _parsing_model_to_json(
     fallback: Optional[Callable[[Any], Any]] = None,
 ) -> Optional[dict[str, Any] | list[dict[str, Any]]]:
     if isinstance(data, (list, tuple)):
-        dumped_data = [
-            _parsing_model_to_json(
-                x,
+        return [
+            x.model_dump(
                 by_alias=by_alias,
                 exclude_unset=exclude_unset,
                 exclude_defaults=exclude_defaults,
@@ -173,7 +175,7 @@ def _parsing_model_to_json(
     elif isinstance(data, type(None)):
         return None
     else:
-        dumped_data = data.model_dump(
+        return data.model_dump(
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
@@ -182,10 +184,11 @@ def _parsing_model_to_json(
             context=context,
             fallback=fallback,
         )
-    return dumped_data
 
 
 def is_pydantic_model(data: Any) -> bool:
+    if not is_pydantic:
+        return False
     if isinstance(data, (list, tuple)):
         return is_pydantic_model(data[0])
     return isinstance(data, pydantic.BaseModel)
@@ -233,7 +236,7 @@ def pydantic_request_model(
         if func.body_parameter is not None:
             func.body_parameter_type = None
 
-        @multiple_hook(func.before_hook, index=index)
+        @multiple_hook(func.before_hook, index=index)  # type: ignore[arg-type]
         async def wrapper(_, request: RequestCore, path: str):
             for name, value in request.headers.items():
                 if not is_pydantic_model(value):
@@ -343,7 +346,7 @@ def pydantic_response_model(
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
 
-    def decorator(func: RequestCore) -> BaseModelT:
+    def decorator(func: RequestCore) -> RequestCore:
         _model = model
         if model is None and func.directly_response:
             _model = func._signature.return_annotation
@@ -354,14 +357,14 @@ def pydantic_response_model(
         if isinstance(_model, GenericAlias):
             _model = _model.__args__[0]
 
-        @multiple_hook(func.after_hook, index=index)
+        @multiple_hook(func.after_hook, index=index)  # type: ignore[arg-type]
         async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
             if isinstance(response, aiohttp.ClientResponse):
                 data = await response.json()
             else:
                 data = response
 
-            result = _parsing_json_to_model(
+            result = _parsing_json_to_model(  # type: ignore[call-overload, misc]
                 data,
                 _model,
                 strict=strict,
