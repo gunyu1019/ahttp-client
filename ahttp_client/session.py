@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
     from ._types import RequestFunction
+    from .request import RequestCore as _RequestCore
 
 T = TypeVar("T")
 _log = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class Session:
         base_url: str,
         *,
         directly_response: bool = False,
-        loop: asyncio.AbstractEventLoop = None,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
         _is_single_session: bool = False,
         **kwargs,
     ):
@@ -147,10 +148,10 @@ class Session:
         Tuple[RequestCore, str]
             The return type must be the same as the parameter.
         """
-        pass
+        return request, path
 
     @_special_method
-    async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse | T:
+    async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse:
         """A special method that acts as a session local post-invoke.
         This is similar to :meth:`RequestCore.after_request`.
 
@@ -169,10 +170,10 @@ class Session:
             If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
             the type of this method.
         """
-        pass
+        return response
 
     @classmethod
-    def single_session(cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs):
+    def single_session(cls, base_url: str, loop: Optional[asyncio.AbstractEventLoop] = None, **session_kwargs):
         """A single session for one request.
 
         Parameters
@@ -194,7 +195,7 @@ class Session:
 
         """
 
-        def decorator(func: RequestFunction):
+        def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, loop=loop, _is_single_session=True, **session_kwargs)
@@ -204,9 +205,9 @@ class Session:
                     await client.close()
                 return response
 
-            wrapper.__core__ = func
-            wrapper.before_hook = func.before_hook
-            wrapper.after_hook = func.after_hook
+            wrapper.__core__ = func  # type: ignore[attr-defined]
+            wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
+            wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
             return wrapper
 
         return decorator

@@ -100,8 +100,8 @@ def multiple_hook(
     ...        # Set-up before request
     ...        return obj, path
     """
-    hook_name = hook.__name__
-    instance = hook.__self__
+    hook_name = hook.__name__  # type: ignore[union-attr]
+    instance = hook.__self__  # type: ignore[union-attr]
 
     is_exist_multiple_hook = True
     if not hasattr(instance, "__multiple_%s__" % hook_name):
@@ -121,5 +121,5 @@ def multiple_hook(
         return _args
 
     if not is_exist_multiple_hook:
-        hook.__func__(instance, wrapper)
+        hook.__func__(instance, wrapper)  # type: ignore[union-attr]
     return decorator

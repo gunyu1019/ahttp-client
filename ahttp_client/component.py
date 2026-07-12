@@ -56,7 +56,7 @@ class Component:
         self.component_name: Optional[Callable[[str], str]] = None
 
     @classmethod
-    def custom_name(cls, name: str) -> type[Self]:
+    def custom_name(cls, name: str) -> Self:
         """Define the name of the component(Header, Query, Form and Path)
         Used when the component name must be different from the parameter name.
 
@@ -96,7 +96,7 @@ class Component:
         return re.sub("(^_*[A-Z])", lambda m: m.group(1).lower(), camel)
 
     @classmethod
-    def to_camel(cls) -> type[Self]:
+    def to_camel(cls) -> Self:
         """Define the name of the component(Header, Query, Form and Path) to follow camel case.
 
         Examples
@@ -120,7 +120,7 @@ class Component:
         return new_cls
 
     @classmethod
-    def to_pascal(cls) -> type[Self]:
+    def to_pascal(cls) -> Self:
         """Define the name of the component(Header, Query, Form and Path) to follow pascal case.
 
         Examples

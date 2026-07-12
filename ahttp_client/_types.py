@@ -31,18 +31,13 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
-_Coroutine = Coroutine[Any, Any, T]
-CoroutineFunction = Callable[..., _Coroutine]
 
-RequestFunction = Callable[
-    [Session, ...],
-    _Coroutine[T | aiohttp.ClientResponse],
-]
+RequestFunction = Callable[..., Coroutine[Any, Any, Any]]
 RequestBeforeHookFunction = Callable[
     [Session, RequestCore, str],
-    _Coroutine[RequestCore],
+    Coroutine[Any, Any, tuple[RequestCore, str]],
 ]
 RequestAfterHookFunction = Callable[
-    [Session, T | aiohttp.ClientResponse],
-    _Coroutine[T | aiohttp.ClientResponse],
+    [Session, Any],
+    Coroutine[Any, Any, Any],
 ]
