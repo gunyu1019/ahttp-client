@@ -28,19 +28,17 @@ import inspect
 import logging
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from .request import RequestCore
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
     from types import TracebackType
-    from typing import Any, Optional
+    from typing import Any, Optional, Self
 
     from ._types import RequestFunction
     from .request import RequestCore as _RequestCore
 
-T = TypeVar("T")
 _log = logging.getLogger(__name__)
 
 
@@ -57,8 +55,6 @@ class BaseSession(ABC):
     ):
         self.directly_response = directly_response
         self.base_url = base_url
-
-        # self.session = aiohttp.ClientSession(self.base_url, loop=self.loop, **kwargs)
 
         if not _is_single_session:
             for name, func in inspect.getmembers(self):
@@ -170,7 +166,7 @@ class AsyncSession(BaseSession, ABC):
         return request, path
 
     @BaseSession._special_method
-    def after_request(self, response: Any) -> Any:
+    async def after_request(self, response: Any) -> Any:
         """A special method that acts as a session local post-invoke.
         This is similar to :meth:`RequestCore.after_request`.
 
@@ -204,21 +200,21 @@ class AsyncSession(BaseSession, ABC):
         --------
         The session is defined through the function's decoration.
 
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @AsyncSession.single_session("https://api.yhs.kr")
         ... @request("GET", "/bus/station")
-        ... def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
+        ... async def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
 
         """
 
         def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
-            def wrapper(*args, **kwargs):
+            async def wrapper(*args, **kwargs):
                 client = cls(base_url, _is_single_session=True, **session_kwargs)
                 func.session = client
-                response = func(*args, **kwargs)
+                response = await func(*args, **kwargs)
                 if not client.closed:
-                    client.close()
+                    await client.close()
                 return response
 
             wrapper.__core__ = func  # type: ignore[attr-defined]
@@ -345,21 +341,21 @@ class SyncSession(BaseSession, ABC):
         --------
         The session is defined through the function's decoration.
 
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @SyncSession.single_session("https://api.yhs.kr")
         ... @request("GET", "/bus/station")
-        ... async def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
+        ... async def station_query(session: SyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
 
         """
 
         def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
-            async def wrapper(*args, **kwargs):
+            def wrapper(*args, **kwargs):
                 client = cls(base_url, _is_single_session=True, **session_kwargs)
                 func.session = client
-                response = await func(*args, **kwargs)
+                response = func(*args, **kwargs)
                 if not client.closed:
-                    await client.close()
+                    client.close()
                 return response
 
             wrapper.__core__ = func  # type: ignore[attr-defined]
