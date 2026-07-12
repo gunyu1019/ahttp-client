@@ -24,14 +24,13 @@ SOFTWARE.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import aiohttp
     from typing import Annotated, Optional, Callable, NoReturn
     from typing_extensions import Self
 
-    from .query import Query
     from .session import Session
     from .request import request
 
@@ -156,3 +155,96 @@ class UnsupportedCustomNameComponent(Component):
     @classmethod
     def to_pascal(cls) -> NoReturn:
         raise NotImplementedError("%s.to_pascal is not supported." % cls.__name__)
+
+
+class Body(UnsupportedCustomNameComponent):
+    """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
+
+    Examples
+    --------
+    >>> def function(body: dict | Body):
+    ...    pass
+    """
+
+    pass
+
+
+class BodyJson(Component):
+    """This class defines the parameters of a function used in Body of the HTTP request in dictionary format.
+
+    Examples
+    --------
+    >>> def function(data: typing.Annotated[str, BodyJson]):
+    ...    pass
+    """
+
+    pass
+
+
+class BodyForm(Component):
+    """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
+
+    Examples
+    --------
+    >>> def function(data: str | BodyForm):
+    ...    pass
+    """
+
+    pass
+
+
+class Header(Component):
+    """This class is used when a function's parameters are used as headers in an HTTP request.
+
+    Examples
+    --------
+    >>> def function(header: str | Header):
+    ...    pass
+    """
+
+    DEFAULT_KEY = "__DEFAULT_HEADER__"
+
+    @staticmethod
+    def default_header(key: str, value: Any):
+        def decorator(func):
+            if not hasattr(func, Header.DEFAULT_KEY):
+                setattr(func, Header.DEFAULT_KEY, dict())
+            getattr(func, Header.DEFAULT_KEY)[key] = value
+            return func
+
+        return decorator
+
+
+class Path(UnsupportedCustomNameComponent):
+    """This class is used when a function's parameters are used as path in an HTTP request.
+    The parameters associated with the Path populate a portion of the HTTP URL.
+
+    Examples
+    --------
+    >>> def function(path: str | Path):
+    ...    pass
+    """
+
+    pass
+
+
+class Query(Component):
+    """This class is used when a function's parameters are used as query in an HTTP request.
+
+    Examples
+    --------
+    >>> def function(query: str | Query):
+    ...    pass
+    """
+
+    DEFAULT_KEY = "__DEFAULT_QUERY__"
+
+    @staticmethod
+    def default_query(key: str, value: Any):
+        def decorator(func):
+            if not hasattr(func, Query.DEFAULT_KEY):
+                setattr(func, Query.DEFAULT_KEY, dict())
+            getattr(func, Query.DEFAULT_KEY)[key] = value
+            return func
+
+        return decorator

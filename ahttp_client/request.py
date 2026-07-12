@@ -30,13 +30,7 @@ from typing import TypeVar, TYPE_CHECKING, Callable
 
 import aiohttp
 
-from .body import Body
-from .body_json import BodyJson
-from .component import Component, EmptyComponent
-from .body_form import BodyForm
-from .header import Header
-from .path import Path
-from .query import Query
+from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .utils import *
 
 if TYPE_CHECKING:

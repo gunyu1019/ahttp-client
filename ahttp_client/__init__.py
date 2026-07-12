@@ -23,12 +23,7 @@ SOFTWARE.
 
 from typing import NamedTuple, Literal, Optional
 
-from .body import Body
-from .body_json import BodyJson
-from .body_form import BodyForm
-from .header import Header
-from .path import Path
-from .query import Query
+from .component import Body, BodyJson, BodyForm, Header, Path, Query
 from .request import RequestCore, request, get, post, options, put, delete
 from .session import Session
 
