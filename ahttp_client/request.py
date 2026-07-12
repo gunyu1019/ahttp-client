@@ -25,18 +25,18 @@ from __future__ import annotations
 
 import copy
 import inspect
+
+from abc import ABC, abstractmethod
 from asyncio import iscoroutinefunction
 from typing import TypeVar, TYPE_CHECKING, Callable
 
-import aiohttp
 
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .utils import *
 
 if TYPE_CHECKING:
     from collections.abc import Collection
-    from typing import Optional, NoReturn, Any, Literal
-    from typing_extensions import Self
+    from typing import Optional, Self, Any, Literal
     from ._types import (
         RequestFunction,
         RequestBeforeHookFunction,
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class RequestCore:
+class RequestCore(ABC):
     """A class that implements functions for HTTP requests.
 
     Attributes
@@ -101,7 +101,7 @@ class RequestCore:
         directly_response: bool = False,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any | aiohttp.FormData] = None,
+        body: Optional[Any] = None,
         response_parameter: Optional[list[str]] = None,
         **kwargs,
     ):
@@ -128,13 +128,13 @@ class RequestCore:
         if len(self._signature.parameters) < 1:
             raise TypeError("%s missing 1 required parameter: 'self(extends Session)'" % self.func.__name__)
 
-        if not iscoroutinefunction(func):
-            raise TypeError("function %s must be coroutine." % func.__name__)
+        # if not iscoroutinefunction(func):
+        #     raise TypeError("function %s must be coroutine." % func.__name__)
 
         # Static HTTP Components
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
-        self.body: Optional[aiohttp.FormData | Any] = body
+        self.body: Optional[Any] = body
 
         # Components (Function Parameter)
         self.header_parameter: dict[str, inspect.Parameter] = dict()
@@ -190,7 +190,7 @@ class RequestCore:
         :class:`RequestCore`
             A new istnace of this request.
         """
-        new_cls = RequestCore(
+        new_cls = self.__class__(
             self.func,
             self.method,
             self.path,
