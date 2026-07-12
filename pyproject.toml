@@ -7,7 +7,7 @@ name = "ahttp_client"
 dynamic = ["version", "dependencies"]
 description = "A framework for easy asynchronous HTTP request calling with decorations"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
     {name = "gunyu1019", email = "gunyu1019@yhs.kr"}
@@ -20,9 +20,9 @@ classifiers = [
     "Natural Language :: English",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
