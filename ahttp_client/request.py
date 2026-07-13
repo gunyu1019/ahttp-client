@@ -30,8 +30,8 @@ from abc import ABC, abstractmethod
 from asyncio import iscoroutinefunction
 from typing import TypeVar, TYPE_CHECKING, Callable
 
-
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
+from .method import Method
 from .utils import *
 
 if TYPE_CHECKING:
@@ -42,7 +42,8 @@ if TYPE_CHECKING:
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
-    from .session import BaseSession, AsyncSession, SyncSession
+    from .session import BaseSession, AsyncSession, Session
+    from .backend.base import BaseBackend
 
 T = TypeVar("T")
 
@@ -94,7 +95,7 @@ class RequestCore(ABC):
     def __init__(
         self,
         func: RequestFunction,
-        method: str,
+        method: str | Method,
         path: str,
         *,
         name: Optional[str] = None,
@@ -107,6 +108,7 @@ class RequestCore(ABC):
     ):
         self.func = func
         self.session: Optional["BaseSession"] = None
+        self.backend: Optional["BaseBackend"] = None
         self.method = method
 
         # Function Wrapper
@@ -156,7 +158,7 @@ class RequestCore(ABC):
     def from_decorator(
         cls,
         func: RequestFunction,
-        method: str,
+        method: str | Method,
         path: str,
         *,
         query_parameter: Optional[list[str]] = None,
@@ -378,7 +380,7 @@ class RequestCore(ABC):
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
+            component_type: type[Component] | type[EmptyComponent] = EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -390,7 +392,7 @@ class RequestCore(ABC):
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
+                if issubclass(annotation, Component) or issubclass(annotation, self.backend.response_cls):
                     component_type = annotation
                     break
 
@@ -425,8 +427,8 @@ class RequestCore(ABC):
                 self.body_parameter = parameter
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
-                instance_origin, aiohttp.ClientResponse
+            elif issubclass(component_type, self.backend.response_cls) or is_subclass_safe(
+                instance_origin, self.backend.response_cls
             ):
                 self.response_parameter.append(parameter.name)
 
@@ -491,34 +493,17 @@ class RequestCore(ABC):
         # Body
         self._duplicated_check_body()
         if self.is_formal_form and self.body_parameter is None:  # self.is_body
-            form_data = aiohttp.FormData()
-            for _name, _parameter in self.body_form_parameter.items():
-                form_data.add_field(_name, bounded_argument.get(_parameter.name))
-            self.body = form_data
+            self.body = {
+                _name: bounded_argument.get(_parameter.name)
+                for _name, _parameter in self.body_form_parameter.items()
+            }
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
             self.body = {
-                _name: bounded_argument.get(_parameter.name) for _name, _parameter in self.body_json_parameter.items()
+                _name: bounded_argument.get(_parameter.name)
+                for _name, _parameter in self.body_json_parameter.items()
             }
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
-
-    def get_request_kwargs(self) -> dict[str, Any]:
-        """Get keyword arguments to call request method"""
-        request_kwargs = copy.deepcopy(self.request_kwargs)
-
-        # Header
-        if len(self.headers) > 0:
-            request_kwargs["headers"] = self.headers
-
-        # Parameter
-        if len(self.params) > 0:
-            request_kwargs["params"] = self.params
-
-        # Body
-        if self.is_body:
-            request_kwargs[str(self.body_type)] = self.body
-
-        return request_kwargs
 
     def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
         """Get final HTTP path from bounded argument
@@ -643,9 +628,9 @@ class AsyncRequestCore(RequestCore):
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
 
-        # Detect directly response
+        # Detect directly response  (TODO)
         if self.directly_response or self.session.directly_response:
-            if isinstance(response, aiohttp.ClientResponse):
+            if isinstance(response, self.backend.response_cls):
                 await response.read()  # Content-Read.
             return response
 
@@ -656,7 +641,7 @@ class AsyncRequestCore(RequestCore):
 
 
 class SyncRequestCore(RequestCore):
-    session: SyncSession
+    session: Session
 
     def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
         """A decorator that registers a method as a pre-invoke hook.
@@ -706,9 +691,9 @@ class SyncRequestCore(RequestCore):
         if self._after_hook is not None:
             response = self._after_hook(self.session, response)
 
-        # Detect directly response
+        # Detect directly response TODO()
         if self.directly_response or self.session.directly_response:
-            if isinstance(response, aiohttp.ClientResponse):
+            if isinstance(response, self.backend.response_cls):
                 response.read()  # Content-Read.
             return response
 
@@ -719,7 +704,7 @@ class SyncRequestCore(RequestCore):
 
 
 def request(
-    method: str,
+    method: str | Method,
     path: str,
     *,
     name: Optional[str] = None,
@@ -820,7 +805,7 @@ def get(
     def decorator(func):
         return RequestCore.from_decorator(
             func,
-            aiohttp.hdrs.METH_GET,
+            Method.GET,
             path,
             name=name,
             params=params,
@@ -860,7 +845,7 @@ def post(
     def decorator(func):
         return RequestCore.from_decorator(
             func,
-            aiohttp.hdrs.METH_POST,
+            Method.POST,
             path,
             name=name,
             params=params,
@@ -900,7 +885,7 @@ def options(
     def decorator(func):
         return RequestCore.from_decorator(
             func,
-            aiohttp.hdrs.METH_OPTIONS,
+            Method.OPTIONS,
             path,
             name=name,
             params=params,
@@ -940,7 +925,7 @@ def put(
     def decorator(func):
         return RequestCore.from_decorator(
             func,
-            aiohttp.hdrs.METH_PUT,
+            Method.PUT,
             path,
             name=name,
             params=params,
@@ -980,7 +965,7 @@ def delete(
     def decorator(func):
         return RequestCore.from_decorator(
             func,
-            aiohttp.hdrs.METH_DELETE,
+            Method.DELETE,
             path,
             name=name,
             params=params,
