@@ -31,7 +31,7 @@ from asyncio import iscoroutinefunction
 from typing import TypeVar, TYPE_CHECKING, Callable
 
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
-from .method import Method
+from .enum import Method
 from .utils import *
 
 if TYPE_CHECKING:

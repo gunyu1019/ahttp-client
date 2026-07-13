@@ -14,3 +14,9 @@ class Method(StrEnum):
 
     def __str__(self) -> str:
         return super().__str__().upper()
+
+
+class FormEncoding(StrEnum):
+    AUTO = auto()
+    URL_ENCODED = "application/x-www-form-urlencoded"
+    MULTIPART = "multipart/form-data"

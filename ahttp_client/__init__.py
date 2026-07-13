@@ -24,7 +24,7 @@ SOFTWARE.
 from typing import NamedTuple, Literal, Optional
 
 from .component import Body, BodyJson, BodyForm, Header, Path, Query
-from .method import Method
+from .enum import Method, FormEncoding
 from .request import RequestCore, request, get, post, options, put, delete
 from .session import BaseSession
 
