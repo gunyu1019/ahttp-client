@@ -30,6 +30,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from .backend.base import AsyncBackendSession, SyncBackendSession
 from .request import RequestCore
 
 if TYPE_CHECKING:
@@ -46,12 +47,12 @@ class BaseSession(ABC):
     """A class to manage session for managing decoration functions."""
 
     def __init__(
-        self,
-        base_url: str,
-        *,
-        directly_response: bool = False,
-        _is_single_session: bool = False,
-        **kwargs,
+            self,
+            base_url: str,
+            *,
+            directly_response: bool = False,
+            _is_single_session: bool = False,
+            **kwargs,
     ):
         self.directly_response = directly_response
         self.base_url = base_url
@@ -62,11 +63,6 @@ class BaseSession(ABC):
                     continue
 
                 func.session = self
-
-    @property
-    @abstractmethod
-    def session(self) -> Any:
-        pass
 
     @staticmethod
     def _has_overridden_method(method):
@@ -84,49 +80,58 @@ class BaseSession(ABC):
         pass
 
 
-class AsyncSession(BaseSession, ABC):
+class AsyncSession(BaseSession):
+    def __init__(
+            self,
+            base_url: str,
+            session: AsyncBackendSession,
+            *,
+            directly_response: bool = False,
+            _is_single_session: bool = False,
+            **kwargs,
+    ):
+        super(AsyncSession, self).__init__(
+            base_url,
+            directly_response=directly_response,
+            _is_single_session=_is_single_session,
+            **kwargs
+        )
+        self.session = session
+
     async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
-        self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
     ):
         await self.close()
 
-    @abstractmethod
     async def close(self):
-        pass
+        await self.session.wrapped_close()
 
-    @abstractmethod
     async def request(self, method: str, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_request(method, path, **kwargs)
 
-    @abstractmethod
     async def get(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_get(path, **kwargs)
 
-    @abstractmethod
     async def post(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_post(path, **kwargs)
 
-    @abstractmethod
     async def options(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_options(path, **kwargs)
 
-    @abstractmethod
     async def delete(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_delete(path, **kwargs)
 
-    @abstractmethod
     async def patch(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_patch(path, **kwargs)
 
-    @abstractmethod
     async def put(self, path: str, **kwargs):
-        pass
+        return await self.session.wrapped_put(path, **kwargs)
 
     async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -137,7 +142,7 @@ class AsyncSession(BaseSession, ABC):
 
         request_kwargs = _req_obj.get_request_kwargs()
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = await self.session.request(_req_obj.method, _path, **request_kwargs)
+        response = await self.session.wrapped_request(_req_obj.method, _path, **request_kwargs)
 
         if self._has_overridden_method(self.after_request):
             response = await self.after_request(response)
@@ -225,49 +230,58 @@ class AsyncSession(BaseSession, ABC):
         return decorator
 
 
-class SyncSession(BaseSession, ABC):
+class Session(BaseSession):
+    def __init__(
+            self,
+            base_url: str,
+            session: SyncBackendSession,
+            *,
+            directly_response: bool = False,
+            _is_single_session: bool = False,
+            **kwargs,
+    ):
+        super(Session, self).__init__(
+            base_url,
+            directly_response=directly_response,
+            _is_single_session=_is_single_session,
+            **kwargs
+        )
+        self.session = session
+
     def __enter__(self) -> Self:
         return self
 
     def __exit__(
-        self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
     ):
         self.close()
 
-    @abstractmethod
     def close(self):
-        pass
+        self.session.wrapped_close()
 
-    @abstractmethod
     def request(self, method: str, path: str, **kwargs):
-        pass
+        return self.session.wrapped_request(method, path, **kwargs)
 
-    @abstractmethod
     def get(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_get(path, **kwargs)
 
-    @abstractmethod
     def post(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_post(path, **kwargs)
 
-    @abstractmethod
     def options(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_options(path, **kwargs)
 
-    @abstractmethod
     def delete(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_delete(path, **kwargs)
 
-    @abstractmethod
     def patch(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_patch(path, **kwargs)
 
-    @abstractmethod
     def put(self, path: str, **kwargs):
-        pass
+        return self.session.wrapped_put(path, **kwargs)
 
     def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -278,7 +292,7 @@ class SyncSession(BaseSession, ABC):
 
         request_kwargs = _req_obj.get_request_kwargs()
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = self.session.request(_req_obj.method, _path, **request_kwargs)
+        response = self.session.wrapped_request(_req_obj.method, _path, **request_kwargs)
 
         if self._has_overridden_method(self.after_request):
             response = self.after_request(response)
@@ -341,7 +355,7 @@ class SyncSession(BaseSession, ABC):
         --------
         The session is defined through the function's decoration.
 
-        >>> @SyncSession.single_session("https://api.yhs.kr")
+        >>> @Session.single_session("https://api.yhs.kr")
         ... @request("GET", "/bus/station")
         ... async def station_query(session: SyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
