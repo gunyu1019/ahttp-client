@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from .._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from ..query import Query
     from ..request import RequestCore, request
-    from ..session import Session
+    from ..session import BaseSession
 
     CallableT = TypeVar("CallableT")
     CallableR = TypeVar("CallableR")
@@ -78,7 +78,7 @@ def multiple_hook(
 
     Examples
     --------
-    >>> class MetroAPI(Session):
+    >>> class MetroAPI(BaseSession):
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...

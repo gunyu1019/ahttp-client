@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from typing import Annotated, Optional, Callable, NoReturn
     from typing_extensions import Self
 
-    from .session import Session
+    from .session import BaseSession
     from .request import request
 
 
@@ -66,10 +66,10 @@ class Component:
 
         Examples
         --------
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @BaseSession.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session,
+        ...     session: BaseSession,
         ...     response: aiohttp.ClientResponse,
         ...     station_name: Annotated[str, Query.custom_name('name')]
         ... ) -> list[...]:
@@ -100,10 +100,10 @@ class Component:
 
         Examples
         --------
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @BaseSession.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session,
+        ...     session: BaseSession,
         ...     response: aiohttp.ClientResponse,
         ...     station_name: Annotated[str, Query.to_camel()]
         ... ) -> list[...]:
@@ -124,10 +124,10 @@ class Component:
 
         Examples
         --------
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @BaseSession.single_session("https://api.yhs.kr")
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: Session,
+        ...     session: BaseSession,
         ...     response: aiohttp.ClientResponse,
         ...     station_name: Annotated[str, Query.to_pascal()]
         ... ) -> list[...]:

@@ -9,7 +9,7 @@ from ahttp_client import *
 def test_method_form_data_type_1():
     @request("GET", "/test_path")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_body: str | BodyForm = None,
     ) -> None:
         pass
@@ -21,7 +21,7 @@ def test_method_form_data_type_1():
 def test_method_form_data_type_2():
     @request("GET", "/test_path")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_body: aiohttp.FormData | Body = None,
     ) -> None:
         pass
@@ -33,7 +33,7 @@ def test_method_form_data_type_2():
 def test_method_json_data():
     @request("GET", "/test_path")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_body: list[Any] | Body = None,
     ) -> None:
         pass
@@ -46,7 +46,7 @@ def test_duplicated_body_type():
 
         @request("GET", "/test_path")
         async def test_request(
-            session: Session,
+            session: BaseSession,
             test_body_1: BodyForm | Body = None,
             test_body_2: list[Any] | Body = None,
         ) -> None:
@@ -58,7 +58,7 @@ def test_duplicated_body_type():
 def test_not_duplicated_body_type():
     @request("GET", "/test_path")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_body_1: int | BodyJson = None,
         test_body_2: list[Any] | BodyJson = None,
     ) -> None:
@@ -73,7 +73,7 @@ def test_duplicated_body():
 
         @request("GET", "/test_path", body=sample_body)
         async def test_request(
-            session: Session,
+            session: BaseSession,
             test_body: aiohttp.FormData | Body = None,
         ) -> None:
             pass

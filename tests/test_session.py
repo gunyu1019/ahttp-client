@@ -6,9 +6,9 @@ from ahttp_client.request import RequestCore
 
 @pytest.fixture
 def test_method_for_single_session():
-    @Session.single_session("https://test_base_url")
+    @BaseSession.single_session("https://test_base_url")
     @request("GET", "/")
-    async def test_request(session: Session) -> None:
+    async def test_request(session: BaseSession) -> None:
         pass
 
     return test_request

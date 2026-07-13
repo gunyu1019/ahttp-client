@@ -26,7 +26,7 @@ from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import aiohttp
-    from .session import Session
+    from .session import BaseSession
     from .request import RequestCore
 
 
@@ -34,10 +34,10 @@ T = TypeVar("T")
 
 RequestFunction = Callable[..., Coroutine[Any, Any, Any]]
 RequestBeforeHookFunction = Callable[
-    [Session, RequestCore, str],
+    [BaseSession, RequestCore, str],
     Coroutine[Any, Any, tuple[RequestCore, str]],
 ]
 RequestAfterHookFunction = Callable[
-    [Session, Any],
+    [BaseSession, Any],
     Coroutine[Any, Any, Any],
 ]

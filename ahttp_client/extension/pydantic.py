@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
     from ..component import Query
     from ..request import RequestCore, request
-    from ..session import Session
+    from ..session import BaseSession
 
 try:
     import pydantic
@@ -330,7 +330,7 @@ def pydantic_response_model(
     ...     name: str
     ...     id: str
     ...
-    >>> class MetroAPI(Session):
+    >>> class MetroAPI(BaseSession):
     ...    def __init__(self, loop: asyncio.AbstractEventLoop):
     ...        super().__init__("https://api.yhs.kr", loop=loop)
     ...

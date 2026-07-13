@@ -1,11 +1,11 @@
 import asyncio
 import aiohttp
 
-from ahttp_client import request, Session, Query
+from ahttp_client import request, BaseSession, Query
 from typing import Annotated
 
 
-class MetroAPI(Session):
+class MetroAPI(BaseSession):
     def __init__(self):
         super().__init__("https://api.yhs.kr")
 

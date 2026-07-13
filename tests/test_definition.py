@@ -9,10 +9,10 @@ from ahttp_client.request import RequestCore
 
 @pytest.fixture
 def test_method_with_parameter():
-    @Session.single_session("https://test_base_url")
+    @BaseSession.single_session("https://test_base_url")
     @request("GET", "/{test_path}")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_response: aiohttp.ClientResponse,
         test_path: str | Path = "__TEST_PATH__",
         test_query: str | Query = "__TEST_PARAMETER__",
@@ -26,10 +26,10 @@ def test_method_with_parameter():
 
 @pytest.fixture
 def test_method_with_annotated():
-    @Session.single_session("https://test_base_url")
+    @BaseSession.single_session("https://test_base_url")
     @request("GET", "/{test_path}")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_path: Annotated[str, Path],
         test_query: Annotated[str, Query],
         test_header: Annotated[str, Header],
@@ -42,7 +42,7 @@ def test_method_with_annotated():
 
 @pytest.fixture
 def test_method_with_decorator_parameter():
-    @Session.single_session("https://test_base_url")
+    @BaseSession.single_session("https://test_base_url")
     @request(
         "GET",
         "/{test_path}",
@@ -52,7 +52,7 @@ def test_method_with_decorator_parameter():
         body_parameter="test_body",
     )
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_path: str,
         test_query: str,
         test_header: str,
@@ -67,7 +67,7 @@ def test_method_with_decorator_parameter():
 def test_method_component_custom_name():
     @request("GET", "/test_path")
     async def test_request(
-        _: Session,
+        _: BaseSession,
         test_header: Annotated[str, Header.custom_name("custom_header_name")],
         test_query: Annotated[int, Query.to_pascal()],
         test_form: Annotated[str, BodyForm.to_camel()],
@@ -124,7 +124,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.to_pascal(),
         ) -> None:
             pass
@@ -135,7 +135,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.to_camel(),
         ) -> None:
             pass
@@ -146,7 +146,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.custom_name("another_name"),
         ) -> None:
             pass
@@ -159,7 +159,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{TestPath}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.to_pascal(),
         ) -> None:
             pass
@@ -170,7 +170,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{testPath}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.to_camel(),
         ) -> None:
             pass
@@ -181,7 +181,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{test_path}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.custom_name("another_name"),
         ) -> None:
             pass

@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 import pydantic
 
-from ahttp_client import request, Session, Query, Body
+from ahttp_client import request, BaseSession, Query, Body
 from ahttp_client.extension import pydantic_response_model
 from pydantic.alias_generators import to_camel
 from typing import Annotated
@@ -22,7 +22,7 @@ class PydanticModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(alias_generator=to_camel)
 
 
-class MetroAPI(Session):
+class MetroAPI(BaseSession):
     def __init__(self):
         super().__init__("https://api.yhs.kr")
 

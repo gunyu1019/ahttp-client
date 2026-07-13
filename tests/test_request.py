@@ -10,7 +10,7 @@ from ahttp_client import *
 def test_method():
     @request("GET", "/{test_path}")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_path: Annotated[str, Path] = "TEST_PATH",
         parameter: Annotated[str, Query] = "TEST_QUERY",
         header: Annotated[str, Header] = "TEST_HEADER",
@@ -22,11 +22,11 @@ def test_method():
 
 @pytest.fixture
 def test_method_for_private_parameter():
-    @Session.single_session("https://test_base_url")
+    @BaseSession.single_session("https://test_base_url")
     @request("GET", "/")
     @Header.default_header("private_header", "__PRIVATE_HEADER__")
     @Query.default_query("private_query", "__PRIVATE_QUERY__")
-    async def test_request(session: Session) -> None:
+    async def test_request(session: BaseSession) -> None:
         pass
 
     return test_request
