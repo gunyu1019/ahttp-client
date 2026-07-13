@@ -25,13 +25,14 @@ from __future__ import annotations
 
 import copy
 import inspect
+import io
 
 from abc import ABC, abstractmethod
 from asyncio import iscoroutinefunction
-from typing import TypeVar, TYPE_CHECKING, Callable
+from typing import TypeVar, TYPE_CHECKING, Callable, IO, BinaryIO
 
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
-from .enum import Method
+from .enum import Method, BodyFormEncoding, BodyType
 from .utils import *
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
     from .backend.base import BaseBackend
 
 T = TypeVar("T")
+IO_TYPE = (IO, BinaryIO, io.IOBase)
 
 
 class RequestCore(ABC):
@@ -142,11 +144,12 @@ class RequestCore(ABC):
         self.header_parameter: dict[str, inspect.Parameter] = dict()
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_form_parameter: dict[str, inspect.Parameter] = dict()
         self.body_json_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_form_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_form_encoding_type: Optional[BodyFormEncoding] = None
 
-        self.body_parameter_type: Literal["json", "data"] | None = None
         self.body_parameter: Optional[inspect.Parameter] = None
+        self.body_parameter_type: Optional[BodyType] = None
 
         self.validation_parameter: dict[str, list[Callable[..., Any]]] = dict()
         self.response_parameter: list[str] = response_parameter or list()
@@ -165,6 +168,7 @@ class RequestCore(ABC):
         header_parameter: Optional[list[str]] = None,
         body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
         path_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
         **kwargs,
@@ -176,6 +180,7 @@ class RequestCore(ABC):
             query_parameter=query_parameter or list(),
             header_parameter=header_parameter or list(),
             form_parameter=form_parameter or list(),
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter or list(),
             body_parameter=body_parameter,
             path_parameter=path_parameter or list(),
@@ -300,7 +305,7 @@ class RequestCore(ABC):
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
 
-    def _duplicated_check_body_parameter(self, filled: bool = False) -> None:
+    def _duplicated_check_body_parameter(self, single_parameter: bool = False) -> None:
         """Check if body parameter is already in fill.
 
         Raises
@@ -308,21 +313,18 @@ class RequestCore(ABC):
         TypeError
             Body parameter is already filled.
         """
-        if filled and self.body_parameter is not None:
+        if single_parameter and self.body_parameter is not None:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
-        if all(
-            [
-                not filled,
+        if (
+                not single_parameter and
                 sum(
                     [
                         self.body_parameter is not None,
                         len(self.body_form_parameter) > 0,
                         len(self.body_json_parameter) > 0,
                     ]
-                )
-                > 1,
-            ]
+                ) > 1,
         ):
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
@@ -351,6 +353,7 @@ class RequestCore(ABC):
         header_parameter: Optional[list[str]] = None,
         body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
     ) -> None:
@@ -373,6 +376,8 @@ class RequestCore(ABC):
         body_parameter: str
             Function parameter name used in the body.
         """
+        form_encoding = form_encoding or BodyFormEncoding.AUTO
+
         for parameter in self._signature.parameters.values():
             annotation = parameter.annotation
             origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
@@ -407,13 +412,19 @@ class RequestCore(ABC):
             elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
-                self.body_parameter_type = "data"
+                if form_encoding != BodyFormEncoding.AUTO:
+                    self.body_parameter_type = form_encoding.body_type
+                elif form_encoding == BodyFormEncoding.AUTO and is_subclass_safe(instance_origin, IO_TYPE):
+                    self.body_parameter_type = BodyType.FORM_DATA
+                elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
+                    self.body_parameter_type = BodyType.URL_ENCODED
+
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_form_parameter[name] = parameter
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
-                self.body_parameter_type = "json"
+                self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
                 self.body_json_parameter[name] = parameter
                 self._duplicated_check_body_parameter()
@@ -421,9 +432,9 @@ class RequestCore(ABC):
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
                 if is_subclass_safe(instance_origin, Collection):
-                    self.body_parameter_type = "json"
+                    self.body_parameter_type = BodyType.JSON
                 else:
-                    self.body_parameter_type = "data"
+                    self.body_parameter_type = BodyType.RAW
                 self.body_parameter = parameter
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
@@ -537,8 +548,8 @@ class RequestCore(ABC):
             and other.query_parameter == self.query_parameter
             and other.path_parameter == self.path_parameter
             and other.body_form_parameter == self.body_form_parameter
+            and other.body_form_encoding_type == self.body_form_encoding_type
             and other.body_json_parameter == self.body_json_parameter
-            and other.body_parameter_type == self.body_parameter_type
             and other.body_parameter == self.body_parameter
             and other._before_hook == self._before_hook
             and other._after_hook == self._after_hook
