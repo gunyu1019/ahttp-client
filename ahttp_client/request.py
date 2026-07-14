@@ -26,7 +26,6 @@ from __future__ import annotations
 import inspect
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional
 
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
@@ -766,6 +765,11 @@ class SyncRequestCore(RequestCore):
         return self.func(**kwargs)
 
 
+def _make_request_core(func, method, path, **kwargs):
+    core_cls = AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    return core_cls.from_decorator(func, method, path, **kwargs)
+
+
 def request(
     method: str | Method,
     path: str,
@@ -779,6 +783,7 @@ def request(
     query_parameter: Optional[list[str]] = None,
     body_json_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
@@ -799,23 +804,24 @@ def request(
         Request parameters.
     headers: Optional[dict[str, Any]]
         Request headers.
-    body: Optional[Any | aiohttp.FormData]
+    body: Optional[Any]
         Request body.
     directly_response: bool
-        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
+        Returns a raw response object without executing the function's body statement.
     header_parameter: list[str]
         Function parameter names used in the header
     query_parameter: list[str]
         Function parameter names used in the query(parameter)
     form_parameter: list[str]
         Function parameter names used in body form.
+    form_encoding: Optional[BodyFormEncoding]
+        Encoding type for form parameters.
     body_json_parameter: list[str]
         Function parameter names used in body json.
     path_parameter: list[str]
         Function parameter names used in the path.
     body_parameter: str
         Function parameter name used in the body.
-        The body parameter must take only Collection, or aiohttp.FormData.
     response_parameter: list[str]
         Function parameter name to store the HTTP result in.
     **request_kwargs
@@ -826,7 +832,7 @@ def request(
     """
 
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             method,
             path,
@@ -838,6 +844,7 @@ def request(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -859,6 +866,7 @@ def get(
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
@@ -866,7 +874,7 @@ def get(
     **request_kwargs,
 ):
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             Method.GET,
             path,
@@ -878,6 +886,7 @@ def get(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -899,6 +908,7 @@ def post(
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
@@ -906,7 +916,7 @@ def post(
     **request_kwargs,
 ):
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             Method.POST,
             path,
@@ -918,6 +928,7 @@ def post(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -939,6 +950,7 @@ def options(
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
@@ -946,7 +958,7 @@ def options(
     **request_kwargs,
 ):
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             Method.OPTIONS,
             path,
@@ -958,8 +970,51 @@ def options(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
-            path_parameter=path_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
+            path_parameter=path_parameter,
+            body_parameter=body_parameter,
+            response_parameter=response_parameter,
+            **request_kwargs,
+        )
+
+    return decorator
+
+
+def patch(
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
+):
+    def decorator(func):
+        return _make_request_core(
+            func,
+            Method.PATCH,
+            path,
+            name=name,
+            params=params,
+            headers=headers,
+            body=body,
+            directly_response=directly_response,
+            header_parameter=header_parameter,
+            query_parameter=query_parameter,
+            form_parameter=form_parameter,
+            form_encoding=form_encoding,
+            body_json_parameter=body_json_parameter,
+            path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
             **request_kwargs,
@@ -979,6 +1034,7 @@ def put(
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
@@ -986,7 +1042,7 @@ def put(
     **request_kwargs,
 ):
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             Method.PUT,
             path,
@@ -998,6 +1054,7 @@ def put(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -1019,6 +1076,7 @@ def delete(
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
@@ -1026,7 +1084,7 @@ def delete(
     **request_kwargs,
 ):
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             Method.DELETE,
             path,
@@ -1038,6 +1096,7 @@ def delete(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
