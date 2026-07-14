@@ -2,14 +2,14 @@ import copy
 import httpx
 
 from typing import TYPE_CHECKING, Collection
-from .base import AsyncBackendSession, BaseBackend, SyncBackendSession
+from .base import AsyncBackend, BaseBackend, SyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
     from .. import RequestCore
 
 
-class HttpXBackend(BaseBackend):
+class CommonHttpXBackend(BaseBackend):
     @property
     def response_cls(self) -> type[Any]:
         return httpx.Response
@@ -39,6 +39,15 @@ class HttpXBackend(BaseBackend):
 
         return request_kwargs
 
+    def response_status(self, response_obj: httpx.Response) -> int:
+        return response_obj.status_code
+
+    def response_headers(self, response_obj: httpx.Response) -> dict[str, Any]:
+        return dict(response_obj.headers)
+
+    def response_url(self, response_obj: httpx.Response) -> str:
+        return str(response_obj.url)
+
     def response_data(self, response_obj: httpx.Response) -> bytes:
         return response_obj.content
 
@@ -58,53 +67,53 @@ class HttpXBackend(BaseBackend):
         return json_parser(raw_response, **json_kwargs)
 
 
-class HttpXAsyncSession(httpx.AsyncClient, AsyncBackendSession):
-    async def wrapped_close(self):
-        await self.aclose()
+class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
+    async def session_close(self):
+        await self.session.aclose()
 
-    async def wrapped_request(self, method: str, path: str, **kwargs):
-        return await self.request(method, path, **kwargs)
+    async def session_request(self, method: str, path: str, **kwargs):
+        return await self.session.request(method, path, **kwargs)
 
-    async def wrapped_get(self, path: str, **kwargs):
-        return await self.get(path, **kwargs)
+    async def session_get(self, path: str, **kwargs):
+        return await self.session.get(path, **kwargs)
 
-    async def wrapped_post(self, path: str, **kwargs):
-        return await self.post(path, **kwargs)
+    async def session_post(self, path: str, **kwargs):
+        return await self.session.post(path, **kwargs)
 
-    async def wrapped_options(self, path: str, **kwargs):
-        return await self.options(path, **kwargs)
+    async def session_options(self, path: str, **kwargs):
+        return await self.session.options(path, **kwargs)
 
-    async def wrapped_delete(self, path: str, **kwargs):
-        return await self.delete(path, **kwargs)
+    async def session_delete(self, path: str, **kwargs):
+        return await self.session.delete(path, **kwargs)
 
-    async def wrapped_patch(self, path: str, **kwargs):
-        return await self.patch(path, **kwargs)
+    async def session_patch(self, path: str, **kwargs):
+        return await self.session.patch(path, **kwargs)
 
-    async def wrapped_put(self, path: str, **kwargs):
-        return await self.put(path, **kwargs)
+    async def session_put(self, path: str, **kwargs):
+        return await self.session.put(path, **kwargs)
 
 
-class HttpXSyncSession(httpx.Client, SyncBackendSession):
-    def wrapped_close(self):
-        self.close()
+class HttpXSyncSession(SyncBackend, CommonHttpXBackend):
+    def session_close(self):
+        self.session.close()
 
-    def wrapped_request(self, method: str, path: str, **kwargs):
-        return self.request(method, path, **kwargs)
+    def session_request(self, method: str, path: str, **kwargs):
+        return self.session.request(method, path, **kwargs)
 
-    def wrapped_get(self, path: str, **kwargs):
-        return self.get(path, **kwargs)
+    def session_get(self, path: str, **kwargs):
+        return self.session.get(path, **kwargs)
 
-    def wrapped_post(self, path: str, **kwargs):
-        return self.post(path, **kwargs)
+    def session_post(self, path: str, **kwargs):
+        return self.session.post(path, **kwargs)
 
-    def wrapped_options(self, path: str, **kwargs):
-        return self.options(path, **kwargs)
+    def session_options(self, path: str, **kwargs):
+        return self.session.options(path, **kwargs)
 
-    def wrapped_delete(self, path: str, **kwargs):
-        return self.delete(path, **kwargs)
+    def session_delete(self, path: str, **kwargs):
+        return self.session.delete(path, **kwargs)
 
-    def wrapped_patch(self, path: str, **kwargs):
-        return self.patch(path, **kwargs)
+    def session_patch(self, path: str, **kwargs):
+        return self.session.patch(path, **kwargs)
 
-    def wrapped_put(self, path: str, **kwargs):
-        return self.put(path, **kwargs)
+    def session_put(self, path: str, **kwargs):
+        return self.session.put(path, **kwargs)

@@ -23,21 +23,18 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import copy
 import inspect
-import io
 
 from abc import ABC, abstractmethod
-from asyncio import iscoroutinefunction
-from typing import TypeVar, TYPE_CHECKING, Callable, IO, BinaryIO
+from typing import TypeVar, TYPE_CHECKING, Callable
 
+from ._types import _IO_TYPE, _BODY_JSON_TYPE
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .enum import Method, BodyFormEncoding, BodyType
 from .utils import *
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
-    from typing import Optional, Self, Any, Literal
+    from typing import Optional, Self, Any
     from ._types import (
         RequestFunction,
         RequestBeforeHookFunction,
@@ -47,7 +44,6 @@ if TYPE_CHECKING:
     from .backend.base import BaseBackend
 
 T = TypeVar("T")
-IO_TYPE = (IO, BinaryIO, io.IOBase)
 
 
 class RequestCore(ABC):
@@ -146,7 +142,7 @@ class RequestCore(ABC):
         self.path_parameter: dict[str, inspect.Parameter] = dict()
         self.body_json_parameter: dict[str, inspect.Parameter] = dict()
         self.body_form_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_form_encoding_type: Optional[BodyFormEncoding] = None
+        self.body_form_encoding_type: BodyFormEncoding = BodyFormEncoding.AUTO
 
         self.body_parameter: Optional[inspect.Parameter] = None
         self.body_parameter_type: Optional[BodyType] = None
@@ -214,6 +210,7 @@ class RequestCore(ABC):
         new_cls.query_parameter = self.query_parameter
         new_cls.path_parameter = self.path_parameter
         new_cls.body_form_parameter = self.body_form_parameter
+        new_cls.body_form_encoding_type = self.body_form_encoding_type
         new_cls.body_json_parameter = self.body_json_parameter
 
         new_cls.body_parameter_type = self.body_parameter_type
@@ -280,7 +277,7 @@ class RequestCore(ABC):
         return len(self.body_form_parameter) > 0
 
     @property
-    def body_type(self) -> Optional[Literal["json", "data"]]:
+    def body_type(self) -> Optional[BodyType]:
         """Returns the final body type
 
         Returns
@@ -290,9 +287,12 @@ class RequestCore(ABC):
         if self.body_parameter_type is not None:
             return self.body_parameter_type
 
-        if isinstance(self.body, Collection):
-            return "json"
-        return "data"
+        if self.body_form_encoding_type != BodyFormEncoding.AUTO:
+            return self.body_form_encoding_type.body_type
+
+        if isinstance(self.body, _BODY_JSON_TYPE):
+            return BodyType.JSON
+        return BodyType.RAW
 
     def _duplicated_check_body(self) -> None:
         """Check if body is already in fill.
@@ -326,7 +326,7 @@ class RequestCore(ABC):
                     ]
                 ) > 1,
         ):
-            raise TypeError("Duplicated Form Parameter or Body Parameter.")
+            raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
     # Setup
     def _add_private_key(self) -> None:
@@ -376,7 +376,7 @@ class RequestCore(ABC):
         body_parameter: str
             Function parameter name used in the body.
         """
-        form_encoding = form_encoding or BodyFormEncoding.AUTO
+        form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
 
         for parameter in self._signature.parameters.values():
             annotation = parameter.annotation
@@ -414,7 +414,7 @@ class RequestCore(ABC):
             elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
-                elif form_encoding == BodyFormEncoding.AUTO and is_subclass_safe(instance_origin, IO_TYPE):
+                elif form_encoding == BodyFormEncoding.AUTO and is_subclass_safe(instance_origin, _IO_TYPE):
                     self.body_parameter_type = BodyType.FORM_DATA
                 elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
                     self.body_parameter_type = BodyType.URL_ENCODED
@@ -431,7 +431,7 @@ class RequestCore(ABC):
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
-                if is_subclass_safe(instance_origin, Collection):
+                if is_subclass_safe(instance_origin, _BODY_JSON_TYPE):
                     self.body_parameter_type = BodyType.JSON
                 else:
                     self.body_parameter_type = BodyType.RAW

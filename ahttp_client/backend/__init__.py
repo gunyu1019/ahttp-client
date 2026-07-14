@@ -1,4 +1,4 @@
-from .base import BaseBackendSession, AsyncBackendSession, SyncBackendSession
+from .base import BaseBackendSession, AsyncBackend, SyncBackend
 from .aiohttp import AiohttpSession
 
 try:

@@ -5,14 +5,14 @@ import copy
 import json as jsonlib
 
 from typing import Collection, TYPE_CHECKING
-from .base import BaseBackend, AsyncBackendSession
+from .base import AsyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
     from .. import RequestCore
 
 
-class AiohttpBackend(BaseBackend):
+class AiohttpBackend(AsyncBackend):
     @property
     def response_cls(self) -> type[Any]:
         return aiohttp.ClientResponse
@@ -37,6 +37,15 @@ class AiohttpBackend(BaseBackend):
         if not raw_response:
             return None
         return json_parser(loads=json_parser, **json_kwargs)
+
+    def response_status(self, response_obj: aiohttp.ClientResponse) -> int:
+        return response_obj.status
+
+    def response_headers(self, response_obj: aiohttp.ClientResponse) -> dict[str, Any]:
+        return dict(response_obj.headers)
+
+    def response_url(self, response_obj: aiohttp.ClientResponse) -> str:
+        return str(response_obj.url)
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
@@ -68,28 +77,26 @@ class AiohttpBackend(BaseBackend):
 
         return request_kwargs
 
+    async def session_close(self):
+        await self.session.close()
 
-class AiohttpSession(aiohttp.ClientSession, AsyncBackendSession):
-    async def wrapped_close(self):
-        await self.close()
+    async def session_request(self, method: str, path: str, **kwargs):
+        return await self.session.request(method, path, **kwargs)
 
-    async def wrapped_request(self, method: str, path: str, **kwargs):
-        return await self.request(method, path, **kwargs)
+    async def session_get(self, path: str, **kwargs):
+        return await self.session.get(path, **kwargs)
 
-    async def wrapped_get(self, path: str, **kwargs):
-        return await self.get(path, **kwargs)
+    async def session_post(self, path: str, **kwargs):
+        return await self.session.post(path, **kwargs)
 
-    async def wrapped_post(self, path: str, **kwargs):
-        return await self.post(path, **kwargs)
+    async def session_options(self, path: str, **kwargs):
+        return await self.session.options(path, **kwargs)
 
-    async def wrapped_options(self, path: str, **kwargs):
-        return await self.options(path, **kwargs)
+    async def session_delete(self, path: str, **kwargs):
+        return await self.session.delete(path, **kwargs)
 
-    async def wrapped_delete(self, path: str, **kwargs):
-        return await self.delete(path, **kwargs)
+    async def session_patch(self, path: str, **kwargs):
+        return await self.session.patch(path, **kwargs)
 
-    async def wrapped_patch(self, path: str, **kwargs):
-        return await self.patch(path, **kwargs)
-
-    async def wrapped_put(self, path: str, **kwargs):
-        return await self.put(path, **kwargs)
+    async def session_put(self, path: str, **kwargs):
+        return await self.session.put(path, **kwargs)

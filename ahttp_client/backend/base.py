@@ -9,6 +9,10 @@ if TYPE_CHECKING:
 
 
 class BaseBackend(ABC):
+    def __init__(self, session: type, **kwargs: Any):
+        self.session = session(**kwargs)
+        self.session_kwargs = kwargs
+
     @abstractmethod
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         pass
@@ -34,74 +38,82 @@ class BaseBackend(ABC):
     ) -> Optional[Any]:
         pass
 
-
-class BaseBackendSession(ABC):
-    pass
-
-
-class AsyncBackendSession(BaseBackendSession, ABC):
     @abstractmethod
-    async def wrapped_close(self):
+    def response_status(self, response_obj: Any) -> int:
         pass
 
     @abstractmethod
-    async def wrapped_request(self, method: str, path: str, **kwargs):
+    def response_headers(self, response_obj: Any) -> dict[str, Any]:
         pass
 
     @abstractmethod
-    async def wrapped_get(self, path: str, **kwargs):
-        pass
-
-    @abstractmethod
-    async def wrapped_post(self, path: str, **kwargs):
-        pass
-
-    @abstractmethod
-    async def wrapped_options(self, path: str, **kwargs):
-        pass
-
-    @abstractmethod
-    async def wrapped_delete(self, path: str, **kwargs):
-        pass
-
-    @abstractmethod
-    async def wrapped_patch(self, path: str, **kwargs):
-        pass
-
-    @abstractmethod
-    async def wrapped_put(self, path: str, **kwargs):
+    def response_url(self, response_obj: Any) -> str:
         pass
 
 
-class SyncBackendSession(BaseBackendSession, ABC):
+class AsyncBackend(BaseBackend, ABC):
     @abstractmethod
-    def wrapped_close(self):
+    async def session_close(self):
         pass
 
     @abstractmethod
-    def wrapped_request(self, method: str, path: str, **kwargs):
+    async def session_request(self, method: str, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_get(self, path: str, **kwargs):
+    async def session_get(self, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_post(self, path: str, **kwargs):
+    async def session_post(self, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_options(self, path: str, **kwargs):
+    async def session_options(self, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_delete(self, path: str, **kwargs):
+    async def session_delete(self, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_patch(self, path: str, **kwargs):
+    async def session_patch(self, path: str, **kwargs):
         pass
 
     @abstractmethod
-    def wrapped_put(self, path: str, **kwargs):
+    async def session_put(self, path: str, **kwargs):
+        pass
+
+
+class SyncBackend(BaseBackend, ABC):
+    @abstractmethod
+    def session_close(self):
+        pass
+
+    @abstractmethod
+    def session_request(self, method: str, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_get(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_post(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_options(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_delete(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_patch(self, path: str, **kwargs):
+        pass
+
+    @abstractmethod
+    def session_put(self, path: str, **kwargs):
         pass
