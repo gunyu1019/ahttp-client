@@ -59,6 +59,7 @@ class CommonHttpXBackend(ABC, BaseBackend):
             json_parser: Optional[Callable[[Any, ...], Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
+        json_kwargs = json_kwargs or dict()
         if json_parser is None:
             return response_obj.json(**json_kwargs)
         raw_response = response_obj.content

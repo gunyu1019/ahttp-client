@@ -31,6 +31,7 @@ class RequestsBackend(SyncBackend):
         if not response_obj.content:
             return None
 
+        json_kwargs = json_kwargs or dict()
         if json_parser is not None:
             return json_parser(response_obj.text, **json_kwargs)
         return response_obj.json(**json_kwargs)
