@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
 
 class RequestsBackend(SyncBackend):
+    session_cls = requests.Session
+    response_cls = requests.Response
+
     def response_data(self, response_obj: requests.Response) -> bytes:
         return response_obj.content
 
@@ -27,6 +30,18 @@ class RequestsBackend(SyncBackend):
         if json_parser is not None:
             return json_parser(response_obj.text, **json_kwargs)
         return response_obj.json(**json_kwargs)
+
+    def response_status(self, response_obj: requests.Response) -> int:
+        return response_obj.status_code
+
+    def response_headers(self, response_obj: requests.Response) -> dict[str, Any]:
+        return dict(response_obj.headers)
+
+    def response_url(self, response_obj: requests.Response) -> str:
+        return response_obj.url
+
+    def response_close(self, response_obj: requests.Response) -> None:
+        response_obj.close()
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
@@ -52,10 +67,6 @@ class RequestsBackend(SyncBackend):
             request_kwargs[body_type] = body
 
         return request_kwargs
-
-    @property
-    def response_cls(self) -> type[Any]:
-        return requests.Response
 
     def session_close(self):
         self.session.close()
