@@ -22,10 +22,10 @@ SOFTWARE.
 """
 
 from __future__ import annotations
-from typing import Any, TypeVar, Callable, Coroutine, TYPE_CHECKING
+from typing import Any, TypeVar, Callable, Coroutine, IO, BinaryIO, TYPE_CHECKING
+from io import IOBase
 
 if TYPE_CHECKING:
-    import aiohttp
     from .session import BaseSession
     from .request import RequestCore
 
@@ -41,3 +41,6 @@ RequestAfterHookFunction = Callable[
     [BaseSession, Any],
     Coroutine[Any, Any, Any],
 ]
+
+_IO_TYPE = (IO, BinaryIO, IOBase)
+_BODY_JSON_TYPE = (dict, list, tuple)

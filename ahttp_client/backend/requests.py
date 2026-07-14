@@ -2,14 +2,14 @@ import copy
 import requests
 from typing import TYPE_CHECKING, Collection
 
-from .base import BaseBackend, SyncBackendSession
+from .base import SyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
     from .. import RequestCore
 
 
-class RequestsBackend(BaseBackend):
+class RequestsBackend(SyncBackend):
     def response_data(self, response_obj: requests.Response) -> bytes:
         return response_obj.content
 
@@ -57,28 +57,26 @@ class RequestsBackend(BaseBackend):
     def response_cls(self) -> type[Any]:
         return requests.Response
 
+    def session_close(self):
+        self.session.close()
 
-class RequestsSession(requests.Session, SyncBackendSession):
-    def wrapped_close(self):
-        self.close()
+    def session_request(self, method: str, path: str, **kwargs):
+        return self.session.request(method, path, **kwargs)
 
-    def wrapped_request(self, method: str, path: str, **kwargs):
-        return self.request(method, path, **kwargs)
+    def session_get(self, path: str, **kwargs):
+        return self.session.get(path, **kwargs)
 
-    def wrapped_get(self, path: str, **kwargs):
-        return self.get(path, **kwargs)
+    def session_post(self, path: str, **kwargs):
+        return self.session.post(path, **kwargs)
 
-    def wrapped_post(self, path: str, **kwargs):
-        return self.post(path, **kwargs)
+    def session_options(self, path: str, **kwargs):
+        return self.session.options(path, **kwargs)
 
-    def wrapped_options(self, path: str, **kwargs):
-        return self.options(path, **kwargs)
+    def session_delete(self, path: str, **kwargs):
+        return self.session.delete(path, **kwargs)
 
-    def wrapped_delete(self, path: str, **kwargs):
-        return self.delete(path, **kwargs)
+    def session_patch(self, path: str, **kwargs):
+        return self.session.patch(path, **kwargs)
 
-    def wrapped_patch(self, path: str, **kwargs):
-        return self.patch(path, **kwargs)
-
-    def wrapped_put(self, path: str, **kwargs):
-        return self.put(path, **kwargs)
+    def session_put(self, path: str, **kwargs):
+        return self.session.put(path, **kwargs)
