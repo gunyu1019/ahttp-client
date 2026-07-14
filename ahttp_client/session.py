@@ -197,19 +197,21 @@ class AsyncSession(BaseSession):
         return response
 
     @classmethod
-    def single_session(cls, base_url: str, **session_kwargs):
+    def single_session(cls, base_url: str, session: type, **session_kwargs):
         """A single session for one request.
 
         Parameters
         ----------
         base_url: str
             base url of the API. (for example, https://api.yhs.kr)
+        session: type
+            The HTTP session class to use (e.g. aiohttp.ClientSession, httpx.AsyncClient).
 
         Examples
         --------
         The session is defined through the function's decoration.
 
-        >>> @AsyncSession.single_session("https://api.yhs.kr")
+        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
         ... @request("GET", "/bus/station")
         ... async def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
@@ -219,7 +221,7 @@ class AsyncSession(BaseSession):
         def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, _is_single_session=True, **session_kwargs)
+                client = cls(base_url, session, _is_single_session=True, **session_kwargs)
                 func.session = client
                 response = await func(*args, **kwargs)
                 if not client.closed:
@@ -350,19 +352,21 @@ class Session(BaseSession):
         return response
 
     @classmethod
-    def single_session(cls, base_url: str, **session_kwargs):
+    def single_session(cls, base_url: str, session: type, **session_kwargs):
         """A single session for one request.
 
         Parameters
         ----------
         base_url: str
             base url of the API. (for example, https://api.yhs.kr)
+        session: type
+            The HTTP session class to use (e.g. requests.Session, httpx.Client).
 
         Examples
         --------
         The session is defined through the function's decoration.
 
-        >>> @Session.single_session("https://api.yhs.kr")
+        >>> @Session.single_session("https://api.yhs.kr", requests.Session)
         ... @request("GET", "/bus/station")
         ... async def station_query(session: SyncSession, name: typing.Annotated[str, Query]) -> Any:
         ...     pass
@@ -372,7 +376,7 @@ class Session(BaseSession):
         def decorator(func: "_RequestCore") -> RequestFunction:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
-                client = cls(base_url, _is_single_session=True, **session_kwargs)
+                client = cls(base_url, session, _is_single_session=True, **session_kwargs)
                 func.session = client
                 response = func(*args, **kwargs)
                 if not client.closed:
