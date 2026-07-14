@@ -13,30 +13,32 @@ if TYPE_CHECKING:
 
 
 class AiohttpBackend(AsyncBackend):
-    @property
-    def response_cls(self) -> type[Any]:
-        return aiohttp.ClientResponse
+    session_cls = aiohttp.ClientSession
+    response_cls = aiohttp.ClientResponse
 
-    async def response_data(self, response_obj: aiohttp.ClientResponse) -> bytes:
-        return await response_obj.read()
+    async def pre_read_response(self, response_obj: aiohttp.ClientResponse) -> None:
+        await response_obj.read()
 
-    async def response_text(self, response_obj: aiohttp.ClientResponse) -> str:
-        return await response_obj.text()
+    def response_data(self, response_obj: aiohttp.ClientResponse) -> bytes:
+        return getattr(response_obj, "_body", b'')
 
-    async def response_json(
+    def response_text(self, response_obj: aiohttp.ClientResponse) -> str:
+        body = getattr(response_obj, "_body", b'')
+        encoding = response_obj.get_encoding()
+        return body.decode(encoding)
+
+    def response_json(
             self, response_obj: aiohttp.ClientResponse,
             json_parser: Optional[Callable[[Any, ...], Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
-    ) -> Optional[dict[str, Any]]:
-        if json_parser is None:
-            json_parser = jsonlib.loads
-
-        if json_kwargs is None:
-            return await response_obj.json(loads=json_parser)
-        raw_response = await response_obj.text()
-        if not raw_response:
+    ) -> Optional[Any]:
+        body = getattr(response_obj, "_body", b'')
+        if not body:
             return None
-        return json_parser(loads=json_parser, **json_kwargs)
+
+        json_parser = json_parser or jsonlib.loads
+        json_kwargs = json_kwargs or dict()
+        return json_parser(body, **json_kwargs)
 
     def response_status(self, response_obj: aiohttp.ClientResponse) -> int:
         return response_obj.status
@@ -46,6 +48,9 @@ class AiohttpBackend(AsyncBackend):
 
     def response_url(self, response_obj: aiohttp.ClientResponse) -> str:
         return str(response_obj.url)
+
+    def response_close(self, response_obj: aiohttp.ClientResponse) -> None:
+        response_obj.close()
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
