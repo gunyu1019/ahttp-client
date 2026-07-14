@@ -1,25 +1,41 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Any, Callable, Optional, ClassVar
     from ..request import RequestCore
+
+_BackendT = TypeVar('_BackendT', bound='BaseBackend')
 
 
 class BaseBackend(ABC):
+    session_cls: ClassVar[type]
+    response_cls: ClassVar[type]
+
+    _registry: ClassVar[dict[type, type[BaseBackend]]] = {}
+
     def __init__(self, session: type, **kwargs: Any):
         self.session = session(**kwargs)
         self.session_kwargs = kwargs
 
+    def __init_subclass__(cls, **kwargs: Any):
+        super(BaseBackend, cls).__init_subclass__(**kwargs)
+
+        if not hasattr(cls, 'response_cls') or not hasattr(cls, 'session_cls'):
+            return
+
+        BaseBackend._registry[cls.session_cls] = cls
+
+    @classmethod
+    def from_session(cls: type[_BackendT], session: type, **kwargs: Any) -> _BackendT:
+        if session not in cls._registry.keys():
+            raise TypeError(f'{session.__name__} is not supported')
+        return cls._registry[session](session, **kwargs)  # type: ignore[return-value]
+
     @abstractmethod
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
-        pass
-
-    @property
-    @abstractmethod
-    def response_cls(self) -> type[Any]:
         pass
 
     @abstractmethod
@@ -50,8 +66,15 @@ class BaseBackend(ABC):
     def response_url(self, response_obj: Any) -> str:
         pass
 
+    @abstractmethod
+    def response_close(self, response_obj: Any) -> None:
+        pass
+
 
 class AsyncBackend(BaseBackend, ABC):
+    async def pre_read_response(self, response_obj: Any) -> None:
+        pass
+
     @abstractmethod
     async def session_close(self):
         pass
