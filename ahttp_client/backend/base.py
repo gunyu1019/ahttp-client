@@ -70,6 +70,11 @@ class BaseBackend(ABC):
     def response_close(self, response_obj: Any) -> None:
         pass
 
+    @property
+    @abstractmethod
+    def session_closed(self) -> bool:
+        pass
+
 
 class AsyncBackend(BaseBackend, ABC):
     async def pre_read_response(self, response_obj: Any) -> None:

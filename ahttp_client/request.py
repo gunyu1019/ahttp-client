@@ -28,6 +28,8 @@ import inspect
 from abc import ABC, abstractmethod
 from typing import TypeVar, TYPE_CHECKING, Callable
 
+from aiohttp import FormData
+
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .enum import Method, BodyFormEncoding, BodyType
@@ -140,8 +142,8 @@ class RequestCore(ABC):
         self.header_parameter: dict[str, inspect.Parameter] = dict()
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_json_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_form_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_json_parameter: dict[str, tuple[inspect.Parameter, Optional[BodyJson]]] = dict()
+        self.body_form_parameter: dict[str, tuple[inspect.Parameter, bool, Optional[BodyForm]]] = dict()
         self.body_form_encoding_type: BodyFormEncoding = BodyFormEncoding.AUTO
 
         self.body_parameter: Optional[inspect.Parameter] = None
@@ -412,21 +414,25 @@ class RequestCore(ABC):
             elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
+                name = self._get_component_name(parameter.name, component_instance)
+                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(component_instance, "is_file_type", False)
+
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
-                elif form_encoding == BodyFormEncoding.AUTO and is_subclass_safe(instance_origin, _IO_TYPE):
+                elif form_encoding == BodyFormEncoding.AUTO and (
+                        is_subclass_safe(instance_origin, _IO_TYPE) or getattr(component_instance, "is_file_type", False)
+                ):
                     self.body_parameter_type = BodyType.FORM_DATA
                 elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                name = self._get_component_name(parameter.name, component_instance)
-                self.body_form_parameter[name] = parameter
+                self.body_form_parameter[name] = (parameter, is_file_type, component_instance)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
-                self.body_json_parameter[name] = parameter
+                self.body_json_parameter[name] = (parameter, component_instance)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
@@ -503,15 +509,33 @@ class RequestCore(ABC):
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is None:  # self.is_body
+        if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
+            self.body = {
+                "file": dict(),
+                "data": dict()
+            }
+
+            for _name, (_parameter, _is_file, _component) in self.body_form_parameter.items():
+                if (_component is not None and _component.is_file_type) or _is_file:
+                    file_name = getattr(_component, "form_filename", None)
+                    content_type = getattr(_component, "form_content_type", None)
+
+                    self.body["file"][_name] = (
+                        file_name,
+                        bounded_argument.get(_parameter.name),
+                        content_type
+                    )
+                    continue
+                self.body["data"][_name] = bounded_argument.get(_parameter.name)
+        elif self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED:  # self.is_body
             self.body = {
                 _name: bounded_argument.get(_parameter.name)
-                for _name, _parameter in self.body_form_parameter.items()
+                for _name, (_parameter, _, _component) in self.body_form_parameter.items()
             }
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
             self.body = {
                 _name: bounded_argument.get(_parameter.name)
-                for _name, _parameter in self.body_json_parameter.items()
+                for _name, (_parameter, _component) in self.body_json_parameter.items()
             }
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)

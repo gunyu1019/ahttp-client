@@ -52,6 +52,10 @@ class AiohttpBackend(AsyncBackend):
     def response_close(self, response_obj: aiohttp.ClientResponse) -> None:
         response_obj.close()
 
+    @property
+    def session_closed(self) -> bool:
+        return self.session.closed
+
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
 
