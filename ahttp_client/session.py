@@ -139,14 +139,14 @@ class AsyncSession(BaseSession):
 
     async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
-        _path = path if self.backend.native_base_url else self.base_url + path
 
         if self._has_overridden_method(self.before_request):
-            _req_obj, _path = await self.before_request(request, _path)
+            _req_obj, path = await self.before_request(request, path)
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
-        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        raw_response = await self.backend.session_request(_req_obj.method.__str__(), _path, **request_kwargs)
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
+        url = path if self.backend.native_base_url else self.base_url + path
+        raw_response = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
         await self.backend.pre_read_response(raw_response)
         response = Response(raw_response, self.backend)
 
@@ -298,16 +298,17 @@ class Session(BaseSession):
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
-            _req_obj, _path = self.before_request(request, _path)
+            _req_obj, path = self.before_request(request, path)
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         url = path if self.backend.native_base_url else self.base_url + path
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
-        response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        raw_response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        response = Response(raw_response, self.backend)
 
         if self._has_overridden_method(self.after_request):
             response = self.after_request(response)
-        return response
+        return raw_response, response
 
     @BaseSession._special_method
     def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
