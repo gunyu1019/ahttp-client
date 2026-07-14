@@ -30,7 +30,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from .backend.base import SyncBackend, AsyncBackend
+from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .request import RequestCore
 
 if TYPE_CHECKING:
@@ -45,6 +45,7 @@ _log = logging.getLogger(__name__)
 
 class BaseSession(ABC):
     """A class to manage session for managing decoration functions."""
+    backend: BaseBackend
 
     def __init__(
             self,
@@ -89,12 +90,12 @@ class AsyncSession(BaseSession):
             _is_single_session: bool = False,
             **kwargs,
     ):
+        self.backend: AsyncBackend = AsyncBackend.from_session(session, **kwargs)
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
-        self.backend: AsyncBackend = AsyncBackend.from_session(session, **kwargs)
 
     @property
     def closed(self) -> bool:
@@ -243,12 +244,12 @@ class Session(BaseSession):
             _is_single_session: bool = False,
             **kwargs,
     ):
+        self.backend: SyncBackend = SyncBackend.from_session(session, **kwargs)
         super(Session, self).__init__(
             base_url,
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
-        self.backend: SyncBackend = SyncBackend.from_session(session, **kwargs)
 
     @property
     def closed(self) -> bool:
