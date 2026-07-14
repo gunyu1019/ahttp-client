@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .request import RequestCore
+from .response import Response
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -145,8 +146,9 @@ class AsyncSession(BaseSession):
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = await self.backend.session_request(_req_obj.method.__str__(), _path, **request_kwargs)
-        await self.backend.pre_read_response(response)
+        raw_response = await self.backend.session_request(_req_obj.method.__str__(), _path, **request_kwargs)
+        await self.backend.pre_read_response(raw_response)
+        response = Response(raw_response, self.backend)
 
         if self._has_overridden_method(self.after_request):
             response = await self.after_request(response)
