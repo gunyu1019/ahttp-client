@@ -94,8 +94,11 @@ class AsyncSession(BaseSession):
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
-        self.session = session(**kwargs)
         self.backend: AsyncBackend = AsyncBackend.from_session(session, **kwargs)
+
+    @property
+    def closed(self) -> bool:
+        return self.backend.session_closed
 
     async def __aenter__(self) -> Self:
         return self
@@ -245,8 +248,11 @@ class Session(BaseSession):
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
-        self.session = session(**kwargs)
         self.backend: SyncBackend = SyncBackend.from_session(session, **kwargs)
+
+    @property
+    def closed(self) -> bool:
+        return self.backend.session_closed
 
     def __enter__(self) -> Self:
         return self
