@@ -25,7 +25,7 @@ from typing import NamedTuple, Literal, Optional
 
 from .component import Body, BodyJson, BodyForm, Header, Path, Query
 from .enum import BodyType, Method, BodyFormEncoding
-from .request import RequestCore, request, get, post, options, put, delete
+from .request import RequestCore, request, get, post, options, patch, put, delete
 from .session import BaseSession
 
 __title__ = "ahttp_client"

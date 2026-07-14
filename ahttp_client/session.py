@@ -90,7 +90,7 @@ class AsyncSession(BaseSession):
             _is_single_session: bool = False,
             **kwargs,
     ):
-        self.backend: AsyncBackend = AsyncBackend.from_session(session, **kwargs)
+        self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
@@ -138,14 +138,14 @@ class AsyncSession(BaseSession):
 
     async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
-        _path = path
+        _path = path if self.backend.native_base_url else self.base_url + path
 
         if self._has_overridden_method(self.before_request):
-            _req_obj, _path = await self.before_request(request, path)
+            _req_obj, _path = await self.before_request(request, _path)
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = await self.backend.session_request(_req_obj.method, _path, **request_kwargs)
+        response = await self.backend.session_request(_req_obj.method.__str__(), _path, **request_kwargs)
         await self.backend.pre_read_response(response)
 
         if self._has_overridden_method(self.after_request):
@@ -246,7 +246,7 @@ class Session(BaseSession):
             _is_single_session: bool = False,
             **kwargs,
     ):
-        self.backend: SyncBackend = SyncBackend.from_session(session, **kwargs)
+        self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(Session, self).__init__(
             base_url,
             directly_response=directly_response,
@@ -294,14 +294,14 @@ class Session(BaseSession):
 
     def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
-        _path = path
 
         if self._has_overridden_method(self.before_request):
-            _req_obj, _path = self.before_request(request, path)
+            _req_obj, _path = self.before_request(request, _path)
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
-        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = self.backend.session_request(_req_obj.method, _path, **request_kwargs)
+        url = path if self.backend.native_base_url else self.base_url + path
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
+        response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
 
         if self._has_overridden_method(self.after_request):
             response = self.after_request(response)
