@@ -13,10 +13,13 @@ _BackendT = TypeVar('_BackendT', bound='BaseBackend')
 class BaseBackend(ABC):
     session_cls: ClassVar[type]
     response_cls: ClassVar[type]
+    native_base_url: ClassVar[bool] = False
 
     _registry: ClassVar[dict[type, type[BaseBackend]]] = {}
 
-    def __init__(self, session: type, **kwargs: Any):
+    def __init__(self, session: type, *, base_url: Optional[str] = None, **kwargs: Any):
+        if self.native_base_url and base_url is not None:
+            kwargs["base_url"] = base_url
         self.session = session(**kwargs)
         self.session_kwargs = kwargs
 

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class AiohttpBackend(AsyncBackend):
     session_cls = aiohttp.ClientSession
     response_cls = aiohttp.ClientResponse
+    native_base_url = True
 
     async def pre_read_response(self, response_obj: aiohttp.ClientResponse) -> None:
         await response_obj.read()

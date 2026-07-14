@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class CommonHttpXBackend(ABC, BaseBackend):
     response_cls = httpx.Response
+    native_base_url = True
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
