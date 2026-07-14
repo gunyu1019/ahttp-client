@@ -1,6 +1,7 @@
 import copy
 import httpx
 
+from abc import ABC
 from typing import TYPE_CHECKING, Collection
 from .base import AsyncBackend, BaseBackend, SyncBackend
 
@@ -9,10 +10,8 @@ if TYPE_CHECKING:
     from .. import RequestCore
 
 
-class CommonHttpXBackend(BaseBackend):
-    @property
-    def response_cls(self) -> type[Any]:
-        return httpx.Response
+class CommonHttpXBackend(ABC, BaseBackend):
+    response_cls = httpx.Response
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
@@ -68,6 +67,11 @@ class CommonHttpXBackend(BaseBackend):
 
 
 class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
+    session_cls = httpx.AsyncClient
+
+    async def response_close(self, response_obj: httpx.Response) -> None:
+        await response_obj.aclose()
+
     async def session_close(self):
         await self.session.aclose()
 
@@ -94,6 +98,11 @@ class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
 
 
 class HttpXSyncSession(SyncBackend, CommonHttpXBackend):
+    session_cls = httpx.Client
+
+    def response_close(self, response_obj: httpx.Response) -> None:
+        response_obj.close()
+
     def session_close(self):
         self.session.close()
 
