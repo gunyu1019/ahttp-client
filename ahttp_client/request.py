@@ -639,10 +639,8 @@ class AsyncRequestCore(RequestCore):
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
 
-        # Detect directly response  (TODO)
+        # Detect directly response
         if self.directly_response or self.session.directly_response:
-            if isinstance(response, self.backend.response_cls):
-                await response.read()  # Content-Read.
             return response
 
         for _parameter in self.response_parameter:
@@ -704,8 +702,6 @@ class SyncRequestCore(RequestCore):
 
         # Detect directly response TODO()
         if self.directly_response or self.session.directly_response:
-            if isinstance(response, self.backend.response_cls):
-                response.read()  # Content-Read.
             return response
 
         for _parameter in self.response_parameter:
