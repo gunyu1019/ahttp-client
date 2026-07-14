@@ -30,7 +30,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from .backend.base import AsyncBackend, SyncBackend
+from .backend.base import SyncBackend, AsyncBackend
 from .request import RequestCore
 
 if TYPE_CHECKING:
@@ -51,8 +51,7 @@ class BaseSession(ABC):
             base_url: str,
             *,
             directly_response: bool = False,
-            _is_single_session: bool = False,
-            **kwargs,
+            _is_single_session: bool = False
     ):
         self.directly_response = directly_response
         self.base_url = base_url
@@ -84,7 +83,7 @@ class AsyncSession(BaseSession):
     def __init__(
             self,
             base_url: str,
-            session: AsyncBackend,
+            session: type,
             *,
             directly_response: bool = False,
             _is_single_session: bool = False,
@@ -94,9 +93,9 @@ class AsyncSession(BaseSession):
             base_url,
             directly_response=directly_response,
             _is_single_session=_is_single_session,
-            **kwargs
         )
-        self.session = session
+        self.session = session(**kwargs)
+        self.backend: AsyncBackend = AsyncBackend.from_session(session, **kwargs)
 
     async def __aenter__(self) -> Self:
         return self
@@ -110,28 +109,28 @@ class AsyncSession(BaseSession):
         await self.close()
 
     async def close(self):
-        await self.session.session_close()
+        await self.backend.session_close()
 
     async def request(self, method: str, path: str, **kwargs):
-        return await self.session.session_request(method, path, **kwargs)
+        return await self.backend.session_request(method, path, **kwargs)
 
     async def get(self, path: str, **kwargs):
-        return await self.session.session_get(path, **kwargs)
+        return await self.backend.session_get(path, **kwargs)
 
     async def post(self, path: str, **kwargs):
-        return await self.session.session_post(path, **kwargs)
+        return await self.backend.session_post(path, **kwargs)
 
     async def options(self, path: str, **kwargs):
-        return await self.session.session_options(path, **kwargs)
+        return await self.backend.session_options(path, **kwargs)
 
     async def delete(self, path: str, **kwargs):
-        return await self.session.session_delete(path, **kwargs)
+        return await self.backend.session_delete(path, **kwargs)
 
     async def patch(self, path: str, **kwargs):
-        return await self.session.session_patch(path, **kwargs)
+        return await self.backend.session_patch(path, **kwargs)
 
     async def put(self, path: str, **kwargs):
-        return await self.session.session_put(path, **kwargs)
+        return await self.backend.session_put(path, **kwargs)
 
     async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -140,9 +139,10 @@ class AsyncSession(BaseSession):
         if self._has_overridden_method(self.before_request):
             _req_obj, _path = await self.before_request(request, path)
 
-        request_kwargs = _req_obj.get_request_kwargs()
+        request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = await self.session.session_request(_req_obj.method, _path, **request_kwargs)
+        response = await self.backend.session_request(_req_obj.method, _path, **request_kwargs)
+        await self.backend.pre_read_response(response)
 
         if self._has_overridden_method(self.after_request):
             response = await self.after_request(response)
@@ -234,7 +234,7 @@ class Session(BaseSession):
     def __init__(
             self,
             base_url: str,
-            session: SyncBackend,
+            session: type,
             *,
             directly_response: bool = False,
             _is_single_session: bool = False,
@@ -244,9 +244,9 @@ class Session(BaseSession):
             base_url,
             directly_response=directly_response,
             _is_single_session=_is_single_session,
-            **kwargs
         )
-        self.session = session
+        self.session = session(**kwargs)
+        self.backend: SyncBackend = SyncBackend.from_session(session, **kwargs)
 
     def __enter__(self) -> Self:
         return self
@@ -260,28 +260,28 @@ class Session(BaseSession):
         self.close()
 
     def close(self):
-        self.session.session_close()
+        self.backend.session_close()
 
     def request(self, method: str, path: str, **kwargs):
-        return self.session.session_request(method, path, **kwargs)
+        return self.backend.session_request(method, path, **kwargs)
 
     def get(self, path: str, **kwargs):
-        return self.session.session_get(path, **kwargs)
+        return self.backend.session_get(path, **kwargs)
 
     def post(self, path: str, **kwargs):
-        return self.session.session_post(path, **kwargs)
+        return self.backend.session_post(path, **kwargs)
 
     def options(self, path: str, **kwargs):
-        return self.session.session_options(path, **kwargs)
+        return self.backend.session_options(path, **kwargs)
 
     def delete(self, path: str, **kwargs):
-        return self.session.session_delete(path, **kwargs)
+        return self.backend.session_delete(path, **kwargs)
 
     def patch(self, path: str, **kwargs):
-        return self.session.session_patch(path, **kwargs)
+        return self.backend.session_patch(path, **kwargs)
 
     def put(self, path: str, **kwargs):
-        return self.session.session_put(path, **kwargs)
+        return self.backend.session_put(path, **kwargs)
 
     def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -290,9 +290,9 @@ class Session(BaseSession):
         if self._has_overridden_method(self.before_request):
             _req_obj, _path = self.before_request(request, path)
 
-        request_kwargs = _req_obj.get_request_kwargs()
+        request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = self.session.session_request(_req_obj.method, _path, **request_kwargs)
+        response = self.backend.session_request(_req_obj.method, _path, **request_kwargs)
 
         if self._has_overridden_method(self.after_request):
             response = self.after_request(response)
