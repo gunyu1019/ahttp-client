@@ -178,7 +178,23 @@ class BodyJson(Component):
     ...    pass
     """
 
-    pass
+    def __init__(self):
+        super(BodyJson, self).__init__()
+        self.json_key: Optional[str] = None
+
+    @classmethod
+    def custom_key(cls, key: str) -> Self:
+        new_cls = cls()
+        new_cls.json_key = key
+        return new_cls
+
+    @property
+    def depth(self) -> int:
+        return self.json_key.count(".") + 1
+
+    @property
+    def keys(self) -> list[str]:
+        return self.json_key.split(".")
 
 
 class BodyForm(Component):
@@ -189,8 +205,21 @@ class BodyForm(Component):
     >>> def function(data: str | BodyForm):
     ...    pass
     """
+    def __init__(self):
+        super(BodyForm, self).__init__()
+        self.form_filename: Optional[str] = None
+        self.form_content_type: Optional[str] = None
 
-    pass
+    @classmethod
+    def multipart(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
+        new_cls = cls()
+        new_cls.form_filename = filename
+        new_cls.form_content_type = content_type
+        return new_cls
+
+    @property
+    def is_file_type(self) -> bool:
+        return self.form_filename is not None or self.form_content_type is not None
 
 
 class Header(Component):
