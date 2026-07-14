@@ -26,14 +26,25 @@ from __future__ import annotations
 import inspect
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, TYPE_CHECKING, Callable
-
-from aiohttp import FormData
+from collections.abc import Mapping
+from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional
 
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
 from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .enum import Method, BodyFormEncoding, BodyType
 from .utils import *
+
+
+class BodyJsonEntry(NamedTuple):
+    parameter: inspect.Parameter
+    custom_key: Optional[str]
+
+
+class BodyFormEntry(NamedTuple):
+    parameter: inspect.Parameter
+    is_file_type: bool
+    component: Optional[BodyForm]
+
 
 if TYPE_CHECKING:
     from typing import Optional, Self, Any
@@ -108,7 +119,6 @@ class RequestCore(ABC):
     ):
         self.func = func
         self.session: Optional["BaseSession"] = None
-        self.backend: Optional["BaseBackend"] = None
         self.method = method
 
         # Function Wrapper
@@ -137,13 +147,14 @@ class RequestCore(ABC):
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
         self.body: Optional[Any] = body
+        self._body_file: Optional[Any] = None  # for multipart/form-data file
 
         # Components (Function Parameter)
         self.header_parameter: dict[str, inspect.Parameter] = dict()
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_json_parameter: dict[str, tuple[inspect.Parameter, Optional[BodyJson]]] = dict()
-        self.body_form_parameter: dict[str, tuple[inspect.Parameter, bool, Optional[BodyForm]]] = dict()
+        self.body_json_parameter: dict[str, BodyJsonEntry] = dict()
+        self.body_form_parameter: dict[str, BodyFormEntry] = dict()
         self.body_form_encoding_type: BodyFormEncoding = BodyFormEncoding.AUTO
 
         self.body_parameter: Optional[inspect.Parameter] = None
@@ -154,6 +165,12 @@ class RequestCore(ABC):
 
         self._before_hook: Optional[RequestBeforeHookFunction] = None
         self._after_hook: Optional[RequestAfterHookFunction] = None
+
+    @property
+    def backend(self) -> BaseBackend:
+        if self.session is None:
+            raise TypeError("Class must inherit from class Session")
+        return self.session.backend
 
     @classmethod
     def from_decorator(
@@ -217,6 +234,7 @@ class RequestCore(ABC):
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
+        new_cls._body_file = self._body_file
 
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook
@@ -419,20 +437,20 @@ class RequestCore(ABC):
 
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
-                elif form_encoding == BodyFormEncoding.AUTO and (
-                        is_subclass_safe(instance_origin, _IO_TYPE) or getattr(component_instance, "is_file_type", False)
-                ):
+                elif form_encoding == BodyFormEncoding.AUTO and is_file_type:
                     self.body_parameter_type = BodyType.FORM_DATA
                 elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                self.body_form_parameter[name] = (parameter, is_file_type, component_instance)
+                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, component_instance)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
-                self.body_json_parameter[name] = (parameter, component_instance)
+                key = getattr(component_instance, "key", None)
+
+                self.body_json_parameter[name] = BodyJsonEntry(parameter, key)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
@@ -510,33 +528,45 @@ class RequestCore(ABC):
         # Body
         self._duplicated_check_body()
         if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
-            self.body = {
-                "file": dict(),
-                "data": dict()
-            }
+            self.body = dict()
+            self._body_file = dict()
 
-            for _name, (_parameter, _is_file, _component) in self.body_form_parameter.items():
-                if (_component is not None and _component.is_file_type) or _is_file:
-                    file_name = getattr(_component, "form_filename", None)
-                    content_type = getattr(_component, "form_content_type", None)
-
-                    self.body["file"][_name] = (
+            for _name, _entry in self.body_form_parameter.items():
+                if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
+                    file_name = getattr(_entry.component, "form_filename", None)
+                    content_type = getattr(_entry.component, "form_content_type", None)
+                    self._body_file[_name] = (
                         file_name,
-                        bounded_argument.get(_parameter.name),
+                        bounded_argument.get(_entry.parameter.name),
                         content_type
                     )
-                    continue
-                self.body["data"][_name] = bounded_argument.get(_parameter.name)
+                else:
+                    self.body[_name] = bounded_argument.get(_entry.parameter.name)
+
+            if len(self.body.keys()) == 0:
+                self.body = None
+            if len(self._body_file.keys()) == 0:
+                self._body_file = None
         elif self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED:  # self.is_body
             self.body = {
-                _name: bounded_argument.get(_parameter.name)
-                for _name, (_parameter, _, _component) in self.body_form_parameter.items()
+                _name: bounded_argument.get(_entry.parameter.name)
+                for _name, _entry in self.body_form_parameter.items()
             }
+            if len(self.body.keys()) == 0:
+                self.body = None
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
-            self.body = {
-                _name: bounded_argument.get(_parameter.name)
-                for _name, (_parameter, _component) in self.body_json_parameter.items()
-            }
+            self.body = dict()
+            for _name, _entry in self.body_json_parameter.items():
+                if _entry.custom_key is not None:
+                    parts = _entry.custom_key.split(".")
+                    direction = self.body
+                    for part in parts[:-1]:
+                        direction = direction.setdefault(part, dict())
+                    direction[parts[-1]] = bounded_argument.get(_entry.parameter.name)
+                    continue
+                self.body[_name] = bounded_argument.get(_entry.parameter.name)
+            if len(self.body.keys()) == 0:
+                self.body = None
         elif self.body_parameter is not None:
             self.body = bounded_argument.get(self.body_parameter.name)
 
@@ -567,6 +597,7 @@ class RequestCore(ABC):
             and other.params == self.params
             and other.headers == self.headers
             and other.body == self.body
+            and other._body_file == self._body_file
             and other.directly_response == self.directly_response
             and other.header_parameter == self.header_parameter
             and other.query_parameter == self.query_parameter
@@ -575,6 +606,7 @@ class RequestCore(ABC):
             and other.body_form_encoding_type == self.body_form_encoding_type
             and other.body_json_parameter == self.body_json_parameter
             and other.body_parameter == self.body_parameter
+            and other.body_parameter_type == self.body_parameter_type
             and other._before_hook == self._before_hook
             and other._after_hook == self._after_hook
         )
