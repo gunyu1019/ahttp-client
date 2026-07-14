@@ -103,6 +103,10 @@ class HttpXSyncSession(SyncBackend, CommonHttpXBackend):
     def response_close(self, response_obj: httpx.Response) -> None:
         response_obj.close()
 
+    @property
+    def session_closed(self) -> bool:
+        return self.session.is_closed
+
     def session_close(self):
         self.session.close()
 
