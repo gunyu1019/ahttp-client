@@ -13,6 +13,10 @@ class RequestsBackend(SyncBackend):
     session_cls = requests.Session
     response_cls = requests.Response
 
+    def __init__(self, session: type, **kwargs: Any):
+        super(RequestsBackend, self).__init__(session, **kwargs)
+        self._closed = False
+
     def response_data(self, response_obj: requests.Response) -> bytes:
         return response_obj.content
 
@@ -43,6 +47,10 @@ class RequestsBackend(SyncBackend):
     def response_close(self, response_obj: requests.Response) -> None:
         response_obj.close()
 
+    @property
+    def session_closed(self) -> bool:
+        return self._closed
+
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
 
@@ -70,6 +78,7 @@ class RequestsBackend(SyncBackend):
 
     def session_close(self):
         self.session.close()
+        self._closed = True
 
     def session_request(self, method: str, path: str, **kwargs):
         return self.session.request(method, path, **kwargs)
