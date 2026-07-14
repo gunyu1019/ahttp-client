@@ -152,7 +152,7 @@ class AsyncSession(BaseSession):
 
         if self._has_overridden_method(self.after_request):
             response = await self.after_request(response)
-        return response
+        return raw_response, response
 
     @BaseSession._special_method
     async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:

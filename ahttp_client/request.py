@@ -451,7 +451,7 @@ class RequestCore(ABC):
             elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
-                key = getattr(component_instance, "key", None)
+                key = getattr(component_instance, "json_key", None)
 
                 self.body_json_parameter[name] = BodyJsonEntry(parameter, key)
                 self._duplicated_check_body_parameter()
@@ -698,7 +698,7 @@ class AsyncRequestCore(RequestCore):
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
-        raw_response = response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response, response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
 
@@ -761,7 +761,7 @@ class SyncRequestCore(RequestCore):
 
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
-        raw_response = response = self.session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response, response = self.session._make_request(req_obj, formatted_path)  # type: ignore
         if self._after_hook is not None:
             response = self._after_hook(self.session, response)
 
