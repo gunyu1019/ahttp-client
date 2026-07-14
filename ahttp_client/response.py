@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Optional
-    from backend.base import BaseBackend
+    from .backend.base import BaseBackend
 
 
 class Response:
@@ -46,4 +46,4 @@ class Response:
         return self._backend.response_json(self._raw_response_obj, json_parser, json_kwargs)
 
     def content(self) -> bytes:
-        return self._raw_response_obj.content
+        return self._backend.response_data(self._raw_response_obj)
