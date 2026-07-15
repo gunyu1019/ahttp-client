@@ -96,9 +96,7 @@ class AiohttpBackend(AsyncBackend):
                         value,
                         content_type,
                     ) in request_obj._body_file.items():
-                        data.add_field(
-                            key, value, filename=file_name, content_type=content_type
-                        )
+                        data.add_field(key, value, filename=file_name, content_type=content_type)
 
                 request_kwargs["data"] = data
             elif body_type == BodyType.RAW:

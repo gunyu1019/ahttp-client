@@ -134,9 +134,7 @@ class _BodyFileComponent(Component):
         self.metadata_content_type: Optional[str] = None
 
     @classmethod
-    def metadata(
-        cls, filename: Optional[str] = None, content_type: Optional[str] = None
-    ) -> Self:
+    def metadata(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
         """Configure file metadata for a body value.
 
         On :class:`BodyForm`, this makes the field a multipart file part. On
@@ -158,9 +156,7 @@ class _BodyFileComponent(Component):
 
     @property
     def is_file_type(self) -> bool:
-        return (
-            self.metadata_filename is not None or self.metadata_content_type is not None
-        )
+        return self.metadata_filename is not None or self.metadata_content_type is not None
 
 
 class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
