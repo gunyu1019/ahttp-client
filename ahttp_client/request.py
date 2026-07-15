@@ -26,7 +26,7 @@ from __future__ import annotations
 import inspect
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional
+from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional, get_type_hints
 
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
 from .component import Component, _EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
@@ -344,7 +344,7 @@ class RequestCore(ABC):
                         len(self.body_form_parameter) > 0,
                         len(self.body_json_parameter) > 0,
                     ]
-                ) > 1,
+                ) > 1
         ):
             raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
@@ -398,8 +398,13 @@ class RequestCore(ABC):
         """
         form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
 
+        try:
+            resolved_hints = get_type_hints(self.func, include_extras=True)
+        except Exception:
+            resolved_hints = {}
+
         for parameter in self._signature.parameters.values():
-            annotation = parameter.annotation
+            annotation = resolved_hints.get(parameter.name, parameter.annotation)
             origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
             metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
             separated_origin = separate_union_type(origin_type)
