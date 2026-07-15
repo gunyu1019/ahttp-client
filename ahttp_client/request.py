@@ -49,6 +49,13 @@ class BodyFormEntry(NamedTuple):
     component: Optional[BodyForm]
 
 
+class BodyEntry(NamedTuple):
+    """Metadata collected for a complete request-body parameter."""
+
+    parameter: inspect.Parameter
+    is_file_type: bool
+    component: Optional[Body]
+
 if TYPE_CHECKING:
     from typing import Optional, Self, Any
     from ._types import (
@@ -101,8 +108,8 @@ class RequestCore(ABC):
         Function parameters collected into a form body.
     path_parameter: dict[str, inspect.Parameter]
         Function parameters substituted into the path.
-    body_parameter: Optional[inspect.Parameter]
-        Function parameter used in the body.
+    body_parameter: Optional[BodyEntry]
+        Metadata for the function parameter used as the complete request body.
     body_parameter_type: Optional[BodyType]
         Explicit body encoding, if one was inferred from the parameter
         annotations or form configuration.
@@ -165,7 +172,7 @@ class RequestCore(ABC):
         self.body_form_parameter: dict[str, BodyFormEntry] = dict()
         self.body_form_encoding_type: BodyFormEncoding = BodyFormEncoding.AUTO
 
-        self.body_parameter: Optional[inspect.Parameter] = None
+        self.body_parameter: Optional[BodyEntry] = None
         self.body_parameter_type: Optional[BodyType] = None
 
         self.validation_parameter: dict[str, list[Callable[..., Any]]] = dict()
@@ -470,11 +477,13 @@ class RequestCore(ABC):
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
+                body_component = component_instance if isinstance(component_instance, Body) else None
+                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE)
+                self.body_parameter = BodyEntry(parameter, is_file_type, body_component)
                 if is_subclass_safe(instance_origin, _BODY_JSON_TYPE):
                     self.body_parameter_type = BodyType.JSON
                 else:
                     self.body_parameter_type = BodyType.RAW
-                self.body_parameter = parameter
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
@@ -544,8 +553,8 @@ class RequestCore(ABC):
 
             for _name, _entry in self.body_form_parameter.items():
                 if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
-                    file_name = getattr(_entry.component, "form_filename", None)
-                    content_type = getattr(_entry.component, "form_content_type", None)
+                    file_name = getattr(_entry.component, "metadata_filename", None)
+                    content_type = getattr(_entry.component, "metadata_content_type", None)
                     self._body_file[_name] = (
                         file_name or _name,
                         bounded_argument.get(_entry.parameter.name),
@@ -579,7 +588,19 @@ class RequestCore(ABC):
             if len(self.body.keys()) == 0:
                 self.body = None
         elif self.body_parameter is not None:
-            self.body = bounded_argument.get(self.body_parameter.name)
+            value = bounded_argument.get(self.body_parameter.parameter.name)
+            body_component = self.body_parameter.component
+            self.body = value
+            if body_component is not None:
+                if body_component.metadata_content_type is not None and not any(
+                    key.lower() == "content-type" for key in self.headers
+                ):
+                    self.headers["Content-Type"] = body_component.metadata_content_type
+                if body_component.metadata_filename is not None and not any(
+                    key.lower() == "content-disposition" for key in self.headers
+                ):
+                    filename = body_component.metadata_filename.replace("\\", "\\\\").replace('"', '\\"')
+                    self.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
         """Build the final request path from bound path parameters.

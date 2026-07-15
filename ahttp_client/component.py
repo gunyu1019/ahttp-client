@@ -130,12 +130,17 @@ class _UnsupportedCustomNameComponent(Component):
 class _BodyFileComponent(Component):
     def __init__(self):
         super(_BodyFileComponent, self).__init__()
-        self.form_filename: Optional[str] = None
-        self.form_content_type: Optional[str] = None
+        self.metadata_filename: Optional[str] = None
+        self.metadata_content_type: Optional[str] = None
 
     @classmethod
-    def multipart(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
-        """Configure a body field as a multipart file field.
+    def metadata(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
+        """Configure file metadata for a body value.
+
+        On :class:`BodyForm`, this makes the field a multipart file part. On
+        :class:`Body`, the raw body is preserved and the metadata is sent in
+        the request-level ``Content-Disposition`` and ``Content-Type``
+        headers.
 
         Parameters
         ----------
@@ -145,21 +150,23 @@ class _BodyFileComponent(Component):
             MIME type included in the multipart field.
         """
         new_cls = cls()
-        new_cls.form_filename = filename
-        new_cls.form_content_type = content_type
+        new_cls.metadata_filename = filename
+        new_cls.metadata_content_type = content_type
         return new_cls
 
     @property
     def is_file_type(self) -> bool:
-        return self.form_filename is not None or self.form_content_type is not None
+        return self.metadata_filename is not None or self.metadata_content_type is not None
 
 
 class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
     """Mark a parameter as the complete request body.
 
     ``dict``, ``list``, and ``tuple`` values are encoded as JSON; other values
-    are sent as raw body data. A ``Body`` parameter cannot be combined with ``BodyJson`` or
-    ``BodyForm`` parameters.
+    (including file-like values) are sent as raw body data. A ``Body``
+    parameter cannot be combined with ``BodyJson`` or ``BodyForm`` parameters.
+    :meth:`metadata` adds filename and content-type metadata without changing
+    the raw-body encoding.
     """
     pass
 
@@ -208,7 +215,7 @@ class BodyJson(Component):
 class BodyForm(_BodyFileComponent):
     """Mark a parameter as a field in a form request body.
 
-    File-like values, or fields whose :meth:`multipart` configuration specifies
+    File-like values, or fields whose :meth:`metadata` configuration specifies
     a filename or content type, use ``multipart/form-data``; other form fields
     default to URL encoding.
     """
