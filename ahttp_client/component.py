@@ -37,19 +37,21 @@ if TYPE_CHECKING:
 
 
 class _EmptyComponent:
-    """Dummy object with nothing defined. It only uses on RequestCore."""
+    """Internal marker for a parameter without a request component."""
 
     pass
 
 
 class Component:
-    """Based object on Header, Query, Path, Form and Body
+    """Base class for request-parameter components.
+
+    Components can be used in annotations to map a function parameter to a
+    header, query string, path placeholder, or request body.
 
     Attributes
     ----------
     component_name: Callable[[str], str]
-        Used to define the name of the component name.
-        In default case, it can cause an AttributesError.
+        Optional transformation used for the component key sent on the wire.
     """
 
     def __init__(self):
@@ -57,29 +59,18 @@ class Component:
 
     @classmethod
     def custom_name(cls, name: str) -> Self:
-        """Define the name of the component(Header, Query, Form and Path)
-        Used when the component name must be different from the parameter name.
+        """Return a component instance with a fixed transmitted name.
 
         Parameters
         ----------
         name: str
-            The name of the component (Header, Query, Path and Form)
+            Name used in the request instead of the Python parameter name.
 
-        Examples
-        --------
-        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
-        ... @request("GET", "/metro/station")
-        ... async def station_search_with_query(
-        ...     session: AsyncSession,
-        ...     response: Response,
-        ...     station_name: Annotated[str, Query.custom_name('name')]
-        ... ) -> list[...]:
-        ...     # A header called "name" is substituted with the value of station_name parameter.
-        ...     pass
-
-        Warnings
-        --------
-        The body component and path component didn't allow the custom_name method to be used.
+        Raises
+        ------
+        NotImplementedError
+            If the component does not support renamed fields, such as
+            :class:`Path` or :class:`Body`.
         """
         new_cls = cls()
         new_cls.component_name = lambda _: name
@@ -97,23 +88,12 @@ class Component:
 
     @classmethod
     def to_camel(cls) -> Self:
-        """Define the name of the component(Header, Query, Form and Path) to follow camel case.
+        """Return a component instance that converts its key to camel case.
 
-        Examples
-        --------
-        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
-        ... @request("GET", "/metro/station")
-        ... async def station_search_with_query(
-        ...     session: AsyncSession,
-        ...     response: Response,
-        ...     station_name: Annotated[str, Query.to_camel()]
-        ... ) -> list[...]:
-        ...     # A header called "stationName" is substituted with the value of station_name parameter.
-        ...     pass
-
-        Warnings
-        --------
-        The body component and path component didn't allow the to_camel method to be used.
+        Raises
+        ------
+        NotImplementedError
+            If the component does not support renamed fields.
         """
         new_cls = cls()
         new_cls.component_name = lambda original_name: new_cls._to_camel(original_name)
@@ -121,23 +101,12 @@ class Component:
 
     @classmethod
     def to_pascal(cls) -> Self:
-        """Define the name of the component(Header, Query, Form and Path) to follow pascal case.
+        """Return a component instance that converts its key to Pascal case.
 
-        Examples
-        --------
-        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
-        ... @request("GET", "/metro/station")
-        ... async def station_search_with_query(
-        ...     session: AsyncSession,
-        ...     response: Response,
-        ...     station_name: Annotated[str, Query.to_pascal()]
-        ... ) -> list[...]:
-        ...     # A header called "StationName" is substituted with the value of station_name parameter.
-        ...     pass
-
-        Warnings
-        --------
-        The body component and path component didn't allow the to_pascal method to be used.
+        Raises
+        ------
+        NotImplementedError
+            If the component does not support renamed fields.
         """
         new_cls = cls()
         new_cls.component_name = lambda original_name: new_cls._to_pascal(original_name)
@@ -177,23 +146,20 @@ class _BodyFileComponent(Component):
 
 
 class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
-    """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
+    """Mark a parameter as the complete request body.
 
-    Examples
-    --------
-    >>> def function(body: dict | Body):
-    ...    pass
+    ``dict``, ``list``, and ``tuple`` values are encoded as JSON; other values
+    are sent as raw body data. A ``Body`` parameter cannot be combined with ``BodyJson`` or
+    ``BodyForm`` parameters.
     """
     pass
 
 
 class BodyJson(Component):
-    """This class defines the parameters of a function used in Body of the HTTP request in dictionary format.
+    """Mark a parameter as a field in a JSON request body.
 
-    Examples
-    --------
-    >>> def function(data: typing.Annotated[str, BodyJson]):
-    ...    pass
+    Use :meth:`custom_key` to place the value under a different or nested JSON
+    key.
     """
 
     def __init__(self):
@@ -220,23 +186,19 @@ class BodyJson(Component):
 
 
 class BodyForm(_BodyFileComponent):
-    """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
+    """Mark a parameter as a field in a form request body.
 
-    Examples
-    --------
-    >>> def function(data: str | BodyForm):
-    ...    pass
+    File-like values, or fields whose :meth:`multipart` configuration specifies
+    a filename or content type, use ``multipart/form-data``; other form fields
+    default to URL encoding.
     """
     pass
 
 
 class Header(Component):
-    """This class is used when a function's parameters are used as headers in an HTTP request.
+    """Mark a parameter as an HTTP request header.
 
-    Examples
-    --------
-    >>> def function(header: str | Header):
-    ...    pass
+    :meth:`default_header` adds a static header to a decorated request.
     """
 
     DEFAULT_KEY = "__DEFAULT_HEADER__"
@@ -253,25 +215,18 @@ class Header(Component):
 
 
 class Path(_UnsupportedCustomNameComponent):
-    """This class is used when a function's parameters are used as path in an HTTP request.
-    The parameters associated with the Path populate a portion of the HTTP URL.
+    """Mark a parameter as a placeholder in the request path.
 
-    Examples
-    --------
-    >>> def function(path: str | Path):
-    ...    pass
+    The parameter name must match a ``str.format`` placeholder in ``path``.
     """
 
     pass
 
 
 class Query(Component):
-    """This class is used when a function's parameters are used as query in an HTTP request.
+    """Mark a parameter as an HTTP query-string value.
 
-    Examples
-    --------
-    >>> def function(query: str | Query):
-    ...    pass
+    :meth:`default_query` adds a static query parameter to a decorated request.
     """
 
     DEFAULT_KEY = "__DEFAULT_QUERY__"

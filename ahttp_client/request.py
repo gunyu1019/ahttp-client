@@ -62,47 +62,54 @@ T = TypeVar("T")
 
 
 class RequestCore(ABC):
-    """A class that implements functions for HTTP requests.
+    """Base descriptor for a decorated HTTP request.
+
+    A request core is bound to a :class:`~ahttp_client.session.BaseSession`
+    instance when it is accessed as a session attribute.  The bound request
+    builds a backend-specific request from its static values and annotated
+    function parameters, then executes the decorated function with any
+    :class:`~ahttp_client.response.Response` parameter filled in.
 
     Attributes
     ----------
     name: str
         The name of the request.
-    func: Callable[..., Coroutine[Any, Any, T]]
-        The coroutine function that is executed when the request is called.
-    method: str
-        HTTP method (example. GET, POST)
+    func: Callable[..., Any]
+        The synchronous or asynchronous function executed after the response
+        is received.
+    method: str | Method
+        HTTP method.
     path: str
-        Request path. Path connects to the base url.
+        Path relative to the session base URL, unless the backend manages its
+        own base URL.
     directly_response: bool
-        Returns a :class:`Response` without executing the function's body statement.
-    params: Optional[dict[str, Any]]
-        Request parameters.
-    headers: Optional[dict[str, Any]]
-        Request headers.
-    body: Optional[Any | aiohttp.FormData]
-        Request body.
+        Return the response-pipeline result without executing the decorated
+        function.
+    params: dict[str, Any]
+        Static query parameters.
+    headers: dict[str, Any]
+        Static request headers.
+    body: Optional[Any]
+        Static request body. Its encoding is determined by ``body_type``.
     header_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the header
+        Function parameters used as request headers.
     query_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the query(parameter)
+        Function parameters used as query parameters.
     body_json_parameter: dict[str, inspect.Parameter]
-        Function parameters used in body json.
+        Function parameters collected into a JSON body.
     body_form_parameter: dict[str, inspect.Parameter]
-        Function parameters used in body form.
+        Function parameters collected into a form body.
     path_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the path.
+        Function parameters substituted into the path.
     body_parameter: Optional[inspect.Parameter]
         Function parameter used in the body.
-        The body parameter must take only Collection, or aiohttp.FormData.
-    body_parameter_type: Literal['json', 'data']
-        The type of body parameter.
-        When body_parameter type is `aiohttp.FormData`, the `body_parameter_type` is 'data'.
-        Else `body_parameter_type` is `Collection`, the `body_parameter_type` is 'json'.
+    body_parameter_type: Optional[BodyType]
+        Explicit body encoding, if one was inferred from the parameter
+        annotations or form configuration.
     response_parameter: list[str]
-        Function parameter name to store the HTTP result in.
+        Names of function parameters that receive the HTTP response.
     request_kwargs: dict[str, Any]
-        Keyword Arguments are passed directly request method.
+        Keyword arguments passed through to the backend request method.
     """
 
     def __init__(
@@ -204,8 +211,9 @@ class RequestCore(ABC):
 
         Returns
         -------
-        :class:`RequestCore`
-            A new istnace of this request.
+        RequestCore
+            An independent request instance with copied static headers and
+            query parameters.
         """
         new_cls = self.__class__(
             self.func,
@@ -240,27 +248,31 @@ class RequestCore(ABC):
         return new_cls
 
     def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
-        """A decorator that registers a coroutine as a pre-invoke hook.
-        A pre-invoke hook is called directly before the HTTP request is called.
-        This makes it a useful function to set up authorizations or any type of set up required.
+        """Register a hook that runs immediately before the HTTP request.
+
+        The hook receives ``(session, request, path)`` and must return the
+        request and path to use. :class:`AsyncRequestCore` requires an async
+        hook; :class:`SyncRequestCore` requires a synchronous hook.
 
         Parameters
         ----------
-        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[..., tuple[RequestCore, str]]
+            Hook to register.
         """
         self._before_hook = func
         return func
 
     def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
-        """A decorator that registers a coroutine as a post-invoke hook.
-        A post-invoke hook is called directly after the returned HTTP response.
-        This makes it a useful function to check correct response or any type of clean up response data.
+        """Register a hook that runs after the HTTP response is received.
+
+        The hook receives ``(session, response)`` and may return a transformed
+        result. :class:`AsyncRequestCore` requires an async hook;
+        :class:`SyncRequestCore` requires a synchronous hook.
 
         Parameters
         ----------
-        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[..., Any]
+            Hook to register.
         """
         self._after_hook = func
         return func
@@ -282,7 +294,7 @@ class RequestCore(ABC):
 
     @property
     def is_formal_form(self) -> bool:
-        """Returns whether the body element in the HTTP request is of type Form.
+        """Return whether this request has form parameters.
 
         Returns
         -------
@@ -292,11 +304,11 @@ class RequestCore(ABC):
 
     @property
     def body_type(self) -> Optional[BodyType]:
-        """Returns the final body type
+        """Return the body encoding selected for this request.
 
         Returns
         -------
-        :class:`Literal`['json', 'data']
+        Optional[BodyType]
         """
         if self.body_parameter_type is not None:
             return self.body_parameter_type
@@ -309,23 +321,24 @@ class RequestCore(ABC):
         return BodyType.RAW
 
     def _duplicated_check_body(self) -> None:
-        """Check if body is already in fill.
+        """Ensure static and parameter-derived bodies are not combined.
 
         Raises
         ------
         TypeError
-            Body or Body parameter is already filled.
+            A static body and a ``Body`` parameter were both supplied.
         """
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
 
     def _duplicated_check_body_parameter(self, single_parameter: bool = False) -> None:
-        """Check if body parameter is already in fill.
+        """Ensure mutually exclusive body parameter styles are not combined.
 
         Raises
         ------
         TypeError
-            Body parameter is already filled.
+            More than one of ``Body``, ``BodyJson``, and ``BodyForm`` was
+            configured where only one is allowed.
         """
         if single_parameter and self.body_parameter is not None:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
@@ -344,9 +357,10 @@ class RequestCore(ABC):
 
     # Setup
     def _add_private_key(self) -> None:
-        """Add private component to the request component.
+        """Add static headers and query values declared by decorators.
 
-        This method used at setup."""
+        This is called while the request descriptor is initialized.
+        """
         self.headers.update(getattr(self.func, Header.DEFAULT_KEY, dict()))
         self.params.update(getattr(self.func, Query.DEFAULT_KEY, dict()))
 
@@ -371,24 +385,26 @@ class RequestCore(ABC):
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
     ) -> None:
-        """Add the component parameter from function
+        """Classify decorated function parameters as request components.
 
-        This method used at setup.
+        Annotations using component classes or instances take precedence;
+        explicit parameter-name lists provide the legacy alternative. This is
+        called while the request descriptor is initialized.
 
         Parameters
         ----------
         header_parameter: list[str]
-            Function parameter names used in the header
+            Parameter names used as headers.
         query_parameter: list[str]
-            Function parameter names used in the query(parameter)
+            Parameter names used as query parameters.
         form_parameter: list[str]
-            Function parameter names used in body form.
+            Parameter names used in a form body.
         body_json_parameter: list[str]
-            Function parameter names used in body json.
+            Parameter names used in a JSON body.
         path_parameter: list[str]
-            Function parameter names used in the path.
+            Parameter names substituted into the path.
         body_parameter: str
-            Function parameter name used in the body.
+            Parameter name used as the complete body.
         """
         form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
 
@@ -465,10 +481,12 @@ class RequestCore(ABC):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
-        """Delete the response parameter in signature.
-        The response parameter is automatically filled when the request is invoked.
+        """Remove response parameters from the public request signature.
 
-        This method used at setup.
+        Response parameters are filled automatically after the backend request
+        completes and before the decorated function is executed.
+
+        This is called while the request descriptor is initialized.
         """
         parameter_without_return_annotation = []
         for parameter in self._signature.parameters.values():
@@ -486,12 +504,12 @@ class RequestCore(ABC):
         self.__annotations__ = self.func.__annotations__
 
     def _fill_parameter(self, session: BaseSession, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
-        """Fill HTTP request component from bounded argument
+        """Fill request components from arguments bound to the request call.
 
         Parameters
         ----------
         bounded_argument: dict[str, Any] | inspect.BoundArguments
-            bounded argument of the method.
+            Arguments bound to the decorated request function.
         """
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
@@ -564,12 +582,12 @@ class RequestCore(ABC):
             self.body = bounded_argument.get(self.body_parameter.name)
 
     def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
-        """Get final HTTP path from bounded argument
+        """Build the final request path from bound path parameters.
 
         Parameters
         ----------
         bounded_argument: dict[str, Any] | inspect.BoundArguments
-            bounded argument of the method.
+            Arguments bound to the decorated request function.
         """
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
@@ -649,14 +667,12 @@ class AsyncRequestCore(RequestCore):
     session: AsyncSession
 
     def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
-        """A decorator that registers a coroutine as a pre-invoke hook.
-        A pre-invoke hook is called directly before the HTTP request is called.
-        This makes it a useful function to set up authorizations or any type of set up required.
+        """Register an asynchronous hook that runs before the HTTP request.
 
         Parameters
         ----------
-        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[[AsyncSession, RequestCore, str], Coroutine[Any, Any, tuple[RequestCore, str]]]
+            Coroutine hook to register.
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("The pre-invoke hook must be a coroutine.")
@@ -664,14 +680,12 @@ class AsyncRequestCore(RequestCore):
         return super(AsyncRequestCore, self).before_hook(func)
 
     def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
-        """A decorator that registers a coroutine as a post-invoke hook.
-        A post-invoke hook is called directly after the returned HTTP response.
-        This makes it a useful function to check correct response or any type of clean up response data.
+        """Register an asynchronous hook that runs after the HTTP response.
 
         Parameters
         ----------
-        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[[AsyncSession, Response], Coroutine[Any, Any, Any]]
+            Coroutine hook to register.
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("The post-invoke hook must be a coroutine.")
@@ -717,14 +731,12 @@ class SyncRequestCore(RequestCore):
     session: Session
 
     def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
-        """A decorator that registers a method as a pre-invoke hook.
-        A pre-invoke hook is called directly before the HTTP request is called.
-        This makes it a useful function to set up authorizations or any type of set up required.
+        """Register a synchronous hook that runs before the HTTP request.
 
         Parameters
         ----------
-        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[[Session, RequestCore, str], tuple[RequestCore, str]]
+            Synchronous hook to register.
         """
         if inspect.iscoroutinefunction(func):
             raise TypeError("The pre-invoke hook must not be a coroutine.")
@@ -732,14 +744,12 @@ class SyncRequestCore(RequestCore):
         return super(SyncRequestCore, self).before_hook(func)
 
     def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
-        """A decorator that registers a method as a post-invoke hook.
-        A post-invoke hook is called directly after the returned HTTP response.
-        This makes it a useful function to check correct response or any type of clean up response data.
+        """Register a synchronous hook that runs after the HTTP response.
 
         Parameters
         ----------
-        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[[Session, Response], Any]
+            Synchronous hook to register.
         """
         if inspect.iscoroutinefunction(func):
             raise TypeError("The post-invoke hook must not be a coroutine.")
@@ -801,46 +811,54 @@ def request(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
-    """A decoration for making request.
-    Create an HTTP client-request, when decorated function is called.
+    """Decorate a session method as an HTTP request.
+
+    Accessing the decorated method on a :class:`Session` or
+    :class:`AsyncSession` binds it to that session. Each invocation builds the
+    request from static values and component parameters, then passes a
+    :class:`Response` to matching response parameters in the decorated
+    function.
 
     Parameters
     ----------
     name: Optional[str]
-        The name of the Request
-    method: str
-        HTTP method (example. GET, POST)
+        Request name; defaults to the decorated function name.
+    method: str | Method
+        HTTP method.
     path: str
-        Request path. Path connects to the base url.
+        Path relative to the session base URL.
     params: Optional[dict[str, Any]]
-        Request parameters.
+        Static query parameters.
     headers: Optional[dict[str, Any]]
-        Request headers.
+        Static request headers.
     body: Optional[Any]
-        Request body.
+        Static request body.
     directly_response: bool
-        Returns a raw response object without executing the function's body statement.
+        Return the response after hooks without executing the decorated
+        function.
     header_parameter: list[str]
-        Function parameter names used in the header
+        Legacy list of parameter names to use as headers.
     query_parameter: list[str]
-        Function parameter names used in the query(parameter)
+        Legacy list of parameter names to use as query parameters.
     form_parameter: list[str]
-        Function parameter names used in body form.
+        Legacy list of parameter names to use in a form body.
     form_encoding: Optional[BodyFormEncoding]
-        Encoding type for form parameters.
+        Encoding to use for form parameters. ``AUTO`` selects multipart when a
+        file field is present, otherwise URL encoding.
     body_json_parameter: list[str]
-        Function parameter names used in body json.
+        Legacy list of parameter names to use in a JSON body.
     path_parameter: list[str]
-        Function parameter names used in the path.
+        Legacy list of parameter names substituted into ``path``.
     body_parameter: str
-        Function parameter name used in the body.
+        Legacy parameter name to use as the complete body.
     response_parameter: list[str]
-        Function parameter name to store the HTTP result in.
+        Legacy list of function parameter names that receive the response.
     **request_kwargs
 
     Warnings
     --------
-    Form_parameter and Body Parameter can only be used with one or the other.
+    A complete ``Body`` parameter cannot be combined with ``BodyJson`` or
+    ``BodyForm`` parameters.
     """
 
     def decorator(func):
