@@ -24,6 +24,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import inspect
+import copy
 
 from abc import ABC, abstractmethod
 from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional, get_type_hints
@@ -218,10 +219,10 @@ class RequestCore(ABC):
             self.path,
             name=self.name,
             directly_response=self.directly_response,
-            headers=self.headers,
-            params=self.params,
+            headers=copy.deepcopy(self.headers),
+            params=copy.deepcopy(self.params),
             body=self.body,
-            response_parameter=self.response_parameter,
+            response_parameter=self.response_parameter[:],
             **self.request_kwargs,
         )
 
