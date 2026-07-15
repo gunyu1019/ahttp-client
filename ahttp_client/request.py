@@ -637,6 +637,23 @@ class RequestCore(ABC):
         return self
 
     def validation(self, parameter_name: str):
+        """Register a validator for a request function parameter.
+
+        The validator is called with ``(session, value)`` before the request is
+        built. Its return value replaces the argument used in request
+        components and in the decorated function.
+
+        Parameters
+        ----------
+        parameter_name: str
+            Name of a parameter in the decorated function signature.
+
+        Raises
+        ------
+        ValueError
+            If the parameter name is empty or does not exist in the request
+            signature.
+        """
         if not parameter_name:
             raise ValueError("Parameter name is required")
         if parameter_name not in self._signature.parameters:
@@ -903,6 +920,10 @@ def get(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``GET`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,
@@ -945,6 +966,10 @@ def post(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``POST`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,
@@ -987,6 +1012,10 @@ def options(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``OPTIONS`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,
@@ -1029,6 +1058,10 @@ def patch(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``PATCH`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,
@@ -1071,6 +1104,10 @@ def put(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``PUT`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,
@@ -1113,6 +1150,10 @@ def delete(
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``DELETE`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
     def decorator(func):
         return _make_request_core(
             func,

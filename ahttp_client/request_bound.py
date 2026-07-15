@@ -33,30 +33,42 @@ if TYPE_CHECKING:
 
 
 class RequestBound(ABC):
+    """A request descriptor bound to a session instance.
+
+    Request-bound objects are created automatically when a decorated request is
+    accessed through a :class:`BaseSession`. They retain both the request core
+    and the session used to execute it.
+    """
     def __init__(self, core: RequestCore, session: BaseSession):
         self._core = core
         self._session = session
 
     @property
     def __core__(self) -> RequestCore:
+        """Return the unbound request descriptor."""
         return self._core
 
     @abstractmethod
     def __call__(self, *args, **kwargs) -> Any:
+        """Execute the request with arguments for the decorated function."""
         pass
 
 
 class RequestAsyncBound(RequestBound):
+    """A request descriptor bound to an :class:`AsyncSession`."""
     _session: AsyncSession
     _core: AsyncRequestCore
 
     async def __call__(self, *args, **kwargs) -> Any:
+        """Execute the asynchronous request."""
         return await self._core._execute(self._session, *args, **kwargs)
 
 
 class RequestSyncBound(RequestBound):
+    """A request descriptor bound to a :class:`Session`."""
     _session: Session
     _core: SyncRequestCore
 
     def __call__(self, *args, **kwargs) -> Any:
+        """Execute the synchronous request."""
         return self._core._execute(self._session, *args, **kwargs)

@@ -135,6 +135,15 @@ class _BodyFileComponent(Component):
 
     @classmethod
     def multipart(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
+        """Configure a body field as a multipart file field.
+
+        Parameters
+        ----------
+        filename: Optional[str]
+            File name included in the multipart field.
+        content_type: Optional[str]
+            MIME type included in the multipart field.
+        """
         new_cls = cls()
         new_cls.form_filename = filename
         new_cls.form_content_type = content_type
@@ -168,18 +177,29 @@ class BodyJson(Component):
 
     @classmethod
     def custom_key(cls, key: str) -> Self:
+        """Return a JSON body component with a custom key.
+
+        A dot-separated key creates nested JSON objects.
+
+        Parameters
+        ----------
+        key: str
+            Key used in the JSON request body.
+        """
         new_cls = cls()
         new_cls.json_key = key
         return new_cls
 
     @property
     def depth(self) -> int:
+        """Return the number of levels in the custom JSON key."""
         if self.json_key is None:
             return 0
         return self.json_key.count(".") + 1
 
     @property
     def keys(self) -> list[str]:
+        """Return the custom JSON key split into nested key names."""
         if self.json_key is None:
             return []
         return self.json_key.split(".")
@@ -205,6 +225,15 @@ class Header(Component):
 
     @staticmethod
     def default_header(key: str, value: Any):
+        """Add a static header to a decorated request.
+
+        Parameters
+        ----------
+        key: str
+            Header name.
+        value: Any
+            Header value.
+        """
         def decorator(func):
             if not hasattr(func, Header.DEFAULT_KEY):
                 setattr(func, Header.DEFAULT_KEY, dict())
@@ -233,6 +262,15 @@ class Query(Component):
 
     @staticmethod
     def default_query(key: str, value: Any):
+        """Add a static query parameter to a decorated request.
+
+        Parameters
+        ----------
+        key: str
+            Query parameter name.
+        value: Any
+            Query parameter value.
+        """
         def decorator(func):
             if not hasattr(func, Query.DEFAULT_KEY):
                 setattr(func, Query.DEFAULT_KEY, dict())
