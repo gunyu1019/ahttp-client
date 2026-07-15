@@ -76,7 +76,11 @@ class AiohttpBackend(AsyncBackend):
             elif body_type == BodyType.URL_ENCODED:
                 request_kwargs["data"] = request_obj.body
             elif body_type == BodyType.FORM_DATA:
-                data = aiohttp.FormData()
+                # Keep non-ASCII multipart field names and filenames intact.
+                # aiohttp's default ``quote_fields=True`` percent-encodes them,
+                # which makes a filename such as "한글.txt" arrive at the server
+                # as its literal percent-encoded representation.
+                data = aiohttp.FormData(quote_fields=False)
                 if request_obj.body is not None:
                     for key, value in request_obj.body.items():
                         data.add_field(key, str(value), content_type="text/plain")
