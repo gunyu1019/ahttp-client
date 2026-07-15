@@ -27,7 +27,7 @@ from .component import Body, BodyJson, BodyForm, Header, Path, Query
 from .enum import BodyType, Method, BodyFormEncoding
 from .request import RequestCore, request, get, post, options, patch, put, delete
 from .response import Response
-from .session import BaseSession
+from .session import BaseSession, AsyncSession, Session
 
 __title__ = "ahttp_client"
 __author__ = "gunyu1019"
