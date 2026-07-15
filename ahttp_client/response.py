@@ -12,6 +12,8 @@ class Response:
         self._raw_response_obj = response_obj
         self._backend = backend
 
+        self._closed = False
+
     @property
     def raw(self) -> Any:
         return self._raw_response_obj
@@ -32,7 +34,12 @@ class Response:
     def url(self) -> str:
         return self._backend.response_url(self._raw_response_obj)
 
+    @property
+    def closed(self) -> bool:
+        return self._backend.response_closed(self._raw_response_obj) or self._closed
+
     def close(self) -> None:
+        self._closed = True
         self._backend.response_close(self._raw_response_obj)
 
     def text(self) -> str:
