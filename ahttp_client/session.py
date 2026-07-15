@@ -57,8 +57,7 @@ class BaseSession(ABC):
             self,
             base_url: str,
             *,
-            directly_response: bool = False,
-            _is_single_session: bool = False
+            directly_response: bool = False
     ):
         self.directly_response = directly_response
         self.base_url = base_url
@@ -97,29 +96,47 @@ class BaseSession(ABC):
 
 
 class AsyncSession(BaseSession):
+    """A session for asynchronous requests.
+
+    Supported client classes are ``aiohttp.ClientSession`` and
+    ``httpx.AsyncClient``. Decorated coroutine methods are bound to this
+    session and executed with the configured base URL.
+
+    Parameters
+    ----------
+    base_url: str
+        Base URL used for request paths.
+    session: type
+        Supported asynchronous HTTP client session class.
+    directly_response: bool
+        Return the response-pipeline result instead of executing decorated
+        request functions.
+    **kwargs
+        Keyword arguments passed to the HTTP client session constructor.
+    """
     def __init__(
             self,
             base_url: str,
             session: type,
             *,
             directly_response: bool = False,
-            _is_single_session: bool = False,
             **kwargs,
     ):
         self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
-            _is_single_session=_is_single_session,
         )
 
         self._request_bound_func: dict[RequestCore, RequestAsyncBound] = dict()
 
     @property
     def closed(self) -> bool:
+        """Return whether the underlying HTTP client session is closed."""
         return self.backend.session_closed
 
     async def __aenter__(self) -> Self:
+        """Enter the asynchronous session context."""
         return self
 
     async def __aexit__(
@@ -128,36 +145,49 @@ class AsyncSession(BaseSession):
             exc_val: Optional[BaseException],
             exc_tb: Optional[TracebackType],
     ):
+        """Close the session when leaving the asynchronous context."""
         await self.close()
 
     async def close(self):
+        """Close the underlying asynchronous HTTP client session."""
         await self.backend.session_close()
 
     async def request(self, method: str, path: str, **kwargs):
+        """Make a raw asynchronous HTTP request.
+
+        ``path`` is joined with the base URL when required. Keyword arguments
+        are passed directly to the underlying HTTP client.
+        """
         url = self._get_request_url(path)
         return await self.backend.session_request(method, url, **kwargs)
 
     async def get(self, path: str, **kwargs):
+        """Make a raw asynchronous ``GET`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_get(url, **kwargs)
 
     async def post(self, path: str, **kwargs):
+        """Make a raw asynchronous ``POST`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_post(url, **kwargs)
 
     async def options(self, path: str, **kwargs):
+        """Make a raw asynchronous ``OPTIONS`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_options(url, **kwargs)
 
     async def delete(self, path: str, **kwargs):
+        """Make a raw asynchronous ``DELETE`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_delete(url, **kwargs)
 
     async def patch(self, path: str, **kwargs):
+        """Make a raw asynchronous ``PATCH`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_patch(url, **kwargs)
 
     async def put(self, path: str, **kwargs):
+        """Make a raw asynchronous ``PUT`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_put(url, **kwargs)
 
@@ -237,7 +267,7 @@ class AsyncSession(BaseSession):
         def decorator(func: RequestCore) -> RequestFunction:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
-                client = cls(base_url, session, _is_single_session=True, **session_kwargs)
+                client = cls(base_url, session, **session_kwargs)
                 try:
                     response = await func._execute(client, *args, **kwargs)
                 finally:
@@ -259,28 +289,46 @@ class AsyncSession(BaseSession):
 
 
 class Session(BaseSession):
+    """A session for synchronous requests.
+
+    Supported client classes are ``requests.Session`` and ``httpx.Client``.
+    Decorated functions are bound to this session and executed with the
+    configured base URL.
+
+    Parameters
+    ----------
+    base_url: str
+        Base URL used for request paths.
+    session: type
+        Supported synchronous HTTP client session class.
+    directly_response: bool
+        Return the response-pipeline result instead of executing decorated
+        request functions.
+    **kwargs
+        Keyword arguments passed to the HTTP client session constructor.
+    """
     def __init__(
             self,
             base_url: str,
             session: type,
             *,
             directly_response: bool = False,
-            _is_single_session: bool = False,
             **kwargs,
     ):
         self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(Session, self).__init__(
             base_url,
             directly_response=directly_response,
-            _is_single_session=_is_single_session,
         )
         self._request_bound_func: dict[RequestCore, RequestSyncBound] = dict()
 
     @property
     def closed(self) -> bool:
+        """Return whether the underlying HTTP client session is closed."""
         return self.backend.session_closed
 
     def __enter__(self) -> Self:
+        """Enter the session context."""
         return self
 
     def __exit__(
@@ -289,36 +337,49 @@ class Session(BaseSession):
             exc_val: Optional[BaseException],
             exc_tb: Optional[TracebackType],
     ):
+        """Close the session when leaving the context."""
         self.close()
 
     def close(self):
+        """Close the underlying HTTP client session."""
         self.backend.session_close()
 
     def request(self, method: str, path: str, **kwargs):
+        """Make a raw synchronous HTTP request.
+
+        ``path`` is joined with the base URL when required. Keyword arguments
+        are passed directly to the underlying HTTP client.
+        """
         url = self._get_request_url(path)
         return self.backend.session_request(method, url, **kwargs)
 
     def get(self, path: str, **kwargs):
+        """Make a raw synchronous ``GET`` request."""
         url = self._get_request_url(path)
         return self.backend.session_get(url, **kwargs)
 
     def post(self, path: str, **kwargs):
+        """Make a raw synchronous ``POST`` request."""
         url = self._get_request_url(path)
         return self.backend.session_post(url, **kwargs)
 
     def options(self, path: str, **kwargs):
+        """Make a raw synchronous ``OPTIONS`` request."""
         url = self._get_request_url(path)
         return self.backend.session_options(url, **kwargs)
 
     def delete(self, path: str, **kwargs):
+        """Make a raw synchronous ``DELETE`` request."""
         url = self._get_request_url(path)
         return self.backend.session_delete(url, **kwargs)
 
     def patch(self, path: str, **kwargs):
+        """Make a raw synchronous ``PATCH`` request."""
         url = self._get_request_url(path)
         return self.backend.session_patch(url, **kwargs)
 
     def put(self, path: str, **kwargs):
+        """Make a raw synchronous ``PUT`` request."""
         url = self._get_request_url(path)
         return self.backend.session_put(url, **kwargs)
 
@@ -397,10 +458,12 @@ class Session(BaseSession):
         def decorator(func: RequestCore) -> RequestFunction:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
-                client = cls(base_url, session, _is_single_session=True, **session_kwargs)
-                response = func._execute(client, *args, **kwargs)
-                if not client.closed:
-                    client.close()
+                client = cls(base_url, session, **session_kwargs)
+                try:
+                    response = func._execute(client, *args, **kwargs)
+                finally:
+                    if not client.closed:
+                        client.close()
                 return response
 
             wrapper.__core__ = func  # type: ignore[attr-defined]
@@ -411,6 +474,6 @@ class Session(BaseSession):
         return decorator
 
     def _get_request_bound(self, request_obj: RequestCore) -> RequestSyncBound:
-        if request_obj not in self._request_bound_func.keys():
-            self._request_bound_func[request_obj] = RequestSyncBound(request_obj, self)
-        return self._request_bound_func[request_obj]
+        if request_obj.name not in self._request_bound_func.keys():
+            self._request_bound_func[request_obj.name] = RequestSyncBound(request_obj, self)
+        return self._request_bound_func[request_obj.name]
