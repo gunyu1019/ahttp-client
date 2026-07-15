@@ -28,9 +28,10 @@ class RequestsBackend(SyncBackend):
         return response_obj.text
 
     def response_json(
-            self, response_obj: requests.Response,
-            json_parser: Optional[Callable[..., Any]] = None,
-            json_kwargs: Optional[dict[str, Any]] = None
+        self,
+        response_obj: requests.Response,
+        json_parser: Optional[Callable[..., Any]] = None,
+        json_kwargs: Optional[dict[str, Any]] = None,
     ) -> Optional[Any]:
         if not response_obj.content:
             return None

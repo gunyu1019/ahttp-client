@@ -39,6 +39,7 @@ class RequestBound(ABC):
     accessed through a :class:`BaseSession`. They retain both the request core
     and the session used to execute it.
     """
+
     def __init__(self, core: RequestCore, session: BaseSession):
         self._core = core
         self._session = session
@@ -56,6 +57,7 @@ class RequestBound(ABC):
 
 class RequestAsyncBound(RequestBound):
     """A request descriptor bound to an :class:`AsyncSession`."""
+
     _session: AsyncSession
     _core: AsyncRequestCore
 
@@ -66,6 +68,7 @@ class RequestAsyncBound(RequestBound):
 
 class RequestSyncBound(RequestBound):
     """A request descriptor bound to a :class:`Session`."""
+
     _session: Session
     _core: SyncRequestCore
 

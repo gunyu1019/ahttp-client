@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from typing import Any, Awaitable, Callable, Optional, ClassVar
     from ..request import RequestCore
 
-_BackendT = TypeVar('_BackendT', bound='BaseBackend')
+_BackendT = TypeVar("_BackendT", bound="BaseBackend")
 
 
 class BaseBackend(ABC):
@@ -18,6 +18,7 @@ class BaseBackend(ABC):
     interface. Subclasses that define both ``session_cls`` and ``response_cls``
     are registered automatically.
     """
+
     session_cls: ClassVar[type]
     response_cls: ClassVar[type]
     native_base_url: ClassVar[bool] = False
@@ -45,7 +46,7 @@ class BaseBackend(ABC):
         """Register a concrete backend for its configured session class."""
         super(BaseBackend, cls).__init_subclass__(**kwargs)
 
-        if not hasattr(cls, 'response_cls') or not hasattr(cls, 'session_cls'):
+        if not hasattr(cls, "response_cls") or not hasattr(cls, "session_cls"):
             return
 
         BaseBackend._registry[cls.session_cls] = cls
@@ -67,7 +68,7 @@ class BaseBackend(ABC):
             If ``session`` is not registered with a backend.
         """
         if session not in cls._registry.keys():
-            raise TypeError(f'{session.__name__} is not supported')
+            raise TypeError(f"{session.__name__} is not supported")
         return cls._registry[session](session, **kwargs)  # type: ignore[return-value]
 
     @abstractmethod
@@ -87,9 +88,10 @@ class BaseBackend(ABC):
 
     @abstractmethod
     def response_json(
-            self, response_obj: Any,
-            json_parser: Optional[Callable[..., Any]] = None,
-            json_kwargs: Optional[dict[str, Any]] = None
+        self,
+        response_obj: Any,
+        json_parser: Optional[Callable[..., Any]] = None,
+        json_kwargs: Optional[dict[str, Any]] = None,
     ) -> Optional[Any]:
         """Parse the response body as JSON using an optional custom parser."""
         pass
@@ -128,6 +130,7 @@ class BaseBackend(ABC):
 
 class AsyncBackend(BaseBackend, ABC):
     """Base adapter contract for asynchronous HTTP client libraries."""
+
     async def pre_read_response(self, response_obj: Any) -> None:
         """Read a response before it is exposed through :class:`Response`.
 
@@ -178,6 +181,7 @@ class AsyncBackend(BaseBackend, ABC):
 
 class SyncBackend(BaseBackend, ABC):
     """Base adapter contract for synchronous HTTP client libraries."""
+
     @abstractmethod
     def session_close(self):
         """Close the underlying synchronous HTTP client session."""

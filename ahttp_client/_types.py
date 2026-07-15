@@ -25,7 +25,6 @@ from __future__ import annotations
 from typing import Any, TypeVar, Callable, IO, BinaryIO, TYPE_CHECKING
 from io import IOBase
 
-
 T = TypeVar("T")
 
 if TYPE_CHECKING:

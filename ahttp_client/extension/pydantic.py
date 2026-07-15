@@ -43,12 +43,14 @@ if TYPE_CHECKING:
 
 try:
     import pydantic
+
     is_pydantic = True
 except (ModuleNotFoundError, ImportError):
     is_pydantic = False
 
 if TYPE_CHECKING:
     import pydantic
+
     BaseModelT = TypeVar("BaseModelT", bound=pydantic.BaseModel)
 else:
     BaseModelT = TypeVar("BaseModelT")
@@ -191,6 +193,8 @@ def is_pydantic_model(data: Any) -> bool:
     if not is_pydantic:
         return False
     if isinstance(data, (list, tuple)):
+        if not data:
+            return False
         return is_pydantic_model(data[0])
     return isinstance(data, pydantic.BaseModel)
 

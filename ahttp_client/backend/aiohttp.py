@@ -23,19 +23,20 @@ class AiohttpBackend(AsyncBackend):
         await response_obj.read()
 
     def response_data(self, response_obj: aiohttp.ClientResponse) -> bytes:
-        return getattr(response_obj, "_body", b'')
+        return getattr(response_obj, "_body", b"")
 
     def response_text(self, response_obj: aiohttp.ClientResponse) -> str:
-        body = getattr(response_obj, "_body", b'')
+        body = getattr(response_obj, "_body", b"")
         encoding = response_obj.get_encoding()
         return body.decode(encoding)
 
     def response_json(
-            self, response_obj: aiohttp.ClientResponse,
-            json_parser: Optional[Callable[..., Any]] = None,
-            json_kwargs: Optional[dict[str, Any]] = None
+        self,
+        response_obj: aiohttp.ClientResponse,
+        json_parser: Optional[Callable[..., Any]] = None,
+        json_kwargs: Optional[dict[str, Any]] = None,
     ) -> Optional[Any]:
-        body = getattr(response_obj, "_body", b'')
+        body = getattr(response_obj, "_body", b"")
         if not body:
             return None
 
@@ -86,8 +87,14 @@ class AiohttpBackend(AsyncBackend):
                         data.add_field(key, str(value), content_type="text/plain")
 
                 if request_obj._body_file is not None:
-                    for key, (file_name, value, content_type) in request_obj._body_file.items():
-                        data.add_field(key, value, filename=file_name, content_type=content_type)
+                    for key, (
+                        file_name,
+                        value,
+                        content_type,
+                    ) in request_obj._body_file.items():
+                        data.add_field(
+                            key, value, filename=file_name, content_type=content_type
+                        )
 
                 request_kwargs["data"] = data
             elif body_type == BodyType.RAW:

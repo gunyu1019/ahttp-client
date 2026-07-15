@@ -50,14 +50,10 @@ class BaseSession(ABC):
     a decorated request is accessed on a session instance, it is bound to that
     session and can be called as a regular synchronous or asynchronous method.
     """
+
     backend: BaseBackend
 
-    def __init__(
-            self,
-            base_url: str,
-            *,
-            directly_response: bool = False
-    ):
+    def __init__(self, base_url: str, *, directly_response: bool = False):
         self.directly_response = directly_response
         self.base_url = base_url
 
@@ -81,13 +77,11 @@ class BaseSession(ABC):
     def _get_request_url(self, path: str) -> str:
         if self.backend.native_base_url:
             return path
-        if not path.startswith("/") and not self.base_url.endswith("/"):
-            return self.base_url + "/" + path
-        return self.base_url + path
+        return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
     @abstractmethod
     def _make_request(
-            self, request: RequestCore, path: str
+        self, request: RequestCore, path: str
     ) -> Response | Awaitable[Response]:
         pass
 
@@ -107,7 +101,6 @@ class BaseSession(ABC):
             if request_obj.name in members.keys():
                 raise ValueError(f"Request name {request_obj.name} is duplicated")
             members[request_obj.name] = request_obj
-
 
 
 class AsyncSession(BaseSession):
@@ -131,14 +124,16 @@ class AsyncSession(BaseSession):
     """
 
     def __init__(
-            self,
-            base_url: str,
-            session: type,
-            *,
-            directly_response: bool = False,
-            **kwargs,
+        self,
+        base_url: str,
+        session: type,
+        *,
+        directly_response: bool = False,
+        **kwargs,
     ):
-        self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
+        self.backend: AsyncBackend = AsyncBackend.from_session(
+            session, base_url=base_url, **kwargs
+        )
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
@@ -158,10 +153,10 @@ class AsyncSession(BaseSession):
         return self
 
     async def __aexit__(
-            self,
-            exc_type: Optional[type[BaseException]],
-            exc_val: Optional[BaseException],
-            exc_tb: Optional[TracebackType],
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
     ):
         """Close the session when leaving the asynchronous context."""
         await self.close()
@@ -218,7 +213,9 @@ class AsyncSession(BaseSession):
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
         url = self._get_request_url(path)
-        raw_response = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        raw_response = await self.backend.session_request(
+            _req_obj.method.__str__(), url, **request_kwargs
+        )
         await self.backend.pre_read_response(raw_response)
         response = Response(raw_response, self.backend)
 
@@ -227,7 +224,9 @@ class AsyncSession(BaseSession):
         return response
 
     @BaseSession._special_method
-    async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+    async def before_request(
+        self, request: RequestCore, path: str
+    ) -> tuple[RequestCore, str]:
         """Run after a request-level pre-hook and before dispatching the request.
 
         Override this method to alter the request object or final path for all
@@ -329,18 +328,21 @@ class Session(BaseSession):
     """
 
     def __init__(
-            self,
-            base_url: str,
-            session: type,
-            *,
-            directly_response: bool = False,
-            **kwargs,
+        self,
+        base_url: str,
+        session: type,
+        *,
+        directly_response: bool = False,
+        **kwargs,
     ):
-        self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
+        self.backend: SyncBackend = SyncBackend.from_session(
+            session, base_url=base_url, **kwargs
+        )
         super(Session, self).__init__(
             base_url,
             directly_response=directly_response,
         )
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._validate_request_core_duplicated()
@@ -355,10 +357,10 @@ class Session(BaseSession):
         return self
 
     def __exit__(
-            self,
-            exc_type: Optional[type[BaseException]],
-            exc_val: Optional[BaseException],
-            exc_tb: Optional[TracebackType],
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
     ):
         """Close the session when leaving the context."""
         self.close()
@@ -415,7 +417,9 @@ class Session(BaseSession):
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         url = self._get_request_url(path)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
-        raw_response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        raw_response = self.backend.session_request(
+            _req_obj.method.__str__(), url, **request_kwargs
+        )
         response = Response(raw_response, self.backend)
 
         if self._has_overridden_method(self.after_request):
@@ -423,7 +427,9 @@ class Session(BaseSession):
         return response
 
     @BaseSession._special_method
-    def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+    def before_request(
+        self, request: RequestCore, path: str
+    ) -> tuple[RequestCore, str]:
         """Run after a request-level pre-hook and before dispatching the request.
 
         Override this method to alter the request object or final path for all

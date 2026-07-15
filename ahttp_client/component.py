@@ -134,7 +134,9 @@ class _BodyFileComponent(Component):
         self.metadata_content_type: Optional[str] = None
 
     @classmethod
-    def metadata(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
+    def metadata(
+        cls, filename: Optional[str] = None, content_type: Optional[str] = None
+    ) -> Self:
         """Configure file metadata for a body value.
 
         On :class:`BodyForm`, this makes the field a multipart file part. On
@@ -156,7 +158,9 @@ class _BodyFileComponent(Component):
 
     @property
     def is_file_type(self) -> bool:
-        return self.metadata_filename is not None or self.metadata_content_type is not None
+        return (
+            self.metadata_filename is not None or self.metadata_content_type is not None
+        )
 
 
 class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
@@ -168,6 +172,7 @@ class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
     :meth:`metadata` adds filename and content-type metadata without changing
     the raw-body encoding.
     """
+
     pass
 
 
@@ -219,6 +224,7 @@ class BodyForm(_BodyFileComponent):
     a filename or content type, use ``multipart/form-data``; other form fields
     default to URL encoding.
     """
+
     pass
 
 
@@ -241,6 +247,7 @@ class Header(Component):
         value: Any
             Header value.
         """
+
         def decorator(func):
             if not hasattr(func, Header.DEFAULT_KEY):
                 setattr(func, Header.DEFAULT_KEY, dict())
@@ -278,6 +285,7 @@ class Query(Component):
         value: Any
             Query parameter value.
         """
+
         def decorator(func):
             if not hasattr(func, Query.DEFAULT_KEY):
                 setattr(func, Query.DEFAULT_KEY, dict())

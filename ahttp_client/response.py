@@ -21,6 +21,7 @@ class Response:
     backend: BaseBackend
         Backend that provides response operations for ``response_obj``.
     """
+
     def __init__(self, response_obj: Any, backend: BaseBackend):
         self._raw_response_obj = response_obj
         self._backend = backend
@@ -60,7 +61,9 @@ class Response:
     def close(self) -> None:
         """Close the underlying HTTP response."""
         if iscoroutinefunction(self._backend.response_close):
-            raise TypeError("close() cannot be called on an asynchronous response backend")
+            raise TypeError(
+                "close() cannot be called on an asynchronous response backend"
+            )
         close = cast(Callable[[Any], None], self._backend.response_close)
         close(self._raw_response_obj)
         self._closed = True
@@ -68,7 +71,9 @@ class Response:
     async def async_close(self) -> None:
         """Close the underlying HTTP response."""
         if not iscoroutinefunction(self._backend.response_close):
-            raise TypeError("async_close() requires an asynchronous response-close backend")
+            raise TypeError(
+                "async_close() requires an asynchronous response-close backend"
+            )
         close = cast(Callable[[Any], Awaitable[None]], self._backend.response_close)
         await close(self._raw_response_obj)
         self._closed = True
@@ -78,9 +83,9 @@ class Response:
         return self._backend.response_text(self._raw_response_obj)
 
     def json(
-            self,
-            json_parser: Optional[Callable[..., Any]] = None,
-            json_kwargs: Optional[dict[str, Any]] = None
+        self,
+        json_parser: Optional[Callable[..., Any]] = None,
+        json_kwargs: Optional[dict[str, Any]] = None,
     ) -> Any:
         """Parse the response body as JSON.
 
@@ -91,7 +96,9 @@ class Response:
         json_kwargs: Optional[dict[str, Any]]
             Keyword arguments passed to ``json_parser`` or the backend parser.
         """
-        return self._backend.response_json(self._raw_response_obj, json_parser, json_kwargs)
+        return self._backend.response_json(
+            self._raw_response_obj, json_parser, json_kwargs
+        )
 
     def content(self) -> bytes:
         """Return the response body as bytes."""

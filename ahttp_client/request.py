@@ -28,10 +28,26 @@ import inspect
 import copy
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional, get_type_hints
+from typing import (
+    TypeVar,
+    TYPE_CHECKING,
+    Callable,
+    NamedTuple,
+    Optional,
+    get_type_hints,
+)
 
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
-from .component import Component, _EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
+from .component import (
+    Component,
+    _EmptyComponent,
+    BodyJson,
+    Body,
+    BodyForm,
+    Header,
+    Path,
+    Query,
+)
 from .enum import Method, BodyFormEncoding, BodyType
 from .session import BaseSession
 from .response import Response
@@ -60,6 +76,7 @@ class BodyEntry(NamedTuple):
     def name(self) -> str:
         """Return the underlying parameter name for backward compatibility."""
         return self.parameter.name
+
 
 if TYPE_CHECKING:
     from typing import Optional, Self, Any
@@ -123,6 +140,7 @@ class RequestCore(ABC):
     request_kwargs: dict[str, Any]
         Keyword arguments passed through to the backend request method.
     """
+
     __request_core__ = True
 
     def __init__(
@@ -159,7 +177,10 @@ class RequestCore(ABC):
 
         # method is related to Session class.
         if len(self._signature.parameters) < 1:
-            raise TypeError("%s missing 1 required parameter: 'self(extends Session)'" % self.func.__name__)
+            raise TypeError(
+                "%s missing 1 required parameter: 'self(extends Session)'"
+                % self.func.__name__
+            )
 
         # if not iscoroutinefunction(func):
         #     raise TypeError("function %s must be coroutine." % func.__name__)
@@ -357,16 +378,19 @@ class RequestCore(ABC):
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
         if (
-                not single_parameter and
-                sum(
-                    [
-                        self.body_parameter is not None,
-                        len(self.body_form_parameter) > 0,
-                        len(self.body_json_parameter) > 0,
-                    ]
-                ) > 1
+            not single_parameter
+            and sum(
+                [
+                    self.body_parameter is not None,
+                    len(self.body_form_parameter) > 0,
+                    len(self.body_json_parameter) > 0,
+                ]
+            )
+            > 1
         ):
-            raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
+            raise TypeError(
+                "Duplicated Body Form Parameter, Body Json Parameter or Body Parameter."
+            )
 
     # Setup
     def _add_private_key(self) -> None:
@@ -419,7 +443,9 @@ class RequestCore(ABC):
         body_parameter: str
             Parameter name used as the complete body.
         """
-        form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
+        form_encoding = self.body_form_encoding_type = (
+            form_encoding or BodyFormEncoding.AUTO
+        )
 
         try:
             resolved_hints = get_type_hints(self.func, include_extras=True)
@@ -428,12 +454,22 @@ class RequestCore(ABC):
 
         for parameter in self._signature.parameters.values():
             annotation = resolved_hints.get(parameter.name, parameter.annotation)
-            origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
-            metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
+            origin_type = (
+                annotation.__origin__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
+            metadata = (
+                annotation.__metadata__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[_EmptyComponent] | type[Response] = _EmptyComponent
+            component_type: type[Component] | type[_EmptyComponent] | type[Response] = (
+                _EmptyComponent
+            )
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -445,36 +481,62 @@ class RequestCore(ABC):
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, Response):
+                if issubclass(annotation, Component) or issubclass(
+                    annotation, Response
+                ):
                     component_type = annotation
                     break
 
-            instance_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
+            instance_origin = [
+                get_origin_for_generic(t) for t in make_collection(separated_origin)
+            ]
 
-            if issubclass(component_type, Header) or (header_parameter is not None and parameter.name in header_parameter):
+            if issubclass(component_type, Header) or (
+                header_parameter is not None and parameter.name in header_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.header_parameter[name] = parameter
-            elif issubclass(component_type, Query) or (query_parameter is not None and parameter.name in query_parameter):
+            elif issubclass(component_type, Query) or (
+                query_parameter is not None and parameter.name in query_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.query_parameter[name] = parameter
-            elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
+            elif issubclass(component_type, Path) or (
+                path_parameter is not None and parameter.name in path_parameter
+            ):
                 self.path_parameter[parameter.name] = parameter
-            elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
+            elif issubclass(component_type, BodyForm) or (
+                form_parameter is not None and parameter.name in form_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
-                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(component_instance, "is_file_type", False)
-                form_component = component_instance if isinstance(component_instance, BodyForm) else None
+                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(
+                    component_instance, "is_file_type", False
+                )
+                form_component = (
+                    component_instance
+                    if isinstance(component_instance, BodyForm)
+                    else None
+                )
 
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
                 elif form_encoding == BodyFormEncoding.AUTO and is_file_type:
                     self.body_parameter_type = BodyType.FORM_DATA
-                elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
+                elif (
+                    form_encoding == BodyFormEncoding.AUTO
+                    and self.body_parameter_type is None
+                ):
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, form_component)
+                self.body_form_parameter[name] = BodyFormEntry(
+                    parameter, is_file_type, form_component
+                )
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
+            elif issubclass(component_type, BodyJson) or (
+                body_json_parameter is not None
+                and parameter.name in body_json_parameter
+            ):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
                 key = getattr(component_instance, "json_key", None)
@@ -484,7 +546,9 @@ class RequestCore(ABC):
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
-                body_component = component_instance if isinstance(component_instance, Body) else None
+                body_component = (
+                    component_instance if isinstance(component_instance, Body) else None
+                )
                 is_file_type = is_subclass_safe(instance_origin, _IO_TYPE)
                 self.body_parameter = BodyEntry(parameter, is_file_type, body_component)
                 if is_subclass_safe(instance_origin, _BODY_JSON_TYPE):
@@ -493,7 +557,9 @@ class RequestCore(ABC):
                     self.body_parameter_type = BodyType.RAW
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
+            elif issubclass(component_type, Response) or is_subclass_safe(
+                instance_origin, Response
+            ):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
@@ -511,7 +577,9 @@ class RequestCore(ABC):
 
             parameter_without_return_annotation.append(parameter)
 
-        self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
+        self._signature = self._signature.replace(
+            parameters=parameter_without_return_annotation
+        )
         for parameter_name in self.response_parameter:
             if parameter_name not in self.func.__annotations__.keys():
                 continue
@@ -519,7 +587,11 @@ class RequestCore(ABC):
             del self.func.__annotations__[parameter_name]
         self.__annotations__ = self.func.__annotations__
 
-    def _fill_parameter(self, session: BaseSession, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
+    def _fill_parameter(
+        self,
+        session: BaseSession,
+        bounded_argument: dict[str, Any] | inspect.BoundArguments,
+    ) -> None:
         """Fill request components from arguments bound to the request call.
 
         Parameters
@@ -554,18 +626,26 @@ class RequestCore(ABC):
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
+        if (
+            self.is_formal_form
+            and self.body_parameter is None
+            and self.body_type == BodyType.FORM_DATA
+        ):  # self.is_body
             self.body = dict()
             self._body_file = dict()
 
             for _name, _entry in self.body_form_parameter.items():
-                if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
+                if (
+                    _entry.component is not None and _entry.component.is_file_type
+                ) or _entry.is_file_type:
                     file_name = getattr(_entry.component, "metadata_filename", None)
-                    content_type = getattr(_entry.component, "metadata_content_type", None)
+                    content_type = getattr(
+                        _entry.component, "metadata_content_type", None
+                    )
                     self._body_file[_name] = (
                         file_name or _name,
                         bounded_argument.get(_entry.parameter.name),
-                        content_type
+                        content_type,
                     )
                 else:
                     self.body[_name] = bounded_argument.get(_entry.parameter.name)
@@ -574,7 +654,11 @@ class RequestCore(ABC):
                 self.body = None
             if len(self._body_file.keys()) == 0:
                 self._body_file = None
-        elif self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED:  # self.is_body
+        elif (
+            self.is_formal_form
+            and self.body_parameter is None
+            and self.body_type == BodyType.URL_ENCODED
+        ):  # self.is_body
             self.body = {
                 _name: bounded_argument.get(_form_entry.parameter.name)
                 for _name, _form_entry in self.body_form_parameter.items()
@@ -589,7 +673,9 @@ class RequestCore(ABC):
                     direction = self.body
                     for part in parts[:-1]:
                         direction = direction.setdefault(part, dict())
-                    direction[parts[-1]] = bounded_argument.get(_json_entry.parameter.name)
+                    direction[parts[-1]] = bounded_argument.get(
+                        _json_entry.parameter.name
+                    )
                     continue
                 self.body[_name] = bounded_argument.get(_json_entry.parameter.name)
             if len(self.body.keys()) == 0:
@@ -606,10 +692,16 @@ class RequestCore(ABC):
                 if body_component.metadata_filename is not None and not any(
                     key.lower() == "content-disposition" for key in self.headers
                 ):
-                    filename = body_component.metadata_filename.replace("\\", "\\\\").replace('"', '\\"')
-                    self.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+                    filename = body_component.metadata_filename.replace(
+                        "\\", "\\\\"
+                    ).replace('"', '\\"')
+                    self.headers["Content-Disposition"] = (
+                        f'attachment; filename="{filename}"'
+                    )
 
-    def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
+    def _get_request_path(
+        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
+    ) -> str:
         """Build the final request path from bound path parameters.
 
         Parameters
@@ -747,14 +839,18 @@ class AsyncRequestCore(RequestCore):
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(
+                session, req_obj, formatted_path
+            )
         raw_response = response = await session._make_request(req_obj, formatted_path)
+        close_response = True
         try:
             if self._after_hook is not None:
                 response = await self._after_hook(session, response)
 
             # Detect directly response
             if self.directly_response or session.directly_response:
+                close_response = False
                 return response
 
             for _parameter in self.response_parameter:
@@ -763,12 +859,8 @@ class AsyncRequestCore(RequestCore):
 
             result = await self.func(**kwargs)
         finally:
-            if not raw_response.closed:
-                close_func = raw_response.close
-                if asyncio.iscoroutinefunction(close_func):
-                    await close_func()
-                else:
-                    close_func()
+            if close_response and not raw_response.closed:
+                await raw_response.async_close()
         return result
 
 
@@ -811,14 +903,18 @@ class SyncRequestCore(RequestCore):
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
+            req_obj, formatted_path = self._before_hook(
+                session, req_obj, formatted_path
+            )
         raw_response = response = session._make_request(req_obj, formatted_path)
+        close_response = True
         try:
             if self._after_hook is not None:
                 response = self._after_hook(session, response)
 
             # Detect directly response
             if self.directly_response or session.directly_response:
+                close_response = False
                 return response
 
             for _parameter in self.response_parameter:
@@ -827,13 +923,15 @@ class SyncRequestCore(RequestCore):
 
             result = self.func(**kwargs)
         finally:
-            if not raw_response.closed:
+            if close_response and not raw_response.closed:
                 raw_response.close()
         return result
 
 
 def _make_request_core(func, method, path, **kwargs):
-    core_cls = AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    core_cls = (
+        AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    )
     return core_cls.from_decorator(func, method, path, **kwargs)
 
 
@@ -952,6 +1050,7 @@ def get(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,
@@ -998,6 +1097,7 @@ def post(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,
@@ -1044,6 +1144,7 @@ def options(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,
@@ -1090,6 +1191,7 @@ def patch(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,
@@ -1136,6 +1238,7 @@ def put(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,
@@ -1182,6 +1285,7 @@ def delete(
 
     All parameters have the same meaning as :func:`request`.
     """
+
     def decorator(func):
         return _make_request_core(
             func,

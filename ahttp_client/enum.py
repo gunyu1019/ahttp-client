@@ -4,6 +4,7 @@ from enum import Flag, StrEnum, auto
 
 class Method(StrEnum):
     """HTTP methods accepted by request decorators and session methods."""
+
     CONNECT = auto()
     HEAD = auto()
     GET = auto()
@@ -20,6 +21,7 @@ class Method(StrEnum):
 
 class BodyType(StrEnum):
     """Encodings used for an HTTP request body."""
+
     JSON = "application/json"
     URL_ENCODED = "application/x-www-form-urlencoded"
     FORM_DATA = "multipart/form-data"
@@ -32,6 +34,7 @@ class BodyFormEncoding(Flag):
     ``AUTO`` uses multipart form data when a file field is present and URL
     encoding otherwise.
     """
+
     AUTO = auto()
     URL_ENCODED = auto()
     FORM_DATA = auto()
