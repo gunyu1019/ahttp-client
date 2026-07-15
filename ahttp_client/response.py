@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import iscoroutinefunction
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -58,8 +59,17 @@ class Response:
 
     def close(self) -> None:
         """Close the underlying HTTP response."""
-        self._closed = True
+        if iscoroutinefunction(self._backend.response_close):
+            raise TypeError("close() cannot be called on a synchronous backend")
         self._backend.response_close(self._raw_response_obj)
+        self._closed = True
+
+    async def async_close(self) -> None:
+        """Close the underlying HTTP response."""
+        if not iscoroutinefunction(self._backend.response_close):
+            raise TypeError("async_close() can only be called on an asynchronous backend")
+        await self._backend.response_close(self._raw_response_obj)
+        self._closed = True
 
     def text(self) -> str:
         """Return the response body decoded as text."""
