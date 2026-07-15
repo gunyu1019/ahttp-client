@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import copy
+import io
 import requests
-from typing import TYPE_CHECKING, Collection
+from typing import TYPE_CHECKING
 
 from .base import SyncBackend
+from ..enum import BodyType
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
@@ -56,27 +58,22 @@ class RequestsBackend(SyncBackend):
 
     def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
-
-        # Header
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
-
-        # Parameter
         if len(request_obj.params) > 0:
             request_kwargs["params"] = request_obj.params
-
-        # Body
         if request_obj.is_body:
-            body_type = str(request_obj.body_parameter_type)
-            body = request_obj.body
-
-            if body_type is None:
-                body_type = (
-                    "json" if isinstance(request_obj.body, Collection)
-                    else "data"
-                )
-            request_kwargs[body_type] = body
-
+            body_type = request_obj.body_type
+            if body_type == BodyType.JSON:
+                request_kwargs["json"] = request_obj.body
+            elif body_type == BodyType.URL_ENCODED:
+                request_kwargs["data"] = request_obj.body
+            elif body_type == BodyType.FORM_DATA:
+                files = {k: (None, str(v)) for k, v in (request_obj.body or {}).items()}
+                files.update(request_obj._body_file or {})
+                request_kwargs["files"] = files
+            elif body_type == BodyType.RAW:
+                request_kwargs["data"] = request_obj.body
         return request_kwargs
 
     def session_close(self):
