@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional
 
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
-from .component import Component, EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
+from .component import Component, _EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .enum import Method, BodyFormEncoding, BodyType
 from .response import Response
 from .utils import *
@@ -405,7 +405,7 @@ class RequestCore(ABC):
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[EmptyComponent] = EmptyComponent
+            component_type: type[Component] | type[_EmptyComponent] = _EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -823,8 +823,6 @@ def request(
         Function parameter name used in the body.
     response_parameter: list[str]
         Function parameter name to store the HTTP result in.
-    raw_response_parameter: list[str]
-        Function parameter name to store the raw HTTP response object in.
     **request_kwargs
 
     Warnings

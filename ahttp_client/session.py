@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from typing import Any, Optional, Self
 
     from ._types import RequestFunction
-    from .request import RequestCore as _RequestCore
 
 _log = logging.getLogger(__name__)
 
