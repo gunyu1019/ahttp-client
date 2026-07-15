@@ -30,6 +30,15 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+aiohttp = [
+    "aiohttp>=3.11.2",
+]
+httpx = [
+    "httpx>=0.28.1",
+]
+requests = [
+    "requests>=2.32.3",
+]
 test = [
     "pytest",
     "pytest-cov"
@@ -51,6 +60,7 @@ Homepage = "https://github.com/gunyu1019/ahttp-client"
 [tool.setuptools]
 packages = [
     "ahttp_client",
+    "ahttp_client.backend",
     "ahttp_client.extension"
 ]
 include-package-data = true
