@@ -55,6 +55,9 @@ class AiohttpBackend(AsyncBackend):
     def response_close(self, response_obj: aiohttp.ClientResponse) -> None:
         response_obj.close()
 
+    def response_closed(self, response_obj: aiohttp.ClientResponse) -> bool:
+        return response_obj.closed
+
     @property
     def session_closed(self) -> bool:
         return self.session.closed

@@ -73,6 +73,10 @@ class BaseBackend(ABC):
     def response_close(self, response_obj: Any) -> None:
         pass
 
+    @abstractmethod
+    def response_closed(self, response_obj: Any) -> Optional[bool]:
+        pass
+
     @property
     @abstractmethod
     def session_closed(self) -> bool:

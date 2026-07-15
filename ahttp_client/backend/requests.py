@@ -52,6 +52,9 @@ class RequestsBackend(SyncBackend):
     def response_close(self, response_obj: requests.Response) -> None:
         response_obj.close()
 
+    def response_closed(self, response_obj: requests.Response) -> Optional[bool]:
+        return None
+
     @property
     def session_closed(self) -> bool:
         return self._closed

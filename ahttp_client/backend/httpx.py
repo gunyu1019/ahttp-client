@@ -52,6 +52,9 @@ class CommonHttpXBackend(BaseBackend, ABC):
     def response_url(self, response_obj: httpx.Response) -> str:
         return str(response_obj.url)
 
+    def response_closed(self, response_obj: httpx.Response) -> bool:
+        return response_obj.is_closed
+
     def response_data(self, response_obj: httpx.Response) -> bytes:
         return response_obj.content
 
