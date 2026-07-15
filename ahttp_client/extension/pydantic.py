@@ -29,6 +29,7 @@ import aiohttp
 from typing import overload, TypeVar, TYPE_CHECKING
 
 from .multiple_hook import multiple_hook
+from ..response import Response
 from ..utils import *
 
 if TYPE_CHECKING:
@@ -36,18 +37,20 @@ if TYPE_CHECKING:
 
     from typing import Any, Optional, Callable
 
-    from ..query import Query
+    from ..component import Query
     from ..request import RequestCore, request
-    from ..session import Session
+    from ..session import AsyncSession
 
 try:
     import pydantic
+
     is_pydantic = True
 except (ModuleNotFoundError, ImportError):
     is_pydantic = False
 
 if TYPE_CHECKING:
     import pydantic
+
     BaseModelT = TypeVar("BaseModelT", bound=pydantic.BaseModel)
 else:
     BaseModelT = TypeVar("BaseModelT")
@@ -190,6 +193,8 @@ def is_pydantic_model(data: Any) -> bool:
     if not is_pydantic:
         return False
     if isinstance(data, (list, tuple)):
+        if not data:
+            return False
         return is_pydantic_model(data[0])
     return isinstance(data, pydantic.BaseModel)
 
@@ -205,27 +210,29 @@ def pydantic_request_model(
     context: Optional[Any] = None,
     fallback: Optional[Callable[[Any], Any]] = None,
 ):
-    """A decorator that the `request` objects to provide parsing from raw data into a pydantic model.
+    """Serialize Pydantic request values before dispatch.
+
+    The hook serializes Pydantic models in headers, query parameters, and the
+    body. Body models are sent as JSON.
 
     Parameters
     ----------
     index : Optional[int]
-        Order of invocation in invoke-hook.
-        The order is recommended to be last after the status check.
+        Invocation order among request pre-hooks.
     by_alias : bool | None
-        Same feature as parameter of pydantic.BaseModel.model_dump method named by_alias.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     exclude_unset : bool
-        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_unset.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     exclude_defaults : bool
-        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_defaults.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     exclude_none : bool
-        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_none.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     exclude_computed_fields : bool
-        Same feature as parameter of pydantic.BaseModel.model_dump method named exclude_computed_fields.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     context : Optional[Any]
-        Same feature as parameter of pydantic.BaseModel.model_dump method named context.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     fallback : Optional[Callable[[Any], Any]]
-        Same feature as parameter of pydantic.BaseModel.model_dump method named fallback.
+        Passed to :meth:`pydantic.BaseModel.model_dump`.
     """
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
@@ -297,51 +304,35 @@ def pydantic_response_model(
     by_alias: Optional[bool] = None,
     by_name: Optional[bool] = None,
 ):
-    """Create a request method to return a model extended by pydantic.BaseModel
+    """Parse a JSON response into a Pydantic model or list of models.
+
+    When ``model`` is omitted, a request configured with
+    ``directly_response=True`` uses its return annotation as the model type.
 
     Parameters
     ----------
-    model: Optional[pydantic.BaseModel]
-        A model extended by pydantic.BaseModel to parse JSON.
-        If directly_response enabled and model parameter is empty, model will followed return annotation.
-        However, model parameter is empty, TypeError("Invalid model type.") will be raised.
+    model: Optional[type[pydantic.BaseModel]]
+        Model class used to parse the JSON response.
     index: Optional[int]
-        Order of invocation in invoke-hook.
-        The order is recommended to be last after the status check.
+        Invocation order among request post-hooks.
     strict: Optional[bool]
-        Same feature as parameter of pydantic.BaseModel.model_validate method named strict.
+        Passed to :meth:`pydantic.BaseModel.model_validate`.
     from_attributes: Optional[bool]
-        Same feature as parameter of pydantic.BaseModel.model_validate method named from_attributes.
+        Passed to :meth:`pydantic.BaseModel.model_validate`.
     context: Optional[Any]
-        Same feature as parameter of pydantic.BaseModel.model_validate method named context.
+        Passed to :meth:`pydantic.BaseModel.model_validate`.
     by_alias: Optional[bool]
-        Same feature as parameter of pydantic.BaseModel.model_validate method named by_alias.
+        Passed to :meth:`pydantic.BaseModel.model_validate`.
     by_name: Optional[bool]
-        Same feature as parameter of pydantic.BaseModel.model_validate method named by_name.
+        Passed to :meth:`pydantic.BaseModel.model_validate`.
 
-    Warnings
-    --------
-    This feature is experimental. It might not work as expected.
-    And `pydatnic` pacakge required.
-
-    Examples
-    --------
-    >>> class ResponseModel(pydantic.BaseModel):
-    ...     name: str
-    ...     id: str
-    ...
-    >>> class MetroAPI(Session):
-    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
-    ...        super().__init__("https://api.yhs.kr", loop=loop)
-    ...
-    ...    @pydantic_response_model()
-    ...    @request("GET", "/metro/station", directly_response=True)
-    ...    async def station_search_with_query(
-    ...            self,
-    ...            response: aiohttp.ClientResponse,
-    ...            name: Query | str
-    ...    ) -> ResponseModel:
-    ...        pass
+    Raises
+    ------
+    ModuleNotFoundError
+        If Pydantic is not installed.
+    TypeError
+        If no model is supplied and a model cannot be inferred from the return
+        annotation.
     """
     if not is_pydantic:
         raise ModuleNotFoundError("pydantic is not installed.")
@@ -358,9 +349,9 @@ def pydantic_response_model(
             _model = _model.__args__[0]
 
         @multiple_hook(func.after_hook, index=index)  # type: ignore[arg-type]
-        async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
-            if isinstance(response, aiohttp.ClientResponse):
-                data = await response.json()
+        async def wrapper(_, response: dict[str, Any] | Response):
+            if isinstance(response, Response):
+                data = response.json()
             else:
                 data = response
 

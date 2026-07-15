@@ -34,7 +34,8 @@ if TYPE_CHECKING:
     from .._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from ..query import Query
     from ..request import RequestCore, request
-    from ..session import Session
+    from ..response import Response
+    from ..session import AsyncSession
 
     CallableT = TypeVar("CallableT")
     CallableR = TypeVar("CallableR")
@@ -59,7 +60,11 @@ def multiple_hook(
     ],
     index: Optional[int] = -1,
 ):
-    """Use this method, if more than one pre-invoke hooks or post-invoke hooks need.
+    """Register an additional request pre-hook or post-hook.
+
+    Hooks run in ascending ``index`` order. Each hook receives the previous
+    hook's return value as its arguments and must return the arguments for the
+    next hook.
 
     Parameters
     ----------
@@ -67,38 +72,14 @@ def multiple_hook(
             (RequestAfterHookFunction | RequestBeforeHookFunction),
             RequestAfterHookFunction | RequestBeforeHookFunction
         ]
-        Contains the decorator function used for hooking.
-        This can be :meth:`RequestObj.before_hook` or :meth:`RequestObj.after_hook`.
+        Bound ``before_hook`` or ``after_hook`` decorator of a request core.
     index: Optional[int]
-        Order of invocation in invoke-hook
+        Invocation order; hooks with lower values run first.
 
     Warnings
     --------
-    This feature is experimental. It might not work as expected.
-
-    Examples
-    --------
-    >>> class MetroAPI(Session):
-    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
-    ...        super().__init__("https://api.yhs.kr", loop=loop)
-    ...
-    ...    @request("GET", "/metro/station")
-    ...    async def station_search_with_query(
-    ...            self,
-    ...            response: aiohttp.ClientResponse,
-    ...            name: Query | str
-    ...    ) -> dict[str, Any]:
-    ...        return await response.json()
-    ...
-    ...    @multiple_hook(station_search_with_query.before_hook)
-    ...    async def before_hook_1(self, obj, path):
-    ...        # Set-up before request
-    ...        return obj, path
-    ...
-    ...    @multiple_hook(station_search_with_query.before_hook)
-    ...    async def before_hook_2(self, obj, path):
-    ...        # Set-up before request
-    ...        return obj, path
+    Additional hooks are currently asynchronous and are intended for async
+    request cores.
     """
     hook_name = hook.__name__  # type: ignore[union-attr]
     instance = hook.__self__  # type: ignore[union-attr]

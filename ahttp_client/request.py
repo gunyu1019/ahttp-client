@@ -23,96 +23,140 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import copy
 import inspect
-from asyncio import iscoroutinefunction
-from typing import TypeVar, TYPE_CHECKING, Callable
+import copy
 
-import aiohttp
+from abc import ABC, abstractmethod
+from typing import (
+    TypeVar,
+    TYPE_CHECKING,
+    Callable,
+    NamedTuple,
+    Optional,
+    get_type_hints,
+)
 
-from .body import Body
-from .body_json import BodyJson
-from .component import Component, EmptyComponent
-from .body_form import BodyForm
-from .header import Header
-from .path import Path
-from .query import Query
+from ._types import _IO_TYPE, _BODY_JSON_TYPE
+from .component import (
+    Component,
+    _EmptyComponent,
+    BodyJson,
+    Body,
+    BodyForm,
+    Header,
+    Path,
+    Query,
+)
+from .enum import Method, BodyFormEncoding, BodyType
+from .session import BaseSession
+from .response import Response
 from .utils import *
 
+
+class BodyJsonEntry(NamedTuple):
+    parameter: inspect.Parameter
+    custom_key: Optional[str]
+
+
+class BodyFormEntry(NamedTuple):
+    parameter: inspect.Parameter
+    is_file_type: bool
+    component: Optional[BodyForm]
+
+
+class BodyEntry(NamedTuple):
+    """Metadata collected for a complete request-body parameter."""
+
+    parameter: inspect.Parameter
+    is_file_type: bool
+    component: Optional[Body]
+
+    @property
+    def name(self) -> str:
+        """Return the underlying parameter name for backward compatibility."""
+        return self.parameter.name
+
+
 if TYPE_CHECKING:
-    from collections.abc import Collection
-    from typing import Optional, NoReturn, Any, Literal
-    from typing_extensions import Self
+    from typing import Optional, Self, Any
     from ._types import (
         RequestFunction,
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
-    from .session import Session
+    from .session import AsyncSession, Session
 
 T = TypeVar("T")
 
 
-class RequestCore:
-    """A class that implements functions for HTTP requests.
+class RequestCore(ABC):
+    """Base descriptor for a decorated HTTP request.
+
+    A request core is bound to a :class:`~ahttp_client.session.BaseSession`
+    instance when it is accessed as a session attribute.  The bound request
+    builds a backend-specific request from its static values and annotated
+    function parameters, then executes the decorated function with any
+    :class:`~ahttp_client.response.Response` parameter filled in.
 
     Attributes
     ----------
     name: str
         The name of the request.
-    func: Callable[..., Coroutine[Any, Any, T]]
-        The coroutine function that is executed when the request is called.
-    method: str
-        HTTP method (example. GET, POST)
+    func: Callable[..., Any]
+        The synchronous or asynchronous function executed after the response
+        is received.
+    method: str | Method
+        HTTP method.
     path: str
-        Request path. Path connects to the base url.
+        Path relative to the session base URL, unless the backend manages its
+        own base URL.
     directly_response: bool
-        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
-    params: Optional[dict[str, Any]]
-        Request parameters.
-    headers: Optional[dict[str, Any]]
-        Request headers.
-    body: Optional[Any | aiohttp.FormData]
-        Request body.
+        Return the response-pipeline result without executing the decorated
+        function.
+    params: dict[str, Any]
+        Static query parameters.
+    headers: dict[str, Any]
+        Static request headers.
+    body: Optional[Any]
+        Static request body. Its encoding is determined by ``body_type``.
     header_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the header
+        Function parameters used as request headers.
     query_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the query(parameter)
+        Function parameters used as query parameters.
     body_json_parameter: dict[str, inspect.Parameter]
-        Function parameters used in body json.
+        Function parameters collected into a JSON body.
     body_form_parameter: dict[str, inspect.Parameter]
-        Function parameters used in body form.
+        Function parameters collected into a form body.
     path_parameter: dict[str, inspect.Parameter]
-        Function parameters used in the path.
-    body_parameter: Optional[inspect.Parameter]
-        Function parameter used in the body.
-        The body parameter must take only Collection, or aiohttp.FormData.
-    body_parameter_type: Literal['json', 'data']
-        The type of body parameter.
-        When body_parameter type is `aiohttp.FormData`, the `body_parameter_type` is 'data'.
-        Else `body_parameter_type` is `Collection`, the `body_parameter_type` is 'json'.
+        Function parameters substituted into the path.
+    body_parameter: Optional[BodyEntry]
+        Metadata for the function parameter used as the complete request body.
+    body_parameter_type: Optional[BodyType]
+        Explicit body encoding, if one was inferred from the parameter
+        annotations or form configuration.
     response_parameter: list[str]
-        Function parameter name to store the HTTP result in.
+        Names of function parameters that receive the HTTP response.
     request_kwargs: dict[str, Any]
-        Keyword Arguments are passed directly request method.
+        Keyword arguments passed through to the backend request method.
     """
+
+    __request_core__ = True
 
     def __init__(
         self,
         func: RequestFunction,
-        method: str,
+        method: str | Method,
         path: str,
         *,
         name: Optional[str] = None,
         directly_response: bool = False,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any | aiohttp.FormData] = None,
+        body: Optional[Any] = None,
         response_parameter: Optional[list[str]] = None,
         **kwargs,
     ):
         self.func = func
-        self.session: Optional["Session"] = None
         self.method = method
 
         # Function Wrapper
@@ -134,23 +178,25 @@ class RequestCore:
         if len(self._signature.parameters) < 1:
             raise TypeError("%s missing 1 required parameter: 'self(extends Session)'" % self.func.__name__)
 
-        if not iscoroutinefunction(func):
-            raise TypeError("function %s must be coroutine." % func.__name__)
+        # if not iscoroutinefunction(func):
+        #     raise TypeError("function %s must be coroutine." % func.__name__)
 
         # Static HTTP Components
         self.params: dict[str, Any] = params or dict()
         self.headers: dict[str, Any] = headers or dict()
-        self.body: Optional[aiohttp.FormData | Any] = body
+        self.body: Optional[Any] = body
+        self._body_file: Optional[Any] = None  # for multipart/form-data file
 
         # Components (Function Parameter)
         self.header_parameter: dict[str, inspect.Parameter] = dict()
         self.query_parameter: dict[str, inspect.Parameter] = dict()
         self.path_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_form_parameter: dict[str, inspect.Parameter] = dict()
-        self.body_json_parameter: dict[str, inspect.Parameter] = dict()
+        self.body_json_parameter: dict[str, BodyJsonEntry] = dict()
+        self.body_form_parameter: dict[str, BodyFormEntry] = dict()
+        self.body_form_encoding_type: BodyFormEncoding = BodyFormEncoding.AUTO
 
-        self.body_parameter_type: Literal["json", "data"] | None = None
-        self.body_parameter: Optional[inspect.Parameter] = None
+        self.body_parameter: Optional[BodyEntry] = None
+        self.body_parameter_type: Optional[BodyType] = None
 
         self.validation_parameter: dict[str, list[Callable[..., Any]]] = dict()
         self.response_parameter: list[str] = response_parameter or list()
@@ -162,13 +208,14 @@ class RequestCore:
     def from_decorator(
         cls,
         func: RequestFunction,
-        method: str,
+        method: str | Method,
         path: str,
         *,
         query_parameter: Optional[list[str]] = None,
         header_parameter: Optional[list[str]] = None,
         body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
         path_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
         **kwargs,
@@ -180,6 +227,7 @@ class RequestCore:
             query_parameter=query_parameter or list(),
             header_parameter=header_parameter or list(),
             form_parameter=form_parameter or list(),
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter or list(),
             body_parameter=body_parameter,
             path_parameter=path_parameter or list(),
@@ -188,24 +236,25 @@ class RequestCore:
         new_cls._delete_response_annotation()
         return new_cls
 
-    def copy(self) -> "RequestCore":
+    def copy(self) -> Self:
         """Creates a copy of this request.
 
         Returns
         -------
-        :class:`RequestCore`
-            A new istnace of this request.
+        RequestCore
+            An independent request instance with copied static headers and
+            query parameters.
         """
-        new_cls = RequestCore(
+        new_cls = self.__class__(
             self.func,
             self.method,
             self.path,
             name=self.name,
             directly_response=self.directly_response,
-            headers=self.headers,
-            params=self.params,
+            headers=copy.deepcopy(self.headers),
+            params=copy.deepcopy(self.params),
             body=self.body,
-            response_parameter=self.response_parameter,
+            response_parameter=self.response_parameter[:],
             **self.request_kwargs,
         )
 
@@ -213,49 +262,48 @@ class RequestCore:
         new_cls.query_parameter = self.query_parameter
         new_cls.path_parameter = self.path_parameter
         new_cls.body_form_parameter = self.body_form_parameter
+        new_cls.body_form_encoding_type = self.body_form_encoding_type
         new_cls.body_json_parameter = self.body_json_parameter
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
+        new_cls._body_file = self._body_file
 
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook
 
         new_cls.validation_parameter = self.validation_parameter
-        new_cls.session = self.session
 
         new_cls._delete_response_annotation()
         return new_cls
 
     def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
-        """A decorator that registers a coroutine as a pre-invoke hook.
-        A pre-invoke hook is called directly before the HTTP request is called.
-        This makes it a useful function to set up authorizations or any type of set up required.
+        """Register a hook that runs immediately before the HTTP request.
+
+        The hook receives ``(session, request, path)`` and must return the
+        request and path to use. :class:`AsyncRequestCore` requires an async
+        hook; :class:`SyncRequestCore` requires a synchronous hook.
 
         Parameters
         ----------
-        func: Callable[[RequestCore, str], Coroutine[Any, Any, RequestCore]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[..., tuple[RequestCore, str]]
+            Hook to register.
         """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("The pre-invoke hook must be a coroutine.")
-
         self._before_hook = func
         return func
 
     def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
-        """A decorator that registers a coroutine as a post-invoke hook.
-        A post-invoke hook is called directly after the returned HTTP response.
-        This makes it a useful function to check correct response or any type of clean up response data.
+        """Register a hook that runs after the HTTP response is received.
+
+        The hook receives ``(session, response)`` and may return a transformed
+        result. :class:`AsyncRequestCore` requires an async hook;
+        :class:`SyncRequestCore` requires a synchronous hook.
 
         Parameters
         ----------
-        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
-            The coroutine to register as the pre-invoke hook.
+        func: Callable[..., Any]
+            Hook to register.
         """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("The post-invoke hook must be a coroutine.")
-
         self._after_hook = func
         return func
 
@@ -276,7 +324,7 @@ class RequestCore:
 
     @property
     def is_formal_form(self) -> bool:
-        """Returns whether the body element in the HTTP request is of type Form.
+        """Return whether this request has form parameters.
 
         Returns
         -------
@@ -285,62 +333,65 @@ class RequestCore:
         return len(self.body_form_parameter) > 0
 
     @property
-    def body_type(self) -> Optional[Literal["json", "data"]]:
-        """Returns the final body type
+    def body_type(self) -> Optional[BodyType]:
+        """Return the body encoding selected for this request.
 
         Returns
         -------
-        :class:`Literal`['json', 'data']
+        Optional[BodyType]
         """
         if self.body_parameter_type is not None:
             return self.body_parameter_type
 
-        if isinstance(self.body, Collection):
-            return "json"
-        return "data"
+        if self.body_form_encoding_type != BodyFormEncoding.AUTO:
+            return self.body_form_encoding_type.body_type
+
+        if isinstance(self.body, _BODY_JSON_TYPE):
+            return BodyType.JSON
+        return BodyType.RAW
 
     def _duplicated_check_body(self) -> None:
-        """Check if body is already in fill.
+        """Ensure static and parameter-derived bodies are not combined.
 
         Raises
         ------
         TypeError
-            Body or Body parameter is already filled.
+            A static body and a ``Body`` parameter were both supplied.
         """
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
 
-    def _duplicated_check_body_parameter(self, filled: bool = False) -> None:
-        """Check if body parameter is already in fill.
+    def _duplicated_check_body_parameter(self, single_parameter: bool = False) -> None:
+        """Ensure mutually exclusive body parameter styles are not combined.
 
         Raises
         ------
         TypeError
-            Body parameter is already filled.
+            More than one of ``Body``, ``BodyJson``, and ``BodyForm`` was
+            configured where only one is allowed.
         """
-        if filled and self.body_parameter is not None:
+        if single_parameter and self.body_parameter is not None:
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
-        if all(
-            [
-                not filled,
-                sum(
-                    [
-                        self.body_parameter is not None,
-                        len(self.body_form_parameter) > 0,
-                        len(self.body_json_parameter) > 0,
-                    ]
-                )
-                > 1,
-            ]
+        if (
+            not single_parameter
+            and sum(
+                [
+                    self.body_parameter is not None,
+                    len(self.body_form_parameter) > 0,
+                    len(self.body_json_parameter) > 0,
+                ]
+            )
+            > 1
         ):
-            raise TypeError("Duplicated Form Parameter or Body Parameter.")
+            raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
     # Setup
     def _add_private_key(self) -> None:
-        """Add private component to the request component.
+        """Add static headers and query values declared by decorators.
 
-        This method used at setup."""
+        This is called while the request descriptor is initialized.
+        """
         self.headers.update(getattr(self.func, Header.DEFAULT_KEY, dict()))
         self.params.update(getattr(self.func, Query.DEFAULT_KEY, dict()))
 
@@ -361,36 +412,46 @@ class RequestCore:
         header_parameter: Optional[list[str]] = None,
         body_json_parameter: Optional[list[str]] = None,
         form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
         body_parameter: Optional[str] = None,
         path_parameter: Optional[list[str]] = None,
     ) -> None:
-        """Add the component parameter from function
+        """Classify decorated function parameters as request components.
 
-        This method used at setup.
+        Annotations using component classes or instances take precedence;
+        explicit parameter-name lists provide the legacy alternative. This is
+        called while the request descriptor is initialized.
 
         Parameters
         ----------
         header_parameter: list[str]
-            Function parameter names used in the header
+            Parameter names used as headers.
         query_parameter: list[str]
-            Function parameter names used in the query(parameter)
+            Parameter names used as query parameters.
         form_parameter: list[str]
-            Function parameter names used in body form.
+            Parameter names used in a form body.
         body_json_parameter: list[str]
-            Function parameter names used in body json.
+            Parameter names used in a JSON body.
         path_parameter: list[str]
-            Function parameter names used in the path.
+            Parameter names substituted into the path.
         body_parameter: str
-            Function parameter name used in the body.
+            Parameter name used as the complete body.
         """
+        form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
+
+        try:
+            resolved_hints = get_type_hints(self.func, include_extras=True)
+        except Exception:
+            resolved_hints = {}
+
         for parameter in self._signature.parameters.values():
-            annotation = parameter.annotation
+            annotation = resolved_hints.get(parameter.name, parameter.annotation)
             origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
             metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[EmptyComponent] | type[aiohttp.ClientResponse] = EmptyComponent
+            component_type: type[Component] | type[_EmptyComponent] | type[Response] = _EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -402,51 +463,74 @@ class RequestCore:
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, aiohttp.ClientResponse):
+                if issubclass(annotation, Component) or issubclass(annotation, Response):
                     component_type = annotation
                     break
 
             instance_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
 
-            if issubclass(component_type, Header) or (header_parameter is not None and parameter.name in header_parameter):
+            if issubclass(component_type, Header) or (
+                header_parameter is not None and parameter.name in header_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.header_parameter[name] = parameter
-            elif issubclass(component_type, Query) or (query_parameter is not None and parameter.name in query_parameter):
+            elif issubclass(component_type, Query) or (
+                query_parameter is not None and parameter.name in query_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.query_parameter[name] = parameter
             elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
                 self.path_parameter[parameter.name] = parameter
-            elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
-                self.body_parameter_type = "data"
+            elif issubclass(component_type, BodyForm) or (
+                form_parameter is not None and parameter.name in form_parameter
+            ):
                 name = self._get_component_name(parameter.name, component_instance)
-                self.body_form_parameter[name] = parameter
+                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(
+                    component_instance, "is_file_type", False
+                )
+                form_component = component_instance if isinstance(component_instance, BodyForm) else None
+
+                if form_encoding != BodyFormEncoding.AUTO:
+                    self.body_parameter_type = form_encoding.body_type
+                elif form_encoding == BodyFormEncoding.AUTO and is_file_type:
+                    self.body_parameter_type = BodyType.FORM_DATA
+                elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
+                    self.body_parameter_type = BodyType.URL_ENCODED
+
+                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, form_component)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
-                self.body_parameter_type = "json"
+            elif issubclass(component_type, BodyJson) or (
+                body_json_parameter is not None and parameter.name in body_json_parameter
+            ):
+                self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
-                self.body_json_parameter[name] = parameter
+                key = getattr(component_instance, "json_key", None)
+
+                self.body_json_parameter[name] = BodyJsonEntry(parameter, key)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
-                if is_subclass_safe(instance_origin, Collection):
-                    self.body_parameter_type = "json"
+                body_component = component_instance if isinstance(component_instance, Body) else None
+                is_file_type = is_subclass_safe(instance_origin, _IO_TYPE)
+                self.body_parameter = BodyEntry(parameter, is_file_type, body_component)
+                if is_subclass_safe(instance_origin, _BODY_JSON_TYPE):
+                    self.body_parameter_type = BodyType.JSON
                 else:
-                    self.body_parameter_type = "data"
-                self.body_parameter = parameter
+                    self.body_parameter_type = BodyType.RAW
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, aiohttp.ClientResponse) or is_subclass_safe(
-                instance_origin, aiohttp.ClientResponse
-            ):
+            elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
-        """Delete the response parameter in signature.
-        The response parameter is automatically filled when the request is invoked.
+        """Remove response parameters from the public request signature.
 
-        This method used at setup.
+        Response parameters are filled automatically after the backend request
+        completes and before the decorated function is executed.
+
+        This is called while the request descriptor is initialized.
         """
         parameter_without_return_annotation = []
         for parameter in self._signature.parameters.values():
@@ -463,27 +547,27 @@ class RequestCore:
             del self.func.__annotations__[parameter_name]
         self.__annotations__ = self.func.__annotations__
 
-    def _fill_parameter(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
-        """Fill HTTP request component from bounded argument
+    def _fill_parameter(
+        self,
+        session: BaseSession,
+        bounded_argument: dict[str, Any] | inspect.BoundArguments,
+    ) -> None:
+        """Fill request components from arguments bound to the request call.
 
         Parameters
         ----------
         bounded_argument: dict[str, Any] | inspect.BoundArguments
-            bounded argument of the method.
+            Arguments bound to the decorated request function.
         """
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
-
-        effective_session = self.session
-        if effective_session is None:
-            effective_session = getattr(self.func, "__self__", None)  # type: ignore[assignment]
 
         # Validation
         for _name, _parameter in bounded_argument.items():
             if _name in self.validation_parameter.keys():
                 value = bounded_argument[_name]
                 for func in self.validation_parameter[_name]:
-                    value = func(effective_session, value)
+                    value = func(session, value)
                 bounded_argument[_name] = value
 
         # Header
@@ -502,43 +586,70 @@ class RequestCore:
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is None:  # self.is_body
-            form_data = aiohttp.FormData()
-            for _name, _parameter in self.body_form_parameter.items():
-                form_data.add_field(_name, bounded_argument.get(_parameter.name))
-            self.body = form_data
-        elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
+        if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
+            self.body = dict()
+            self._body_file = dict()
+
+            for _name, _entry in self.body_form_parameter.items():
+                if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
+                    file_name = getattr(_entry.component, "metadata_filename", None)
+                    content_type = getattr(_entry.component, "metadata_content_type", None)
+                    self._body_file[_name] = (
+                        file_name or _name,
+                        bounded_argument.get(_entry.parameter.name),
+                        content_type,
+                    )
+                else:
+                    self.body[_name] = bounded_argument.get(_entry.parameter.name)
+
+            if len(self.body.keys()) == 0:
+                self.body = None
+            if len(self._body_file.keys()) == 0:
+                self._body_file = None
+        elif (
+            self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED
+        ):  # self.is_body
             self.body = {
-                _name: bounded_argument.get(_parameter.name) for _name, _parameter in self.body_json_parameter.items()
+                _name: bounded_argument.get(_form_entry.parameter.name)
+                for _name, _form_entry in self.body_form_parameter.items()
             }
+            if len(self.body.keys()) == 0:
+                self.body = None
+        elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
+            self.body = dict()
+            for _name, _json_entry in self.body_json_parameter.items():
+                if _json_entry.custom_key is not None:
+                    parts = _json_entry.custom_key.split(".")
+                    direction = self.body
+                    for part in parts[:-1]:
+                        direction = direction.setdefault(part, dict())
+                    direction[parts[-1]] = bounded_argument.get(_json_entry.parameter.name)
+                    continue
+                self.body[_name] = bounded_argument.get(_json_entry.parameter.name)
+            if len(self.body.keys()) == 0:
+                self.body = None
         elif self.body_parameter is not None:
-            self.body = bounded_argument.get(self.body_parameter.name)
-
-    def get_request_kwargs(self) -> dict[str, Any]:
-        """Get keyword arguments to call request method"""
-        request_kwargs = copy.deepcopy(self.request_kwargs)
-
-        # Header
-        if len(self.headers) > 0:
-            request_kwargs["headers"] = self.headers
-
-        # Parameter
-        if len(self.params) > 0:
-            request_kwargs["params"] = self.params
-
-        # Body
-        if self.is_body:
-            request_kwargs[str(self.body_type)] = self.body
-
-        return request_kwargs
+            value = bounded_argument.get(self.body_parameter.parameter.name)
+            body_component = self.body_parameter.component
+            self.body = value
+            if body_component is not None:
+                if body_component.metadata_content_type is not None and not any(
+                    key.lower() == "content-type" for key in self.headers
+                ):
+                    self.headers["Content-Type"] = body_component.metadata_content_type
+                if body_component.metadata_filename is not None and not any(
+                    key.lower() == "content-disposition" for key in self.headers
+                ):
+                    filename = body_component.metadata_filename.replace("\\", "\\\\").replace('"', '\\"')
+                    self.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
-        """Get final HTTP path from bounded argument
+        """Build the final request path from bound path parameters.
 
         Parameters
         ----------
         bounded_argument: dict[str, Any] | inspect.BoundArguments
-            bounded argument of the method.
+            Arguments bound to the decorated request function.
         """
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
@@ -559,14 +670,16 @@ class RequestCore:
             and other.params == self.params
             and other.headers == self.headers
             and other.body == self.body
+            and other._body_file == self._body_file
             and other.directly_response == self.directly_response
             and other.header_parameter == self.header_parameter
             and other.query_parameter == self.query_parameter
             and other.path_parameter == self.path_parameter
             and other.body_form_parameter == self.body_form_parameter
+            and other.body_form_encoding_type == self.body_form_encoding_type
             and other.body_json_parameter == self.body_json_parameter
-            and other.body_parameter_type == self.body_parameter_type
             and other.body_parameter == self.body_parameter
+            and other.body_parameter_type == self.body_parameter_type
             and other._before_hook == self._before_hook
             and other._after_hook == self._after_hook
         )
@@ -574,37 +687,8 @@ class RequestCore:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __copy__(self) -> "RequestCore":
+    def __copy__(self) -> Self:
         return self.copy()
-
-    async def __call__(self, *args, **kwargs):
-        if self.session is None:
-            raise TypeError("Class must inherit from class Session")
-
-        bound_argument = self._signature.bind(self.session, *args, **kwargs)
-        bound_argument.apply_defaults()
-
-        req_obj = self.copy()
-
-        req_obj._fill_parameter(bound_argument)
-        formatted_path = req_obj._get_request_path(bound_argument)
-
-        if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
-        response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
-        if self._after_hook is not None:
-            response = await self._after_hook(self.session, response)
-
-        # Detect directly response
-        if self.directly_response or self.session.directly_response:
-            if isinstance(response, aiohttp.ClientResponse):
-                await response.read()  # Content-Read.
-            return response
-
-        for _parameter in self.response_parameter:
-            kwargs[_parameter] = response
-        kwargs.update(bound_argument.arguments)
-        return await self.func(**kwargs)
 
     @property
     def __request_path__(self) -> str:
@@ -615,6 +699,23 @@ class RequestCore:
         return self
 
     def validation(self, parameter_name: str):
+        """Register a validator for a request function parameter.
+
+        The validator is called with ``(session, value)`` before the request is
+        built. Its return value replaces the argument used in request
+        components and in the decorated function.
+
+        Parameters
+        ----------
+        parameter_name: str
+            Name of a parameter in the decorated function signature.
+
+        Raises
+        ------
+        ValueError
+            If the parameter name is empty or does not exist in the request
+            signature.
+        """
         if not parameter_name:
             raise ValueError("Parameter name is required")
         if parameter_name not in self._signature.parameters:
@@ -628,68 +729,219 @@ class RequestCore:
 
         return decorator
 
+    @abstractmethod
+    def _execute(self, session: Any, *args, **kwargs) -> Any:
+        pass
+
+    def __get__(self, instance: BaseSession | Any, instance_type: type) -> Any:
+        if isinstance(instance, BaseSession):
+            return instance._get_request_bound(self)
+        return self
+
+    def __call__(self, *args, **kwargs):
+        raise TypeError("RequestCore must be accessed through a Session instance.")
+
+
+class AsyncRequestCore(RequestCore):
+    session: AsyncSession
+
+    def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
+        """Register an asynchronous hook that runs before the HTTP request.
+
+        Parameters
+        ----------
+        func: Callable[[AsyncSession, RequestCore, str], Coroutine[Any, Any, tuple[RequestCore, str]]]
+            Coroutine hook to register.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("The pre-invoke hook must be a coroutine.")
+
+        return super(AsyncRequestCore, self).before_hook(func)
+
+    def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
+        """Register an asynchronous hook that runs after the HTTP response.
+
+        Parameters
+        ----------
+        func: Callable[[AsyncSession, Response], Coroutine[Any, Any, Any]]
+            Coroutine hook to register.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("The post-invoke hook must be a coroutine.")
+
+        return super(AsyncRequestCore, self).after_hook(func)
+
+    async def _execute(self, session: AsyncSession, *args, **kwargs) -> Any:
+        bound_argument = self._signature.bind(session, *args, **kwargs)
+        bound_argument.apply_defaults()
+
+        req_obj: RequestCore = self.copy()
+
+        req_obj._fill_parameter(session, bound_argument)
+        formatted_path = req_obj._get_request_path(bound_argument)
+
+        if self._before_hook is not None:
+            req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
+        raw_response = response = await session._make_request(req_obj, formatted_path)
+        close_response = True
+        try:
+            if self._after_hook is not None:
+                response = await self._after_hook(session, response)
+
+            # Detect directly response
+            if self.directly_response or session.directly_response:
+                close_response = False
+                return response
+
+            for _parameter in self.response_parameter:
+                kwargs[_parameter] = response
+            kwargs.update(bound_argument.arguments)
+
+            result = await self.func(**kwargs)
+        finally:
+            if close_response and not raw_response.closed:
+                await raw_response.async_close()
+        return result
+
+
+class SyncRequestCore(RequestCore):
+    session: Session
+
+    def before_hook(self, func: RequestBeforeHookFunction) -> RequestBeforeHookFunction:
+        """Register a synchronous hook that runs before the HTTP request.
+
+        Parameters
+        ----------
+        func: Callable[[Session, RequestCore, str], tuple[RequestCore, str]]
+            Synchronous hook to register.
+        """
+        if inspect.iscoroutinefunction(func):
+            raise TypeError("The pre-invoke hook must not be a coroutine.")
+
+        return super(SyncRequestCore, self).before_hook(func)
+
+    def after_hook(self, func: RequestAfterHookFunction) -> RequestAfterHookFunction:
+        """Register a synchronous hook that runs after the HTTP response.
+
+        Parameters
+        ----------
+        func: Callable[[Session, Response], Any]
+            Synchronous hook to register.
+        """
+        if inspect.iscoroutinefunction(func):
+            raise TypeError("The post-invoke hook must not be a coroutine.")
+
+        return super(SyncRequestCore, self).after_hook(func)
+
+    def _execute(self, session: Session, *args, **kwargs) -> Any:
+        bound_argument = self._signature.bind(session, *args, **kwargs)
+        bound_argument.apply_defaults()
+
+        req_obj: RequestCore = self.copy()
+
+        req_obj._fill_parameter(session, bound_argument)
+        formatted_path = req_obj._get_request_path(bound_argument)
+
+        if self._before_hook is not None:
+            req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
+        raw_response = response = session._make_request(req_obj, formatted_path)
+        close_response = True
+        try:
+            if self._after_hook is not None:
+                response = self._after_hook(session, response)
+
+            # Detect directly response
+            if self.directly_response or session.directly_response:
+                close_response = False
+                return response
+
+            for _parameter in self.response_parameter:
+                kwargs[_parameter] = response
+            kwargs.update(bound_argument.arguments)
+
+            result = self.func(**kwargs)
+        finally:
+            if close_response and not raw_response.closed:
+                raw_response.close()
+        return result
+
+
+def _make_request_core(func, method, path, **kwargs):
+    core_cls = AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    return core_cls.from_decorator(func, method, path, **kwargs)
+
 
 def request(
-    method: str,
+    method: str | Method,
     path: str,
     *,
     name: Optional[str] = None,
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     body_json_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
-    """A decoration for making request.
-    Create an HTTP client-request, when decorated function is called.
+    """Decorate a session method as an HTTP request.
+
+    Accessing the decorated method on a :class:`Session` or
+    :class:`AsyncSession` binds it to that session. Each invocation builds the
+    request from static values and component parameters, then passes a
+    :class:`Response` to matching response parameters in the decorated
+    function.
 
     Parameters
     ----------
     name: Optional[str]
-        The name of the Request
-    method: str
-        HTTP method (example. GET, POST)
+        Request name; defaults to the decorated function name.
+    method: str | Method
+        HTTP method.
     path: str
-        Request path. Path connects to the base url.
+        Path relative to the session base URL.
     params: Optional[dict[str, Any]]
-        Request parameters.
+        Static query parameters.
     headers: Optional[dict[str, Any]]
-        Request headers.
-    body: Optional[Any | aiohttp.FormData]
-        Request body.
+        Static request headers.
+    body: Optional[Any]
+        Static request body.
     directly_response: bool
-        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
+        Return the response after hooks without executing the decorated
+        function.
     header_parameter: list[str]
-        Function parameter names used in the header
+        Legacy list of parameter names to use as headers.
     query_parameter: list[str]
-        Function parameter names used in the query(parameter)
+        Legacy list of parameter names to use as query parameters.
     form_parameter: list[str]
-        Function parameter names used in body form.
+        Legacy list of parameter names to use in a form body.
+    form_encoding: Optional[BodyFormEncoding]
+        Encoding to use for form parameters. ``AUTO`` selects multipart when a
+        file field is present, otherwise URL encoding.
     body_json_parameter: list[str]
-        Function parameter names used in body json.
+        Legacy list of parameter names to use in a JSON body.
     path_parameter: list[str]
-        Function parameter names used in the path.
+        Legacy list of parameter names substituted into ``path``.
     body_parameter: str
-        Function parameter name used in the body.
-        The body parameter must take only Collection, or aiohttp.FormData.
+        Legacy parameter name to use as the complete body.
     response_parameter: list[str]
-        Function parameter name to store the HTTP result in.
+        Legacy list of function parameter names that receive the response.
     **request_kwargs
 
     Warnings
     --------
-    Form_parameter and Body Parameter can only be used with one or the other.
+    A complete ``Body`` parameter cannot be combined with ``BodyJson`` or
+    ``BodyForm`` parameters.
     """
 
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
             method,
             path,
@@ -701,6 +953,7 @@ def request(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -718,20 +971,26 @@ def get(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``GET`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
-            aiohttp.hdrs.METH_GET,
+            Method.GET,
             path,
             name=name,
             params=params,
@@ -741,6 +1000,7 @@ def get(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -758,20 +1018,26 @@ def post(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``POST`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
-            aiohttp.hdrs.METH_POST,
+            Method.POST,
             path,
             name=name,
             params=params,
@@ -781,6 +1047,7 @@ def post(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -798,20 +1065,26 @@ def options(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``OPTIONS`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
-            aiohttp.hdrs.METH_OPTIONS,
+            Method.OPTIONS,
             path,
             name=name,
             params=params,
@@ -821,8 +1094,56 @@ def options(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
-            path_parameter=path_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
+            path_parameter=path_parameter,
+            body_parameter=body_parameter,
+            response_parameter=response_parameter,
+            **request_kwargs,
+        )
+
+    return decorator
+
+
+def patch(
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
+):
+    """Create a request decorator for the ``PATCH`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
+    def decorator(func):
+        return _make_request_core(
+            func,
+            Method.PATCH,
+            path,
+            name=name,
+            params=params,
+            headers=headers,
+            body=body,
+            directly_response=directly_response,
+            header_parameter=header_parameter,
+            query_parameter=query_parameter,
+            form_parameter=form_parameter,
+            form_encoding=form_encoding,
+            body_json_parameter=body_json_parameter,
+            path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
             **request_kwargs,
@@ -838,20 +1159,26 @@ def put(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``PUT`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
-            aiohttp.hdrs.METH_PUT,
+            Method.PUT,
             path,
             name=name,
             params=params,
@@ -861,6 +1188,7 @@ def put(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,
@@ -878,20 +1206,26 @@ def delete(
     directly_response: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
-    body: Optional[aiohttp.FormData | Any] = None,
+    body: Optional[Any] = None,
     header_parameter: Optional[list[str]] = None,
     query_parameter: Optional[list[str]] = None,
     form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
     body_json_parameter: Optional[list[str]] = None,
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
+    """Create a request decorator for the ``DELETE`` HTTP method.
+
+    All parameters have the same meaning as :func:`request`.
+    """
+
     def decorator(func):
-        return RequestCore.from_decorator(
+        return _make_request_core(
             func,
-            aiohttp.hdrs.METH_DELETE,
+            Method.DELETE,
             path,
             name=name,
             params=params,
@@ -901,6 +1235,7 @@ def delete(
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
+            form_encoding=form_encoding,
             body_json_parameter=body_json_parameter,
             path_parameter=path_parameter,
             body_parameter=body_parameter,

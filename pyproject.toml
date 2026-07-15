@@ -7,7 +7,7 @@ name = "ahttp_client"
 dynamic = ["version", "dependencies"]
 description = "A framework for easy asynchronous HTTP request calling with decorations"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
     {name = "gunyu1019", email = "gunyu1019@yhs.kr"}
@@ -20,9 +20,9 @@ classifiers = [
     "Natural Language :: English",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -30,9 +30,21 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+aiohttp = [
+    "aiohttp>=3.11.2",
+]
+httpx = [
+    "httpx>=0.28.1",
+]
+requests = [
+    "requests>=2.32.3",
+]
 test = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "aiohttp>=3.11.2",
+    "httpx>=0.28.1",
+    "requests>=2.32.3",
 ]
 lint = [
     "pycodestyle",
@@ -51,6 +63,7 @@ Homepage = "https://github.com/gunyu1019/ahttp-client"
 [tool.setuptools]
 packages = [
     "ahttp_client",
+    "ahttp_client.backend",
     "ahttp_client.extension"
 ]
 include-package-data = true
@@ -58,3 +71,6 @@ include-package-data = true
 [tool.setuptools.dynamic]
 version = {attr = "ahttp_client.__version__"}
 dependencies = { file = "requirements.txt"}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
