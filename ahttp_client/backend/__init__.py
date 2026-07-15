@@ -1,7 +1,8 @@
 from .base import BaseBackend, AsyncBackend, SyncBackend
 
 try:
-    from .aiohttp import AiohttpSession
+    from .aiohttp import AiohttpBackend
+    AiohttpSession = AiohttpBackend
 except ImportError:
     pass
 
@@ -11,6 +12,7 @@ except ImportError:
     pass
 
 try:
-    from .requests import RequestSession
+    from .requests import RequestsBackend
+    RequestSession = RequestsBackend
 except ImportError:
     pass

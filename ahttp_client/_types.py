@@ -22,25 +22,18 @@ SOFTWARE.
 """
 
 from __future__ import annotations
-from typing import Any, TypeVar, Callable, Coroutine, IO, BinaryIO, TYPE_CHECKING
+from typing import Any, TypeVar, Callable, IO, BinaryIO, TYPE_CHECKING
 from io import IOBase
 
 
 T = TypeVar("T")
 
 if TYPE_CHECKING:
-    from .session import BaseSession
-    from .request import RequestCore
-
-    RequestFunction = Callable[..., Coroutine[Any, Any, Any]]
-    RequestBeforeHookFunction = Callable[
-        [BaseSession, RequestCore, str],
-        Coroutine[Any, Any, tuple[RequestCore, str]],
-    ]
-    RequestAfterHookFunction = Callable[
-        [BaseSession, Any],
-        Coroutine[Any, Any, Any],
-    ]
+    # Request descriptors support both synchronous and asynchronous functions.
+    # Concrete core classes validate the appropriate callable kind at runtime.
+    RequestFunction = Callable[..., Any]
+    RequestBeforeHookFunction = Callable[..., Any]
+    RequestAfterHookFunction = Callable[..., Any]
 
 _IO_TYPE = (IO, BinaryIO, IOBase)
 _BODY_JSON_TYPE = (dict, list, tuple)

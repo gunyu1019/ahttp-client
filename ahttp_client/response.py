@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from asyncio import iscoroutinefunction
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional
+    from typing import Optional
     from .backend.base import BaseBackend
 
 
@@ -60,15 +60,17 @@ class Response:
     def close(self) -> None:
         """Close the underlying HTTP response."""
         if iscoroutinefunction(self._backend.response_close):
-            raise TypeError("close() cannot be called on a synchronous backend")
-        self._backend.response_close(self._raw_response_obj)
+            raise TypeError("close() cannot be called on an asynchronous response backend")
+        close = cast(Callable[[Any], None], self._backend.response_close)
+        close(self._raw_response_obj)
         self._closed = True
 
     async def async_close(self) -> None:
         """Close the underlying HTTP response."""
         if not iscoroutinefunction(self._backend.response_close):
-            raise TypeError("async_close() can only be called on an asynchronous backend")
-        await self._backend.response_close(self._raw_response_obj)
+            raise TypeError("async_close() requires an asynchronous response-close backend")
+        close = cast(Callable[[Any], Awaitable[None]], self._backend.response_close)
+        await close(self._raw_response_obj)
         self._closed = True
 
     def text(self) -> str:
@@ -77,14 +79,14 @@ class Response:
 
     def json(
             self,
-            json_parser: Optional[Callable[[Any, ...], Any]] = None,
+            json_parser: Optional[Callable[..., Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
     ) -> Any:
         """Parse the response body as JSON.
 
         Parameters
         ----------
-        json_parser: Optional[Callable[[Any, ...], Any]]
+        json_parser: Optional[Callable[..., Any]]
             Custom JSON parser. The backend default parser is used when empty.
         json_kwargs: Optional[dict[str, Any]]
             Keyword arguments passed to ``json_parser`` or the backend parser.

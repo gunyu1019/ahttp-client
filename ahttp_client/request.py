@@ -56,6 +56,11 @@ class BodyEntry(NamedTuple):
     is_file_type: bool
     component: Optional[Body]
 
+    @property
+    def name(self) -> str:
+        """Return the underlying parameter name for backward compatibility."""
+        return self.parameter.name
+
 if TYPE_CHECKING:
     from typing import Optional, Self, Any
     from ._types import (
@@ -118,6 +123,7 @@ class RequestCore(ABC):
     request_kwargs: dict[str, Any]
         Keyword arguments passed through to the backend request method.
     """
+    __request_core__ = True
 
     def __init__(
         self,
@@ -427,7 +433,7 @@ class RequestCore(ABC):
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[_EmptyComponent] = _EmptyComponent
+            component_type: type[Component] | type[_EmptyComponent] | type[Response] = _EmptyComponent
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -456,6 +462,7 @@ class RequestCore(ABC):
             elif issubclass(component_type, BodyForm) or (form_parameter is not None and parameter.name in form_parameter):
                 name = self._get_component_name(parameter.name, component_instance)
                 is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(component_instance, "is_file_type", False)
+                form_component = component_instance if isinstance(component_instance, BodyForm) else None
 
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
@@ -464,7 +471,7 @@ class RequestCore(ABC):
                 elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, component_instance)
+                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, form_component)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (body_json_parameter is not None and parameter.name in body_json_parameter):
@@ -569,22 +576,22 @@ class RequestCore(ABC):
                 self._body_file = None
         elif self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED:  # self.is_body
             self.body = {
-                _name: bounded_argument.get(_entry.parameter.name)
-                for _name, _entry in self.body_form_parameter.items()
+                _name: bounded_argument.get(_form_entry.parameter.name)
+                for _name, _form_entry in self.body_form_parameter.items()
             }
             if len(self.body.keys()) == 0:
                 self.body = None
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
             self.body = dict()
-            for _name, _entry in self.body_json_parameter.items():
-                if _entry.custom_key is not None:
-                    parts = _entry.custom_key.split(".")
+            for _name, _json_entry in self.body_json_parameter.items():
+                if _json_entry.custom_key is not None:
+                    parts = _json_entry.custom_key.split(".")
                     direction = self.body
                     for part in parts[:-1]:
                         direction = direction.setdefault(part, dict())
-                    direction[parts[-1]] = bounded_argument.get(_entry.parameter.name)
+                    direction[parts[-1]] = bounded_argument.get(_json_entry.parameter.name)
                     continue
-                self.body[_name] = bounded_argument.get(_entry.parameter.name)
+                self.body[_name] = bounded_argument.get(_json_entry.parameter.name)
             if len(self.body.keys()) == 0:
                 self.body = None
         elif self.body_parameter is not None:
@@ -689,7 +696,7 @@ class RequestCore(ABC):
         return decorator
 
     @abstractmethod
-    async def _execute(self, session: BaseSession, *args, **kwargs) -> Any:
+    def _execute(self, session: Any, *args, **kwargs) -> Any:
         pass
 
     def __get__(self, instance: BaseSession | Any, instance_type: type) -> Any:
@@ -734,14 +741,14 @@ class AsyncRequestCore(RequestCore):
         bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
-        req_obj = self.copy()
+        req_obj: RequestCore = self.copy()
 
         req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
-        raw_response = response = await session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response = response = await session._make_request(req_obj, formatted_path)
         try:
             if self._after_hook is not None:
                 response = await self._after_hook(session, response)
@@ -798,14 +805,14 @@ class SyncRequestCore(RequestCore):
         bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
-        req_obj = self.copy()
+        req_obj: RequestCore = self.copy()
 
         req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
-        raw_response = response = session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response = response = session._make_request(req_obj, formatted_path)
         try:
             if self._after_hook is not None:
                 response = self._after_hook(session, response)

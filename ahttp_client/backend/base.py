@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from typing import Any, Callable, Optional, ClassVar
+    from typing import Any, Awaitable, Callable, Optional, ClassVar
     from ..request import RequestCore
 
 _BackendT = TypeVar('_BackendT', bound='BaseBackend')
@@ -88,7 +88,7 @@ class BaseBackend(ABC):
     @abstractmethod
     def response_json(
             self, response_obj: Any,
-            json_parser: Optional[Callable[[Any, ...], Any]] = None,
+            json_parser: Optional[Callable[..., Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
         """Parse the response body as JSON using an optional custom parser."""
@@ -110,7 +110,7 @@ class BaseBackend(ABC):
         pass
 
     @abstractmethod
-    def response_close(self, response_obj: Any) -> None:
+    def response_close(self, response_obj: Any) -> None | Awaitable[None]:
         """Close a client response object."""
         pass
 

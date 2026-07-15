@@ -63,7 +63,7 @@ class CommonHttpXBackend(BaseBackend, ABC):
 
     def response_json(
             self, response_obj: httpx.Response,
-            json_parser: Optional[Callable[[Any, ...], Any]] = None,
+            json_parser: Optional[Callable[..., Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
         json_kwargs = json_kwargs or dict()

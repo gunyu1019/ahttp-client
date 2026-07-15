@@ -27,7 +27,7 @@ import functools
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .request_bound import RequestBound, RequestAsyncBound, RequestSyncBound
@@ -35,7 +35,7 @@ from .response import Response
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Any, Optional, Self
+    from typing import Any, Awaitable, Optional, Self
 
     from .request import RequestCore
     from ._types import RequestFunction
@@ -61,7 +61,7 @@ class BaseSession(ABC):
         self.directly_response = directly_response
         self.base_url = base_url
 
-        self._request_bound_func: dict[RequestCore, RequestBound] = dict()
+        self._request_bound_func: dict[str, RequestBound] = dict()
 
     @staticmethod
     def _has_overridden_method(method):
@@ -86,7 +86,9 @@ class BaseSession(ABC):
         return self.base_url + path
 
     @abstractmethod
-    def _make_request(self, request: RequestCore, path: str) -> Response:
+    def _make_request(
+            self, request: RequestCore, path: str
+    ) -> Response | Awaitable[Response]:
         pass
 
     @abstractmethod
@@ -95,13 +97,11 @@ class BaseSession(ABC):
 
     @classmethod
     def _validate_request_core_duplicated(cls):
-        from .request import RequestCore  # avoid circular import
-
-        members = dict()
+        members: dict[str, Any] = dict()
         for _, func in inspect.getmembers(cls):
             request_obj = getattr(func, "__core__", func)
 
-            if not isinstance(request_obj, RequestCore):
+            if not getattr(request_obj, "__request_core__", False):
                 continue
 
             if request_obj.name in members.keys():
@@ -143,8 +143,6 @@ class AsyncSession(BaseSession):
             base_url,
             directly_response=directly_response,
         )
-
-        self._request_bound_func: dict[RequestCore, RequestAsyncBound] = dict()
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -211,7 +209,7 @@ class AsyncSession(BaseSession):
         url = self._get_request_url(path)
         return await self.backend.session_put(url, **kwargs)
 
-    async def _make_request(self, request: RequestCore, path: str):
+    async def _make_request(self, request: RequestCore, path: str) -> Response:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -303,9 +301,11 @@ class AsyncSession(BaseSession):
         return decorator
 
     def _get_request_bound(self, request_obj: RequestCore) -> RequestAsyncBound:
-        if request_obj.name not in self._request_bound_func.keys():
-            self._request_bound_func[request_obj.name] = RequestAsyncBound(request_obj, self)
-        return self._request_bound_func[request_obj.name]
+        bound = self._request_bound_func.get(request_obj.name)
+        if bound is None:
+            bound = RequestAsyncBound(request_obj, self)
+            self._request_bound_func[request_obj.name] = bound
+        return cast(RequestAsyncBound, bound)
 
 
 class Session(BaseSession):
@@ -341,8 +341,6 @@ class Session(BaseSession):
             base_url,
             directly_response=directly_response,
         )
-        self._request_bound_func: dict[RequestCore, RequestSyncBound] = dict()
-
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._validate_request_core_duplicated()
@@ -408,7 +406,7 @@ class Session(BaseSession):
         url = self._get_request_url(path)
         return self.backend.session_put(url, **kwargs)
 
-    def _make_request(self, request: RequestCore, path: str):
+    def _make_request(self, request: RequestCore, path: str) -> Response:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -499,6 +497,8 @@ class Session(BaseSession):
         return decorator
 
     def _get_request_bound(self, request_obj: RequestCore) -> RequestSyncBound:
-        if request_obj.name not in self._request_bound_func.keys():
-            self._request_bound_func[request_obj.name] = RequestSyncBound(request_obj, self)
-        return self._request_bound_func[request_obj.name]
+        bound = self._request_bound_func.get(request_obj.name)
+        if bound is None:
+            bound = RequestSyncBound(request_obj, self)
+            self._request_bound_func[request_obj.name] = bound
+        return cast(RequestSyncBound, bound)

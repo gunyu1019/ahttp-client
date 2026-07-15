@@ -32,7 +32,7 @@ class AiohttpBackend(AsyncBackend):
 
     def response_json(
             self, response_obj: aiohttp.ClientResponse,
-            json_parser: Optional[Callable[[Any, ...], Any]] = None,
+            json_parser: Optional[Callable[..., Any]] = None,
             json_kwargs: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
         body = getattr(response_obj, "_body", b'')
