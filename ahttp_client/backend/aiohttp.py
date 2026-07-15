@@ -84,7 +84,11 @@ class AiohttpBackend(AsyncBackend):
                 data = aiohttp.FormData(quote_fields=False)
                 if request_obj.body is not None:
                     for key, value in request_obj.body.items():
-                        data.add_field(key, str(value), content_type="text/plain")
+                        data.add_field(
+                            key,
+                            value if isinstance(value, (str, bytes)) else str(value),
+                            content_type="text/plain",
+                        )
 
                 if request_obj._body_file is not None:
                     for key, (

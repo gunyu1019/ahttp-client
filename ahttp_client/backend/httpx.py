@@ -32,7 +32,10 @@ class CommonHttpXBackend(BaseBackend, ABC):
             elif body_type == BodyType.URL_ENCODED:
                 request_kwargs["data"] = request_obj.body
             elif body_type == BodyType.FORM_DATA:
-                files = {k: (None, str(v)) for k, v in (request_obj.body or {}).items()}
+                files = {
+                    k: (None, v if isinstance(v, (str, bytes)) else str(v))
+                    for k, v in (request_obj.body or {}).items()
+                }
                 files.update(request_obj._body_file or {})
                 request_kwargs["files"] = files
             elif body_type == BodyType.RAW:
