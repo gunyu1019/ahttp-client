@@ -25,22 +25,22 @@ from __future__ import annotations
 from typing import Any, TypeVar, Callable, Coroutine, IO, BinaryIO, TYPE_CHECKING
 from io import IOBase
 
+
+T = TypeVar("T")
+
 if TYPE_CHECKING:
     from .session import BaseSession
     from .request import RequestCore
 
-
-T = TypeVar("T")
-
-RequestFunction = Callable[..., Coroutine[Any, Any, Any]]
-RequestBeforeHookFunction = Callable[
-    [BaseSession, RequestCore, str],
-    Coroutine[Any, Any, tuple[RequestCore, str]],
-]
-RequestAfterHookFunction = Callable[
-    [BaseSession, Any],
-    Coroutine[Any, Any, Any],
-]
+    RequestFunction = Callable[..., Coroutine[Any, Any, Any]]
+    RequestBeforeHookFunction = Callable[
+        [BaseSession, RequestCore, str],
+        Coroutine[Any, Any, tuple[RequestCore, str]],
+    ]
+    RequestAfterHookFunction = Callable[
+        [BaseSession, Any],
+        Coroutine[Any, Any, Any],
+    ]
 
 _IO_TYPE = (IO, BinaryIO, IOBase)
 _BODY_JSON_TYPE = (dict, list, tuple)
