@@ -207,10 +207,14 @@ class BodyJson(Component):
 
     @property
     def depth(self) -> int:
+        if self.json_key is None:
+            return 0
         return self.json_key.count(".") + 1
 
     @property
     def keys(self) -> list[str]:
+        if self.json_key is None:
+            return []
         return self.json_key.split(".")
 
 
