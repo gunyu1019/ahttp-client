@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from .request import request
 
 
-class EmptyComponent:
+class _EmptyComponent:
     """Dummy object with nothing defined. It only uses on RequestCore."""
 
     pass
@@ -143,7 +143,7 @@ class Component:
         return new_cls
 
 
-class UnsupportedCustomNameComponent(Component):
+class _UnsupportedCustomNameComponent(Component):
     @classmethod
     def custom_name(cls, name: str) -> NoReturn:
         raise NotImplementedError("%s.custom_name is not supported." % cls.__name__)
@@ -157,7 +157,25 @@ class UnsupportedCustomNameComponent(Component):
         raise NotImplementedError("%s.to_pascal is not supported." % cls.__name__)
 
 
-class Body(UnsupportedCustomNameComponent):
+class _BodyFileComponent(Component):
+    def __init__(self):
+        super(_BodyFileComponent, self).__init__()
+        self.form_filename: Optional[str] = None
+        self.form_content_type: Optional[str] = None
+
+    @classmethod
+    def multipart(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
+        new_cls = cls()
+        new_cls.form_filename = filename
+        new_cls.form_content_type = content_type
+        return new_cls
+
+    @property
+    def is_file_type(self) -> bool:
+        return self.form_filename is not None or self.form_content_type is not None
+
+
+class Body(_BodyFileComponent, _UnsupportedCustomNameComponent):
     """This class is used to indicate that a method's parameter is used in the HTTP Request's Body.
 
     Examples
@@ -165,7 +183,6 @@ class Body(UnsupportedCustomNameComponent):
     >>> def function(body: dict | Body):
     ...    pass
     """
-
     pass
 
 
@@ -197,7 +214,7 @@ class BodyJson(Component):
         return self.json_key.split(".")
 
 
-class BodyForm(Component):
+class BodyForm(_BodyFileComponent):
     """This class defines the parameters of a function to be used in the FormData of an HTTP Request.
 
     Examples
@@ -205,21 +222,7 @@ class BodyForm(Component):
     >>> def function(data: str | BodyForm):
     ...    pass
     """
-    def __init__(self):
-        super(BodyForm, self).__init__()
-        self.form_filename: Optional[str] = None
-        self.form_content_type: Optional[str] = None
-
-    @classmethod
-    def multipart(cls, filename: Optional[str] = None, content_type: Optional[str] = None) -> Self:
-        new_cls = cls()
-        new_cls.form_filename = filename
-        new_cls.form_content_type = content_type
-        return new_cls
-
-    @property
-    def is_file_type(self) -> bool:
-        return self.form_filename is not None or self.form_content_type is not None
+    pass
 
 
 class Header(Component):
@@ -244,7 +247,7 @@ class Header(Component):
         return decorator
 
 
-class Path(UnsupportedCustomNameComponent):
+class Path(_UnsupportedCustomNameComponent):
     """This class is used when a function's parameters are used as path in an HTTP request.
     The parameters associated with the Path populate a portion of the HTTP URL.
 
