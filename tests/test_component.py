@@ -2,7 +2,7 @@ import aiohttp
 import pytest
 
 from typing import Any
-from ahttp_client import *
+from ahttp_client import BaseSession, Body, BodyForm, BodyJson, BodyType, request
 
 
 @pytest.fixture
@@ -52,7 +52,9 @@ def test_duplicated_body_type():
         ) -> None:
             pass
 
-    assert str(error_message.value) == "Duplicated Form Parameter or Body Parameter."
+    assert str(error_message.value) == (
+        "Duplicated Body Form Parameter, Body Json Parameter or Body Parameter."
+    )
 
 
 def test_not_duplicated_body_type():
@@ -84,16 +86,16 @@ def test_duplicated_body():
 def test_form_data_type_1(test_method_form_data_type_1):
     assert test_method_form_data_type_1.is_formal_form is True
     assert test_method_form_data_type_1.is_body is True
-    assert test_method_form_data_type_1.body_parameter_type == "data"
+    assert test_method_form_data_type_1.body_parameter_type == BodyType.URL_ENCODED
 
 
 def test_form_data_type_2(test_method_form_data_type_2):
     assert test_method_form_data_type_2.is_formal_form is False
     assert test_method_form_data_type_2.is_body is True
-    assert test_method_form_data_type_2.body_parameter_type == "data"
+    assert test_method_form_data_type_2.body_parameter_type == BodyType.RAW
 
 
 def test_json_data(test_method_json_data):
     assert test_method_json_data.is_formal_form is False
     assert test_method_json_data.is_body is True
-    assert test_method_json_data.body_parameter_type == "json"
+    assert test_method_json_data.body_parameter_type == BodyType.JSON

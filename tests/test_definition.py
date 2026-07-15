@@ -3,17 +3,28 @@ import pytest
 
 from typing import Annotated, Any
 
-from ahttp_client import *
+from ahttp_client import (
+    AsyncSession,
+    BaseSession,
+    Body,
+    BodyForm,
+    BodyType,
+    Header,
+    Path,
+    Query,
+    Response,
+    request,
+)
 from ahttp_client.request import RequestCore
 
 
 @pytest.fixture
 def test_method_with_parameter():
-    @BaseSession.single_session("https://test_base_url")
+    @AsyncSession.single_session("https://test_base_url", aiohttp.ClientSession)
     @request("GET", "/{test_path}")
     async def test_request(
         session: BaseSession,
-        test_response: aiohttp.ClientResponse,
+        test_response: Response,
         test_path: str | Path = "__TEST_PATH__",
         test_query: str | Query = "__TEST_PARAMETER__",
         test_header: str | Header = "__TEST_HEADER__",
@@ -26,7 +37,7 @@ def test_method_with_parameter():
 
 @pytest.fixture
 def test_method_with_annotated():
-    @BaseSession.single_session("https://test_base_url")
+    @AsyncSession.single_session("https://test_base_url", aiohttp.ClientSession)
     @request("GET", "/{test_path}")
     async def test_request(
         session: BaseSession,
@@ -42,7 +53,7 @@ def test_method_with_annotated():
 
 @pytest.fixture
 def test_method_with_decorator_parameter():
-    @BaseSession.single_session("https://test_base_url")
+    @AsyncSession.single_session("https://test_base_url", aiohttp.ClientSession)
     @request(
         "GET",
         "/{test_path}",
@@ -78,31 +89,34 @@ def test_method_component_custom_name():
 
 
 def test_component_parameter_1(test_method_with_parameter):
-    assert "test_header" in test_method_with_parameter.header_parameter
-    assert "test_query" in test_method_with_parameter.query_parameter
-    assert "test_path" in test_method_with_parameter.path_parameter
-    assert "test_response" in test_method_with_parameter.response_parameter
+    request_core = test_method_with_parameter.__core__
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
+    assert "test_response" in request_core.response_parameter
 
-    assert test_method_with_parameter.body_parameter.name == "test_body"
-    assert test_method_with_parameter.body_parameter_type == "json"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.JSON
 
 
 def test_component_parameter_2(test_method_with_decorator_parameter):
-    assert "test_header" in test_method_with_decorator_parameter.header_parameter
-    assert "test_query" in test_method_with_decorator_parameter.query_parameter
-    assert "test_path" in test_method_with_decorator_parameter.path_parameter
+    request_core = test_method_with_decorator_parameter.__core__
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
 
-    assert test_method_with_decorator_parameter.body_parameter.name == "test_body"
-    assert test_method_with_decorator_parameter.body_parameter_type == "data"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.RAW
 
 
 def test_component_parameter_3(test_method_with_annotated):
-    assert "test_header" in test_method_with_annotated.header_parameter
-    assert "test_query" in test_method_with_annotated.query_parameter
-    assert "test_path" in test_method_with_annotated.path_parameter
+    request_core = test_method_with_annotated.__core__
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
 
-    assert test_method_with_annotated.body_parameter.name == "test_body"
-    assert test_method_with_annotated.body_parameter_type == "json"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.JSON
 
 
 def test_component_custom_name(test_method_component_custom_name):
@@ -114,9 +128,18 @@ def test_component_custom_name(test_method_component_custom_name):
     assert "test_query" not in test_method_component_custom_name.query_parameter
     assert "test_form" not in test_method_component_custom_name.body_form_parameter
 
-    assert test_method_component_custom_name.header_parameter["custom_header_name"].name == "test_header"
-    assert test_method_component_custom_name.query_parameter["TestQuery"].name == "test_query"
-    assert test_method_component_custom_name.body_form_parameter["testForm"].name == "test_form"
+    assert (
+        test_method_component_custom_name.header_parameter["custom_header_name"].name
+        == "test_header"
+    )
+    assert (
+        test_method_component_custom_name.query_parameter["TestQuery"].name
+        == "test_query"
+    )
+    assert (
+        test_method_component_custom_name.body_form_parameter["testForm"].parameter.name
+        == "test_form"
+    )
 
 
 def test_body_unsupported_custom_name():

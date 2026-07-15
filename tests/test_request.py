@@ -3,7 +3,7 @@ from typing import Annotated
 import aiohttp
 import pytest
 
-from ahttp_client import *
+from ahttp_client import AsyncSession, BaseSession, Header, Path, Query, request
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_method():
 
 @pytest.fixture
 def test_method_for_private_parameter():
-    @BaseSession.single_session("https://test_base_url")
+    @AsyncSession.single_session("https://test_base_url", aiohttp.ClientSession)
     @request("GET", "/")
     @Header.default_header("private_header", "__PRIVATE_HEADER__")
     @Query.default_query("private_query", "__PRIVATE_QUERY__")
@@ -36,10 +36,10 @@ def test_copy_and_equal(test_method):
     other_method = test_method.copy()
     assert other_method == test_method
 
-    bound_argument = test_method._signature.bind(test_method.session)
+    bound_argument = test_method._signature.bind(None)
     bound_argument.apply_defaults()
 
-    other_method._fill_parameter(bound_argument)
+    other_method._fill_parameter(None, bound_argument)
     assert other_method != test_method
 
 
@@ -52,10 +52,10 @@ def test_fill_parameter(test_method):
     assert "header" not in new_method.headers.keys()
     assert "parameter" not in new_method.params.keys()
 
-    bound_argument = test_method._signature.bind(test_method.session)
+    bound_argument = test_method._signature.bind(None)
     bound_argument.apply_defaults()
 
-    new_method._fill_parameter(bound_argument)
+    new_method._fill_parameter(None, bound_argument)
     assert "header" in new_method.headers.keys()
     assert "parameter" in new_method.params.keys()
     assert new_method.headers["header"] == "TEST_HEADER"
@@ -67,7 +67,7 @@ def test_formatted_path(test_method):
 
     assert "test_path" in new_method.path_parameter.keys()
 
-    bound_argument = test_method._signature.bind(test_method.session)
+    bound_argument = test_method._signature.bind(None)
     bound_argument.apply_defaults()
 
     formatted_path = new_method._get_request_path(bound_argument)
@@ -78,5 +78,11 @@ def test_private_component(test_method_for_private_parameter):
     assert "private_header" in test_method_for_private_parameter.headers
     assert "private_query" in test_method_for_private_parameter.params
 
-    assert test_method_for_private_parameter.headers.get("private_header") == "__PRIVATE_HEADER__"
-    assert test_method_for_private_parameter.params.get("private_query") == "__PRIVATE_QUERY__"
+    assert (
+        test_method_for_private_parameter.headers.get("private_header")
+        == "__PRIVATE_HEADER__"
+    )
+    assert (
+        test_method_for_private_parameter.params.get("private_query")
+        == "__PRIVATE_QUERY__"
+    )
