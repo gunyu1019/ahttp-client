@@ -62,6 +62,7 @@ class RequestsBackend(SyncBackend):
             request_kwargs["headers"] = request_obj.headers
         if len(request_obj.params) > 0:
             request_kwargs["params"] = request_obj.params
+
         if request_obj.is_body:
             body_type = request_obj.body_type
             if body_type == BodyType.JSON:

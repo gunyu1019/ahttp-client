@@ -74,10 +74,14 @@ class AiohttpBackend(AsyncBackend):
                 request_kwargs["data"] = request_obj.body
             elif body_type == BodyType.FORM_DATA:
                 data = aiohttp.FormData()
-                for key, value in (request_obj.body or {}).items():
-                    data.add_field(key, str(value), content_type="text/plain")
-                for key, (filename, file_obj, content_type) in (request_obj._body_file or {}).items():
-                    data.add_field(key, file_obj, filename=filename, content_type=content_type)
+                if request_obj.body is not None:
+                    for key, value in request_obj.body.items():
+                        data.add_field(key, str(value), content_type="text/plain")
+
+                if request_obj._body_file is not None:
+                    for key, (file_name, value, content_type) in request_obj._body_file.items():
+                        data.add_field(key, value, filename=file_name, content_type=content_type)
+
                 request_kwargs["data"] = data
             elif body_type == BodyType.RAW:
                 request_kwargs["data"] = request_obj.body
