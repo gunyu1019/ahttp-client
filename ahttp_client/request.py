@@ -115,7 +115,6 @@ class RequestCore(ABC):
         headers: Optional[dict[str, Any]] = None,
         body: Optional[Any] = None,
         response_parameter: Optional[list[str]] = None,
-        raw_response_parameter: Optional[list[str]] = None,
         **kwargs,
     ):
         self.func = func
@@ -163,7 +162,6 @@ class RequestCore(ABC):
 
         self.validation_parameter: dict[str, list[Callable[..., Any]]] = dict()
         self.response_parameter: list[str] = response_parameter or list()
-        self.raw_response_parameter: list[str] = raw_response_parameter or list()
 
         self._before_hook: Optional[RequestBeforeHookFunction] = None
         self._after_hook: Optional[RequestAfterHookFunction] = None
@@ -224,7 +222,6 @@ class RequestCore(ABC):
             params=self.params,
             body=self.body,
             response_parameter=self.response_parameter,
-            raw_response_parameter=self.raw_response_parameter,
             **self.request_kwargs,
         )
 
@@ -420,7 +417,7 @@ class RequestCore(ABC):
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, self.backend.response_cls):
+                if issubclass(annotation, Component) or issubclass(annotation, Response):
                     component_type = annotation
                     break
 
@@ -465,10 +462,6 @@ class RequestCore(ABC):
                 self.body_parameter = parameter
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, self.backend.response_cls) or is_subclass_safe(
-                instance_origin, self.backend.response_cls
-            ):
-                self.raw_response_parameter.append(parameter.name)
             elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
                 self.response_parameter.append(parameter.name)
 
@@ -478,16 +471,15 @@ class RequestCore(ABC):
 
         This method used at setup.
         """
-        hidden_parameters = set(self.response_parameter) | set(self.raw_response_parameter)
         parameter_without_return_annotation = []
         for parameter in self._signature.parameters.values():
-            if parameter.name in hidden_parameters:
+            if parameter.name in self.response_parameter:
                 continue
 
             parameter_without_return_annotation.append(parameter)
 
         self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
-        for parameter_name in hidden_parameters:
+        for parameter_name in self.response_parameter:
             if parameter_name not in self.func.__annotations__.keys():
                 continue
 
@@ -613,7 +605,6 @@ class RequestCore(ABC):
             and other.body_json_parameter == self.body_json_parameter
             and other.body_parameter == self.body_parameter
             and other.body_parameter_type == self.body_parameter_type
-            and other.raw_response_parameter == self.raw_response_parameter
             and other._before_hook == self._before_hook
             and other._after_hook == self._after_hook
         )
@@ -698,7 +689,7 @@ class AsyncRequestCore(RequestCore):
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
-        raw_response, response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
+        response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
         if self._after_hook is not None:
             response = await self._after_hook(self.session, response)
 
@@ -708,8 +699,6 @@ class AsyncRequestCore(RequestCore):
 
         for _parameter in self.response_parameter:
             kwargs[_parameter] = response
-        for _parameter in self.raw_response_parameter:
-            kwargs[_parameter] = raw_response.raw
         kwargs.update(bound_argument.arguments)
         return await self.func(**kwargs)
 
@@ -761,7 +750,7 @@ class SyncRequestCore(RequestCore):
 
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
-        raw_response, response = self.session._make_request(req_obj, formatted_path)  # type: ignore
+        response = self.session._make_request(req_obj, formatted_path)  # type: ignore
         if self._after_hook is not None:
             response = self._after_hook(self.session, response)
 
@@ -771,8 +760,6 @@ class SyncRequestCore(RequestCore):
 
         for _parameter in self.response_parameter:
             kwargs[_parameter] = response
-        for _parameter in self.raw_response_parameter:
-            kwargs[_parameter] = raw_response.raw
         kwargs.update(bound_argument.arguments)
         return self.func(**kwargs)
 
@@ -799,7 +786,6 @@ def request(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     """A decoration for making request.
@@ -864,7 +850,6 @@ def request(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -887,7 +872,6 @@ def get(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -908,7 +892,6 @@ def get(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -931,7 +914,6 @@ def post(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -952,7 +934,6 @@ def post(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -975,7 +956,6 @@ def options(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -996,7 +976,6 @@ def options(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -1019,7 +998,6 @@ def patch(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -1040,7 +1018,6 @@ def patch(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -1063,7 +1040,6 @@ def put(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -1084,7 +1060,6 @@ def put(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
@@ -1107,7 +1082,6 @@ def delete(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    raw_response_parameter: Optional[list[str]] = None,
     **request_kwargs,
 ):
     def decorator(func):
@@ -1128,7 +1102,6 @@ def delete(
             path_parameter=path_parameter,
             body_parameter=body_parameter,
             response_parameter=response_parameter,
-            raw_response_parameter=raw_response_parameter,
             **request_kwargs,
         )
 
