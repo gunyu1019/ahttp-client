@@ -1,17 +1,19 @@
 import asyncio
 import aiohttp
 
-from ahttp_client import request, BaseSession, Query
+from ahttp_client import AsyncSession, Query, Response, request
 from typing import Annotated
 
 
-class MetroAPI(BaseSession):
+class MetroAPI(AsyncSession):
     def __init__(self):
-        super().__init__("https://api.yhs.kr")
+        super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
 
     @request("GET", "/metro/station")
-    async def station_search_with_query(self, response: aiohttp.ClientResponse, name: Annotated[str, Query]):
-        return await response.json()
+    async def station_search_with_query(
+        self, response: Response, name: Annotated[str, Query]
+    ):
+        return response.json()
 
 
 async def main():

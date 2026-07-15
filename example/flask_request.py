@@ -1,16 +1,18 @@
 import aiohttp
 
 from flask import Flask
-from ahttp_client import request, BaseSession, Query
+from ahttp_client import AsyncSession, Query, Response, request
 
 app = Flask(__name__)
 
 
 @app.get("/station/<name>")
-@BaseSession.single_session("https://api.yhs.kr")
+@AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
 @request("GET", "/metro/station")
-async def station_search_with_query(session: BaseSession, response: aiohttp.ClientResponse, name: Query | str):
-    return await response.json()
+async def station_search_with_query(
+    session: AsyncSession, response: Response, name: Query | str
+):
+    return response.json()
 
 
 app.run(host="0.0.0.0", port=8080)
