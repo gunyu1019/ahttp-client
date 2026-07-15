@@ -238,9 +238,11 @@ class AsyncSession(BaseSession):
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, session, _is_single_session=True, **session_kwargs)
                 func.session = client
-                response = await func(*args, **kwargs)
-                if not client.closed:
-                    await client.close()
+                try:
+                    response = await func(*args, **kwargs)
+                finally:
+                    if not client.closed:
+                        await client.close()
                 return response
 
             wrapper.__core__ = func  # type: ignore[attr-defined]
