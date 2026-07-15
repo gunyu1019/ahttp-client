@@ -79,6 +79,13 @@ class BaseSession(ABC):
     def closed(self) -> bool:
         pass
 
+    def _get_request_url(self, path: str) -> str:
+        if self.backend.native_base_url:
+            return path
+        if not path.startswith("/") and not self.base_url.endswith("/"):
+            return self.base_url + "/" + path
+        return self.base_url + path
+
 
 class AsyncSession(BaseSession):
     def __init__(
@@ -116,25 +123,32 @@ class AsyncSession(BaseSession):
         await self.backend.session_close()
 
     async def request(self, method: str, path: str, **kwargs):
-        return await self.backend.session_request(method, path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_request(method, url, **kwargs)
 
     async def get(self, path: str, **kwargs):
-        return await self.backend.session_get(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_get(url, **kwargs)
 
     async def post(self, path: str, **kwargs):
-        return await self.backend.session_post(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_post(url, **kwargs)
 
     async def options(self, path: str, **kwargs):
-        return await self.backend.session_options(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_options(url, **kwargs)
 
     async def delete(self, path: str, **kwargs):
-        return await self.backend.session_delete(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_delete(url, **kwargs)
 
     async def patch(self, path: str, **kwargs):
-        return await self.backend.session_patch(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_patch(url, **kwargs)
 
     async def put(self, path: str, **kwargs):
-        return await self.backend.session_put(path, **kwargs)
+        url = self._get_request_url(path)
+        return await self.backend.session_put(url, **kwargs)
 
     async def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -144,7 +158,7 @@ class AsyncSession(BaseSession):
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
-        url = path if self.backend.native_base_url else self.base_url + path
+        url = self._get_request_url(path)
         raw_response = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
         await self.backend.pre_read_response(raw_response)
         response = Response(raw_response, self.backend)
@@ -273,25 +287,32 @@ class Session(BaseSession):
         self.backend.session_close()
 
     def request(self, method: str, path: str, **kwargs):
-        return self.backend.session_request(method, path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_request(method, url, **kwargs)
 
     def get(self, path: str, **kwargs):
-        return self.backend.session_get(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_get(url, **kwargs)
 
     def post(self, path: str, **kwargs):
-        return self.backend.session_post(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_post(url, **kwargs)
 
     def options(self, path: str, **kwargs):
-        return self.backend.session_options(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_options(url, **kwargs)
 
     def delete(self, path: str, **kwargs):
-        return self.backend.session_delete(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_delete(url, **kwargs)
 
     def patch(self, path: str, **kwargs):
-        return self.backend.session_patch(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_patch(url, **kwargs)
 
     def put(self, path: str, **kwargs):
-        return self.backend.session_put(path, **kwargs)
+        url = self._get_request_url(path)
+        return self.backend.session_put(url, **kwargs)
 
     def _make_request(self, request: RequestCore, path: str):
         _req_obj = request
@@ -300,7 +321,7 @@ class Session(BaseSession):
             _req_obj, path = self.before_request(request, path)
 
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
-        url = path if self.backend.native_base_url else self.base_url + path
+        url = self._get_request_url(path)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
         raw_response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
         response = Response(raw_response, self.backend)
