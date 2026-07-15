@@ -10,16 +10,17 @@ When a `list_repository_activites` method is called, the request is called as sh
     :linenos:
     :emphasize-lines: 19, 20
 
-    @Session.single_session("https://api.github.com/")
+    @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
     @request("GET", "/repos/{owner}/{repo}/activity")
-    def list_repository_activites(
-        session, 
+    async def list_repository_activites(
+        session: AsyncSession,
+        response: Response,
         owner: Annotated[str, Path],
         repo: Annotated[str, Path],
         activity_type: Annotated[str, Query],
         authorization: Annotated[str, Header]
     ) -> dict[str, Any]:
-        return await response.json()
+        return response.json()
 
     await list_repository_activites(
         owner="gunyu1019",
@@ -35,16 +36,17 @@ When a `list_repository_activites` method is called, the request is called as sh
     
     .. code-block:: python
 
-        @Session.single_session("https://api.github.com/")
+        @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
         @request("GET", "/repos/{owner}/{repo}/activity")
-        def list_repository_activites(
-            session, 
+        async def list_repository_activites(
+            session: AsyncSession,
+            response: Response,
             owner:str | Path,
             repo: str | Path,
             activity_type: str | Query,
             authorization: str | Header  # or, authorization: typing.Union[str, Header]
         ) -> dict[str, Any]:
-            return await response.json()
+            return response.json()
 
     However, using typing.Annotated is recommended to follow correct Python syntax.
 
@@ -73,16 +75,17 @@ To follow the PEP 8 rules as described, an `ahttp_client` package provides a cus
     :linenos:
     :emphasize-lines: 19, 20
 
-    @Session.single_session("https://api.github.com/")
+    @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
     @request("GET", "/repos/{owner}/{repo}/activity")
-    def list_repository_activites(
-        session, 
+    async def list_repository_activites(
+        session: AsyncSession,
+        response: Response,
         owner: Annotated[str, Path],
         repo: Annotated[str, Path],
         activity_type: Annotated[str, Query],
         token: Annotated[str, Header.custom_name("Authorization")]
     ) -> dict[str, Any]:
-        return await response.json()
+        return response.json()
 
     await list_repository_activites(
         owner="gunyu1019",

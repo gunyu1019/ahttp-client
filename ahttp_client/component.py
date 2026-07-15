@@ -31,7 +31,8 @@ if TYPE_CHECKING:
     from typing import Annotated, Optional, Callable, NoReturn
     from typing_extensions import Self
 
-    from .session import BaseSession
+    from .response import Response
+    from .session import AsyncSession
     from .request import request
 
 
@@ -66,11 +67,11 @@ class Component:
 
         Examples
         --------
-        >>> @BaseSession.single_session("https://api.yhs.kr")
+        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: BaseSession,
-        ...     response: aiohttp.ClientResponse,
+        ...     session: AsyncSession,
+        ...     response: Response,
         ...     station_name: Annotated[str, Query.custom_name('name')]
         ... ) -> list[...]:
         ...     # A header called "name" is substituted with the value of station_name parameter.
@@ -100,11 +101,11 @@ class Component:
 
         Examples
         --------
-        >>> @BaseSession.single_session("https://api.yhs.kr")
+        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: BaseSession,
-        ...     response: aiohttp.ClientResponse,
+        ...     session: AsyncSession,
+        ...     response: Response,
         ...     station_name: Annotated[str, Query.to_camel()]
         ... ) -> list[...]:
         ...     # A header called "stationName" is substituted with the value of station_name parameter.
@@ -124,11 +125,11 @@ class Component:
 
         Examples
         --------
-        >>> @BaseSession.single_session("https://api.yhs.kr")
+        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
         ... @request("GET", "/metro/station")
         ... async def station_search_with_query(
-        ...     session: BaseSession,
-        ...     response: aiohttp.ClientResponse,
+        ...     session: AsyncSession,
+        ...     response: Response,
         ...     station_name: Annotated[str, Query.to_pascal()]
         ... ) -> list[...]:
         ...     # A header called "StationName" is substituted with the value of station_name parameter.

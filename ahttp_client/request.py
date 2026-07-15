@@ -75,7 +75,7 @@ class RequestCore(ABC):
     path: str
         Request path. Path connects to the base url.
     directly_response: bool
-        Returns a `aiohttp.ClientResponse` without executing the function's body statement.
+        Returns a :class:`Response` without executing the function's body statement.
     params: Optional[dict[str, Any]]
         Request parameters.
     headers: Optional[dict[str, Any]]
@@ -267,7 +267,7 @@ class RequestCore(ABC):
 
         Parameters
         ----------
-        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
+        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
             The coroutine to register as the pre-invoke hook.
         """
         self._after_hook = func
@@ -674,7 +674,7 @@ class AsyncRequestCore(RequestCore):
 
         Parameters
         ----------
-        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
+        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
             The coroutine to register as the pre-invoke hook.
         """
         if not inspect.iscoroutinefunction(func):
@@ -697,6 +697,7 @@ class AsyncRequestCore(RequestCore):
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
         response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response = response
         try:
             if self._after_hook is not None:
                 response = await self._after_hook(self.session, response)
@@ -711,8 +712,8 @@ class AsyncRequestCore(RequestCore):
 
             result = await self.func(**kwargs)
         finally:
-            if not response.closed:
-                close_func = response.close
+            if isinstance(raw_response, Response) and not raw_response.closed:
+                close_func = raw_response.close
                 if asyncio.iscoroutinefunction(close_func):
                     await close_func()
                 else:
@@ -745,7 +746,7 @@ class SyncRequestCore(RequestCore):
 
         Parameters
         ----------
-        func: Callable[[aiohttp.ClientResponse], Coroutine[Any, Any, T | aiohttp.ClientResponse]]
+        func: Callable[[Response], Coroutine[Any, Any, T | Response]]
             The coroutine to register as the pre-invoke hook.
         """
         if inspect.iscoroutinefunction(func):
@@ -768,6 +769,7 @@ class SyncRequestCore(RequestCore):
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
         response = self.session._make_request(req_obj, formatted_path)  # type: ignore
+        raw_response = response
         try:
             if self._after_hook is not None:
                 response = self._after_hook(self.session, response)
@@ -781,8 +783,8 @@ class SyncRequestCore(RequestCore):
             kwargs.update(bound_argument.arguments)
             result = self.func(**kwargs)
         finally:
-            if not response.closed:
-                response.close()
+            if isinstance(raw_response, Response) and not raw_response.closed:
+                raw_response.close()
         return result
 
 

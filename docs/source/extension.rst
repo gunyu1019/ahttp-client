@@ -23,17 +23,17 @@ In normal condition, an HTTP request can only have one hooking: before the reque
     .. code-block:: python
         :linenos:
     
-        class MetroAPI(Session):
-            def __init__(self, loop: asyncio.AbstractEventLoop):
-                super().__init__("https://api.yhs.kr", loop=loop)
+        class MetroAPI(AsyncSession):
+            def __init__(self):
+                super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
 
             @request("GET", "/metro/station")
             async def station_search_with_query(
                     self,
-                    response: aiohttp.ClientResponse,
+                    response: Response,
                     name: Query | str
             ) -> dict[str, Any]:
-                return await response.json()
+                return response.json()
 
             @multiple_hook(station_search_with_query.before_hook)
             async def before_hook_1(self, obj, path):

@@ -34,7 +34,8 @@ if TYPE_CHECKING:
     from .._types import RequestAfterHookFunction, RequestBeforeHookFunction
     from ..query import Query
     from ..request import RequestCore, request
-    from ..session import BaseSession
+    from ..response import Response
+    from ..session import AsyncSession
 
     CallableT = TypeVar("CallableT")
     CallableR = TypeVar("CallableR")
@@ -78,17 +79,17 @@ def multiple_hook(
 
     Examples
     --------
-    >>> class MetroAPI(BaseSession):
-    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
-    ...        super().__init__("https://api.yhs.kr", loop=loop)
+    >>> class MetroAPI(AsyncSession):
+    ...    def __init__(self):
+    ...        super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
     ...
     ...    @request("GET", "/metro/station")
     ...    async def station_search_with_query(
     ...            self,
-    ...            response: aiohttp.ClientResponse,
+    ...            response: Response,
     ...            name: Query | str
     ...    ) -> dict[str, Any]:
-    ...        return await response.json()
+    ...        return response.json()
     ...
     ...    @multiple_hook(station_search_with_query.before_hook)
     ...    async def before_hook_1(self, obj, path):

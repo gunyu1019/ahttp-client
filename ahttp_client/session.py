@@ -228,8 +228,12 @@ class AsyncSession(BaseSession):
 
         >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
         ... @request("GET", "/bus/station")
-        ... async def station_query(session: AsyncSession, name: typing.Annotated[str, Query]) -> Any:
-        ...     pass
+        ... async def station_query(
+        ...     session: AsyncSession,
+        ...     response: Response,
+        ...     name: typing.Annotated[str, Query],
+        ... ) -> Any:
+        ...     return response.json()
 
         """
 
@@ -393,8 +397,12 @@ class Session(BaseSession):
 
         >>> @Session.single_session("https://api.yhs.kr", requests.Session)
         ... @request("GET", "/bus/station")
-        ... async def station_query(session: SyncSession, name: typing.Annotated[str, Query]) -> Any:
-        ...     pass
+        ... def station_query(
+        ...     session: Session,
+        ...     response: Response,
+        ...     name: typing.Annotated[str, Query],
+        ... ) -> Any:
+        ...     return response.json()
 
         """
 

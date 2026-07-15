@@ -17,29 +17,29 @@ An ahttp-client is Python package that provides concise and aintuitive asynchron
 Getting Started
 ---------------
 
-Implement a `GithubService` class extended with `ahttp_client.Session`. 
+Implement a `GithubService` class extended with `ahttp_client.AsyncSession`.
 Then, create a `list_repositories` method using a request decorator.
 
 An `user` argument define HTTP-component (Path) through annotation types.
 
 .. code-block:: python
 
-    class GithubService(Session):
+    class GithubService(AsyncSession):
         def __init__(self):
-            super().__init__("https://api.github.com")
+            super().__init__("https://api.github.com", aiohttp.ClientSession)
 
         @request("GET", "/users/{user}/repos")
-        def list_repositories(
-            self, user: Annotated[str, Path]
-        ) -> dict[str, Any]:
-            return await response.json()
+        async def list_repositories(
+            self, response: Response, user: Annotated[str, Path]
+        ) -> list[dict[str, Any]]:
+            return response.json()
 
 Using the asynchronous context manager(`async with`), create a GithubService instance.
 
 .. code-block:: python
 
     async with GithubService() as service:
-        result = await service.list_repoisitories(user = "gunyu1019")
+        result = await service.list_repositories(user="gunyu1019")
         print(result)
 
 Client Session in GithubServices are terminated when leave the asynchronous context manager.

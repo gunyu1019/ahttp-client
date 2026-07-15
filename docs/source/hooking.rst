@@ -22,36 +22,36 @@ A Session unit hooking is created by overridding a method.
     :linenos:
     :caption: Hooking of Session Unit Example
 
-    class GithubService(Session):
+    class GithubService(AsyncSession):
         def __init__(self, token: str):
             self._token = token  # Private Attribute
-            super().__init__("https://api.github.com")
+            super().__init__("https://api.github.com", aiohttp.ClientSession)
         
-        # overridding before_hook method
-        async def before_hook(self, req_obj: RequestCore, path: str):
+        # overridding before_request method
+        async def before_request(self, req_obj: RequestCore, path: str):
             req_obj.headers["Authorization"] = self._token
             req_obj.headers["Accepts"] = "application/vnd.github+json;"
             return req_obj, path
 
-        # overridding after_hook method
-        async def after_hook(self, response: aiohttp.ClientResponse):
-            if response.status_code != 200:
+        # overridding after_request method
+        async def after_request(self, response: Response):
+            if response.status != 200:
                 raise HTTPException()
             return response
 
         @request("GET", "/users/{user}/repos")
-        def list_repositories(
-            self, user: Annotated[str, Path]
-        ) -> dict[str, Any]:
-            return await response.json()
+        async def list_repositories(
+            self, response: Response, user: Annotated[str, Path]
+        ) -> list[dict[str, Any]]:
+            return response.json()
 
-A `Github Service` object are defined by overriding before_hook and after_hook.
+A `Github Service` object is defined by overriding before_request and after_request.
 
-Store the token required for authentication as a private attribute and insert it in header in before_hook.
+Store the token required for authentication as a private attribute and insert it in header in before_request.
 When a method on a `GithubService` object is called, such as `list_repositories` method, 
-`before_hook` method is called first to insert the necessary HTTP compoenents.
+`before_request` method is called first to insert the necessary HTTP compoenents.
 
-After finishing the HTTP request, the `after_hook` method is called to check HTTP status code.
+After finishing the HTTP request, the `after_request` method is called to check HTTP status code.
 If the HTTP status code is not 200(OK), a HTTPException(A predefined exception) is raised.
 
 Request Hooking
@@ -64,32 +64,33 @@ A request unit hooking is created using the decorating method.
 
     token = "GITHUB TOKEN"
 
-    @Session.single_session(base_url="https://api.github.com")
-    @request("GET", "/repos/{user}/{repo}/topics", directly_response=True)
-    def repository_topic(
-        self, 
+    @AsyncSession.single_session("https://api.github.com", aiohttp.ClientSession)
+    @request("GET", "/repos/{user}/{repo}/topics")
+    async def repository_topic(
+        session: AsyncSession,
+        response: Response,
         user: Annotated[str, Path],
         repo: Annotated[str, Path]
     ) -> list[str]:
-        pass
+        return response.json()["names"]
 
     # before_hook method
     @repository_topic.before_hook
-    async def before_hook(self, req_obj: RequestCore, path: str):
+    async def before_hook(session: AsyncSession, req_obj: RequestCore, path: str):
         req_obj.headers["Authorization"] = token
         req_obj.headers["Accepts"] = "application/vnd.github+json;"
         return req_obj, path
 
     # after_hook method
     @repository_topic.after_hook
-    async def after_hook(self, response: aiohttp.ClientResponse):
-        data = await response.json()
-        return data["names"]
+    async def after_hook(session: AsyncSession, response: Response):
+        if response.status != 200:
+            raise HTTPException()
+        return response
 
 To get the topic of a repository, `repository_topic` method defined.
 And defined the hooking with the before_hook decoration method and after_hook decoration method of the `repository_topic` method.
 
 The before_hook method inserts the necessary compoenents(authorization key...etc) before the HTTP request of the repository_topic method is called.
 
-The after_hook method refines and return the result received in response.
-It removes unnesscessary keys.
+The after_hook method validates the response before the request function parses the JSON data.
