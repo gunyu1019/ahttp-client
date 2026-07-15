@@ -26,7 +26,6 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
-
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -94,6 +93,22 @@ class BaseSession(ABC):
     def _get_request_bound(self, request: RequestCore) -> RequestBound:
         pass
 
+    @classmethod
+    def _validate_request_core_duplicated(cls):
+        from .request import RequestCore  # avoid circular import
+
+        members = dict()
+        for _, func in inspect.getmembers(cls):
+            request_obj = getattr(func, "__core__", func)
+
+            if not isinstance(request_obj, RequestCore):
+                continue
+
+            if request_obj.name in members.keys():
+                raise ValueError(f"Request name {request_obj.name} is duplicated")
+            members[request_obj.name] = request_obj
+
+
 
 class AsyncSession(BaseSession):
     """A session for asynchronous requests.
@@ -114,6 +129,7 @@ class AsyncSession(BaseSession):
     **kwargs
         Keyword arguments passed to the HTTP client session constructor.
     """
+
     def __init__(
             self,
             base_url: str,
@@ -129,6 +145,10 @@ class AsyncSession(BaseSession):
         )
 
         self._request_bound_func: dict[RequestCore, RequestAsyncBound] = dict()
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._validate_request_core_duplicated()
 
     @property
     def closed(self) -> bool:
@@ -307,6 +327,7 @@ class Session(BaseSession):
     **kwargs
         Keyword arguments passed to the HTTP client session constructor.
     """
+
     def __init__(
             self,
             base_url: str,
@@ -321,6 +342,10 @@ class Session(BaseSession):
             directly_response=directly_response,
         )
         self._request_bound_func: dict[RequestCore, RequestSyncBound] = dict()
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._validate_request_core_duplicated()
 
     @property
     def closed(self) -> bool:
