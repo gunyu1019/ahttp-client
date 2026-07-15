@@ -41,7 +41,10 @@ requests = [
 ]
 test = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "aiohttp>=3.11.2",
+    "httpx>=0.28.1",
+    "requests>=2.32.3",
 ]
 lint = [
     "pycodestyle",
