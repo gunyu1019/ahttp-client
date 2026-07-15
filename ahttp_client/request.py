@@ -23,6 +23,7 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import copy
 
@@ -706,7 +707,14 @@ class AsyncRequestCore(RequestCore):
         for _parameter in self.response_parameter:
             kwargs[_parameter] = response
         kwargs.update(bound_argument.arguments)
-        return await self.func(**kwargs)
+        result = await self.func(**kwargs)
+        if not response.closed:
+            close_func = response.close
+            if asyncio.iscoroutinefunction(close_func):
+                await close_func()
+            else:
+                close_func()
+        return result
 
 
 class SyncRequestCore(RequestCore):
@@ -767,7 +775,10 @@ class SyncRequestCore(RequestCore):
         for _parameter in self.response_parameter:
             kwargs[_parameter] = response
         kwargs.update(bound_argument.arguments)
-        return self.func(**kwargs)
+        result = self.func(**kwargs)
+        if not response.closed:
+            response.close()
+        return result
 
 
 def _make_request_core(func, method, path, **kwargs):
