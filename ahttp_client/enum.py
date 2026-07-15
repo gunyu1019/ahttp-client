@@ -1,4 +1,3 @@
-from typing import overload
 from enum import Flag, StrEnum, auto
 
 
