@@ -29,6 +29,7 @@ import aiohttp
 from typing import overload, TypeVar, TYPE_CHECKING
 
 from .multiple_hook import multiple_hook
+from ..response import Response
 from ..utils import *
 
 if TYPE_CHECKING:
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 
     from ..component import Query
     from ..request import RequestCore, request
-    from ..session import BaseSession
+    from ..session import AsyncSession
 
 try:
     import pydantic
@@ -330,15 +331,15 @@ def pydantic_response_model(
     ...     name: str
     ...     id: str
     ...
-    >>> class MetroAPI(BaseSession):
-    ...    def __init__(self, loop: asyncio.AbstractEventLoop):
-    ...        super().__init__("https://api.yhs.kr", loop=loop)
+    >>> class MetroAPI(AsyncSession):
+    ...    def __init__(self):
+    ...        super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
     ...
     ...    @pydantic_response_model()
     ...    @request("GET", "/metro/station", directly_response=True)
     ...    async def station_search_with_query(
     ...            self,
-    ...            response: aiohttp.ClientResponse,
+    ...            response: Response,
     ...            name: Query | str
     ...    ) -> ResponseModel:
     ...        pass
@@ -358,9 +359,9 @@ def pydantic_response_model(
             _model = _model.__args__[0]
 
         @multiple_hook(func.after_hook, index=index)  # type: ignore[arg-type]
-        async def wrapper(_, response: dict[str, Any] | aiohttp.ClientResponse):
-            if isinstance(response, aiohttp.ClientResponse):
-                data = await response.json()
+        async def wrapper(_, response: dict[str, Any] | Response):
+            if isinstance(response, Response):
+                data = response.json()
             else:
                 data = response
 
