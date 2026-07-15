@@ -697,23 +697,26 @@ class AsyncRequestCore(RequestCore):
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
         response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
-        if self._after_hook is not None:
-            response = await self._after_hook(self.session, response)
+        try:
+            if self._after_hook is not None:
+                response = await self._after_hook(self.session, response)
 
-        # Detect directly response
-        if self.directly_response or self.session.directly_response:
-            return response
+            # Detect directly response
+            if self.directly_response or self.session.directly_response:
+                return response
 
-        for _parameter in self.response_parameter:
-            kwargs[_parameter] = response
-        kwargs.update(bound_argument.arguments)
-        result = await self.func(**kwargs)
-        if not response.closed:
-            close_func = response.close
-            if asyncio.iscoroutinefunction(close_func):
-                await close_func()
-            else:
-                close_func()
+            for _parameter in self.response_parameter:
+                kwargs[_parameter] = response
+            kwargs.update(bound_argument.arguments)
+
+            result = await self.func(**kwargs)
+        finally:
+            if not response.closed:
+                close_func = response.close
+                if asyncio.iscoroutinefunction(close_func):
+                    await close_func()
+                else:
+                    close_func()
         return result
 
 
@@ -765,19 +768,21 @@ class SyncRequestCore(RequestCore):
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
         response = self.session._make_request(req_obj, formatted_path)  # type: ignore
-        if self._after_hook is not None:
-            response = self._after_hook(self.session, response)
+        try:
+            if self._after_hook is not None:
+                response = self._after_hook(self.session, response)
 
-        # Detect directly response
-        if self.directly_response or self.session.directly_response:
-            return response
+            # Detect directly response
+            if self.directly_response or self.session.directly_response:
+                return response
 
-        for _parameter in self.response_parameter:
-            kwargs[_parameter] = response
-        kwargs.update(bound_argument.arguments)
-        result = self.func(**kwargs)
-        if not response.closed:
-            response.close()
+            for _parameter in self.response_parameter:
+                kwargs[_parameter] = response
+            kwargs.update(bound_argument.arguments)
+            result = self.func(**kwargs)
+        finally:
+            if not response.closed:
+                response.close()
         return result
 
 
