@@ -13,7 +13,7 @@ class MetroAPI(AsyncSession):
     async def station_search_with_query(
         self, response: Response, name: Annotated[str, Query]
     ):
-        return response.json()
+        return response.text()
 
 
 async def main():
