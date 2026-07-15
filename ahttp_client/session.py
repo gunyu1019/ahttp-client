@@ -45,7 +45,12 @@ _log = logging.getLogger(__name__)
 
 
 class BaseSession(ABC):
-    """A class to manage session for managing decoration functions."""
+    """Base class for sessions that own and execute request descriptors.
+
+    Subclasses select a supported HTTP client through a backend adapter. When
+    a decorated request is accessed on a session instance, it is bound to that
+    session and can be called as a regular synchronous or asynchronous method.
+    """
     backend: BaseBackend
 
     def __init__(
@@ -62,7 +67,7 @@ class BaseSession(ABC):
 
     @staticmethod
     def _has_overridden_method(method):
-        """Return False if the method is not overridden. Otherwise returns True if the overridden method."""
+        """Return whether a session hook was overridden by a subclass."""
         return not hasattr(method, "__special_method__")
 
     @staticmethod
@@ -175,81 +180,66 @@ class AsyncSession(BaseSession):
 
     @BaseSession._special_method
     async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
-        """A special method that acts as a session local pre-invoke hook.
-        This is similar to :meth:`RequestCore.before_request`.
+        """Run after a request-level pre-hook and before dispatching the request.
 
-        When :meth:`RequestCore.before_request` exists, this method is called after
-        :meth:`RequestCore.before_request` called.
+        Override this method to alter the request object or final path for all
+        requests made by this session.
 
         Parameters
         ----------
         request: RequestCore
-            The instance of RequestCore.
+            Request descriptor prepared for this invocation.
         path: str
-            The final string of the request url.
+            Request path after path parameters have been substituted.
 
         Returns
         -------
-        Tuple[RequestCore, str]
-            The return type must be the same as the parameter.
+        tuple[RequestCore, str]
+            Request descriptor and path to dispatch.
         """
         return request, path
 
     @BaseSession._special_method
     async def after_request(self, response: Any) -> Any:
-        """A special method that acts as a session local post-invoke.
-        This is similar to :meth:`RequestCore.after_request`.
+        """Run after the backend receives a response and before a request hook.
 
-        When :meth:`RequestCore.after_request` exists, this method is called before
-        :meth:`RequestCore.after_request` called.
+        Override this method to transform the :class:`Response` for every
+        request made by this session.
 
         Parameters
         ----------
         response: Any
-            The result of HTTP request.
+            Response returned by the backend.
 
         Returns
         -------
-        Any | T
-            Cleanup response HTTP results.
-            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
-            the type of this method.
+        Any
+            Value passed to the request-level post-hook or decorated function.
         """
         return response
 
     @classmethod
     def single_session(cls, base_url: str, session: type, **session_kwargs):
-        """A single session for one request.
+        """Decorate a request to create and close a session per invocation.
+
+        The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
+        for the call, then closes it after the request completes.
 
         Parameters
         ----------
         base_url: str
-            base url of the API. (for example, https://api.yhs.kr)
+            Base URL of the API.
         session: type
             The HTTP session class to use (e.g. aiohttp.ClientSession, httpx.AsyncClient).
 
-        Examples
-        --------
-        The session is defined through the function's decoration.
-
-        >>> @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
-        ... @request("GET", "/bus/station")
-        ... async def station_query(
-        ...     session: AsyncSession,
-        ...     response: Response,
-        ...     name: typing.Annotated[str, Query],
-        ... ) -> Any:
-        ...     return response.json()
-
         """
 
-        def decorator(func: "_RequestCore") -> RequestFunction:
+        def decorator(func: RequestCore) -> RequestFunction:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, session, _is_single_session=True, **session_kwargs)
-                func.session = client
                 try:
-                    response = await func(*args, **kwargs)
+                    response = await func._execute(client, *args, **kwargs)
                 finally:
                     if not client.closed:
                         await client.close()
@@ -350,80 +340,65 @@ class Session(BaseSession):
 
     @BaseSession._special_method
     def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
-        """A special method that acts as a session local pre-invoke hook.
-        This is similar to :meth:`RequestCore.before_request`.
+        """Run after a request-level pre-hook and before dispatching the request.
 
-        When :meth:`RequestCore.before_request` exists, this method is called after
-        :meth:`RequestCore.before_request` called.
+        Override this method to alter the request object or final path for all
+        requests made by this session.
 
         Parameters
         ----------
         request: RequestCore
-            The instance of RequestCore.
+            Request descriptor prepared for this invocation.
         path: str
-            The final string of the request url.
+            Request path after path parameters have been substituted.
 
         Returns
         -------
-        Tuple[RequestCore, str]
-            The return type must be the same as the parameter.
+        tuple[RequestCore, str]
+            Request descriptor and path to dispatch.
         """
         return request, path
 
     @BaseSession._special_method
     def after_request(self, response: Any) -> Any:
-        """A special method that acts as a session local post-invoke.
-        This is similar to :meth:`RequestCore.after_request`.
+        """Run after the backend receives a response and before a request hook.
 
-        When :meth:`RequestCore.after_request` exists, this method is called before
-        :meth:`RequestCore.after_request` called.
+        Override this method to transform the :class:`Response` for every
+        request made by this session.
 
         Parameters
         ----------
         response: Any
-            The result of HTTP request.
+            Response returned by the backend.
 
         Returns
         -------
-        Any | T
-            Cleanup response HTTP results.
-            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
-            the type of this method.
+        Any
+            Value passed to the request-level post-hook or decorated function.
         """
         return response
 
     @classmethod
     def single_session(cls, base_url: str, session: type, **session_kwargs):
-        """A single session for one request.
+        """Decorate a request to create and close a session per invocation.
+
+        The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
+        for the call, then closes it after the request completes.
 
         Parameters
         ----------
         base_url: str
-            base url of the API. (for example, https://api.yhs.kr)
+            Base URL of the API.
         session: type
             The HTTP session class to use (e.g. requests.Session, httpx.Client).
 
-        Examples
-        --------
-        The session is defined through the function's decoration.
-
-        >>> @Session.single_session("https://api.yhs.kr", requests.Session)
-        ... @request("GET", "/bus/station")
-        ... def station_query(
-        ...     session: Session,
-        ...     response: Response,
-        ...     name: typing.Annotated[str, Query],
-        ... ) -> Any:
-        ...     return response.json()
-
         """
 
-        def decorator(func: "_RequestCore") -> RequestFunction:
+        def decorator(func: RequestCore) -> RequestFunction:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 client = cls(base_url, session, _is_single_session=True, **session_kwargs)
-                func.session = client
-                response = func(*args, **kwargs)
+                response = func._execute(client, *args, **kwargs)
                 if not client.closed:
                     client.close()
                 return response
