@@ -547,7 +547,7 @@ class RequestCore(ABC):
                     file_name = getattr(_entry.component, "form_filename", None)
                     content_type = getattr(_entry.component, "form_content_type", None)
                     self._body_file[_name] = (
-                        file_name,
+                        file_name or _name,
                         bounded_argument.get(_entry.parameter.name),
                         content_type
                     )
