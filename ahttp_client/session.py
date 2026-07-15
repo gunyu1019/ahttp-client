@@ -31,13 +31,14 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
-from .request import RequestCore
+from .request_bound import RequestBound, RequestAsyncBound, RequestSyncBound
 from .response import Response
 
 if TYPE_CHECKING:
     from types import TracebackType
     from typing import Any, Optional, Self
 
+    from .request import RequestCore
     from ._types import RequestFunction
 
 _log = logging.getLogger(__name__)
@@ -57,12 +58,7 @@ class BaseSession(ABC):
         self.directly_response = directly_response
         self.base_url = base_url
 
-        if not _is_single_session:
-            for name, func in inspect.getmembers(self):
-                if not isinstance(func, RequestCore):
-                    continue
-
-                func.session = self
+        self._request_bound_func: dict[RequestCore, RequestBound] = dict()
 
     @staticmethod
     def _has_overridden_method(method):
@@ -86,6 +82,14 @@ class BaseSession(ABC):
             return self.base_url + "/" + path
         return self.base_url + path
 
+    @abstractmethod
+    def _make_request(self, request: RequestCore, path: str) -> Response:
+        pass
+
+    @abstractmethod
+    def _get_request_bound(self, request: RequestCore) -> RequestBound:
+        pass
+
 
 class AsyncSession(BaseSession):
     def __init__(
@@ -103,6 +107,8 @@ class AsyncSession(BaseSession):
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
+
+        self._request_bound_func: dict[RequestCore, RequestAsyncBound] = dict()
 
     @property
     def closed(self) -> bool:
@@ -256,6 +262,11 @@ class AsyncSession(BaseSession):
 
         return decorator
 
+    def _get_request_bound(self, request_obj: RequestCore) -> RequestAsyncBound:
+        if request_obj.name not in self._request_bound_func.keys():
+            self._request_bound_func[request_obj.name] = RequestAsyncBound(request_obj, self)
+        return self._request_bound_func[request_obj.name]
+
 
 class Session(BaseSession):
     def __init__(
@@ -273,6 +284,7 @@ class Session(BaseSession):
             directly_response=directly_response,
             _is_single_session=_is_single_session,
         )
+        self._request_bound_func: dict[RequestCore, RequestSyncBound] = dict()
 
     @property
     def closed(self) -> bool:
@@ -422,3 +434,8 @@ class Session(BaseSession):
             return wrapper
 
         return decorator
+
+    def _get_request_bound(self, request_obj: RequestCore) -> RequestSyncBound:
+        if request_obj not in self._request_bound_func.keys():
+            self._request_bound_func[request_obj] = RequestSyncBound(request_obj, self)
+        return self._request_bound_func[request_obj]

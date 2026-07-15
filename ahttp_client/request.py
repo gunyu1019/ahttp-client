@@ -33,6 +33,7 @@ from typing import TypeVar, TYPE_CHECKING, Callable, NamedTuple, Optional, get_t
 from ._types import _IO_TYPE, _BODY_JSON_TYPE
 from .component import Component, _EmptyComponent, BodyJson, Body, BodyForm, Header, Path, Query
 from .enum import Method, BodyFormEncoding, BodyType
+from .session import BaseSession
 from .response import Response
 from .utils import *
 
@@ -55,8 +56,7 @@ if TYPE_CHECKING:
         RequestBeforeHookFunction,
         RequestAfterHookFunction,
     )
-    from .session import BaseSession, AsyncSession, Session
-    from .backend.base import BaseBackend
+    from .session import AsyncSession, Session
 
 T = TypeVar("T")
 
@@ -120,7 +120,6 @@ class RequestCore(ABC):
         **kwargs,
     ):
         self.func = func
-        self.session: Optional["BaseSession"] = None
         self.method = method
 
         # Function Wrapper
@@ -167,12 +166,6 @@ class RequestCore(ABC):
 
         self._before_hook: Optional[RequestBeforeHookFunction] = None
         self._after_hook: Optional[RequestAfterHookFunction] = None
-
-    @property
-    def backend(self) -> BaseBackend:
-        if self.session is None:
-            raise TypeError("Class must inherit from class Session")
-        return self.session.backend
 
     @classmethod
     def from_decorator(
@@ -242,7 +235,6 @@ class RequestCore(ABC):
         new_cls._after_hook = self._after_hook
 
         new_cls.validation_parameter = self.validation_parameter
-        new_cls.session = self.session
 
         new_cls._delete_response_annotation()
         return new_cls
@@ -493,7 +485,7 @@ class RequestCore(ABC):
             del self.func.__annotations__[parameter_name]
         self.__annotations__ = self.func.__annotations__
 
-    def _fill_parameter(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
+    def _fill_parameter(self, session: BaseSession, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> None:
         """Fill HTTP request component from bounded argument
 
         Parameters
@@ -504,16 +496,12 @@ class RequestCore(ABC):
         if isinstance(bounded_argument, inspect.BoundArguments):
             bounded_argument = bounded_argument.arguments
 
-        effective_session = self.session
-        if effective_session is None:
-            effective_session = getattr(self.func, "__self__", None)  # type: ignore[assignment]
-
         # Validation
         for _name, _parameter in bounded_argument.items():
             if _name in self.validation_parameter.keys():
                 value = bounded_argument[_name]
                 for func in self.validation_parameter[_name]:
-                    value = func(effective_session, value)
+                    value = func(session, value)
                 bounded_argument[_name] = value
 
         # Header
@@ -645,8 +633,16 @@ class RequestCore(ABC):
         return decorator
 
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> Any:
+    async def _execute(self, session: BaseSession, *args, **kwargs) -> Any:
         pass
+
+    def __get__(self, instance: BaseSession | Any, instance_type: type) -> Any:
+        if isinstance(instance, BaseSession):
+            return instance._get_request_bound(self)
+        return self
+
+    def __call__(self, *args, **kwargs):
+        raise TypeError("RequestCore must be accessed through a Session instance.")
 
 
 class AsyncRequestCore(RequestCore):
@@ -682,28 +678,24 @@ class AsyncRequestCore(RequestCore):
 
         return super(AsyncRequestCore, self).after_hook(func)
 
-    async def __call__(self, *args, **kwargs):
-        if self.session is None:
-            raise TypeError("Class must inherit from class Session")
-
-        bound_argument = self._signature.bind(self.session, *args, **kwargs)
+    async def _execute(self, session: AsyncSession, *args, **kwargs) -> Any:
+        bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
         req_obj = self.copy()
 
-        req_obj._fill_parameter(bound_argument)
+        req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(self.session, req_obj, formatted_path)
-        response = await self.session._make_request(req_obj, formatted_path)  # type: ignore
-        raw_response = response
+            req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
+        raw_response = response = await session._make_request(req_obj, formatted_path)  # type: ignore
         try:
             if self._after_hook is not None:
-                response = await self._after_hook(self.session, response)
+                response = await self._after_hook(session, response)
 
             # Detect directly response
-            if self.directly_response or self.session.directly_response:
+            if self.directly_response or session.directly_response:
                 return response
 
             for _parameter in self.response_parameter:
@@ -712,7 +704,7 @@ class AsyncRequestCore(RequestCore):
 
             result = await self.func(**kwargs)
         finally:
-            if isinstance(raw_response, Response) and not raw_response.closed:
+            if not raw_response.closed:
                 close_func = raw_response.close
                 if asyncio.iscoroutinefunction(close_func):
                     await close_func()
@@ -754,36 +746,33 @@ class SyncRequestCore(RequestCore):
 
         return super(SyncRequestCore, self).after_hook(func)
 
-    def __call__(self, *args, **kwargs):
-        if self.session is None:
-            raise TypeError("Class must inherit from class Session")
-
-        bound_argument = self._signature.bind(self.session, *args, **kwargs)
+    def _execute(self, session: Session, *args, **kwargs) -> Any:
+        bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
         req_obj = self.copy()
 
-        req_obj._fill_parameter(bound_argument)
+        req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = self._before_hook(self.session, req_obj, formatted_path)
-        response = self.session._make_request(req_obj, formatted_path)  # type: ignore
-        raw_response = response
+            req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
+        raw_response = response = session._make_request(req_obj, formatted_path)  # type: ignore
         try:
             if self._after_hook is not None:
-                response = self._after_hook(self.session, response)
+                response = self._after_hook(session, response)
 
             # Detect directly response
-            if self.directly_response or self.session.directly_response:
+            if self.directly_response or session.directly_response:
                 return response
 
             for _parameter in self.response_parameter:
                 kwargs[_parameter] = response
             kwargs.update(bound_argument.arguments)
+
             result = self.func(**kwargs)
         finally:
-            if isinstance(raw_response, Response) and not raw_response.closed:
+            if not raw_response.closed:
                 raw_response.close()
         return result
 
