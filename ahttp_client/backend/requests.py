@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import requests
 from typing import TYPE_CHECKING, Collection
@@ -6,7 +8,7 @@ from .base import SyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
-    from .. import RequestCore
+    from ..request import RequestCore
 
 
 class RequestsBackend(SyncBackend):

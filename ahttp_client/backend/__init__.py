@@ -1,5 +1,9 @@
-from .base import BaseBackendSession, AsyncBackend, SyncBackend
-from .aiohttp import AiohttpSession
+from .base import BaseBackend, AsyncBackend, SyncBackend
+
+try:
+    from .aiohttp import AiohttpSession
+except ImportError:
+    pass
 
 try:
     from .httpx import HttpXAsyncSession, HttpXSyncSession

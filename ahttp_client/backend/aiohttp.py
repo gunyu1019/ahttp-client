@@ -9,7 +9,7 @@ from .base import AsyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
-    from .. import RequestCore
+    from ..request import RequestCore
 
 
 class AiohttpBackend(AsyncBackend):

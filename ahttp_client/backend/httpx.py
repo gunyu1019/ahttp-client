@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import httpx
 
@@ -7,10 +9,10 @@ from .base import AsyncBackend, BaseBackend, SyncBackend
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Callable
-    from .. import RequestCore
+    from ..request import RequestCore
 
 
-class CommonHttpXBackend(ABC, BaseBackend):
+class CommonHttpXBackend(BaseBackend, ABC):
     response_cls = httpx.Response
     native_base_url = True
 
