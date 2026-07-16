@@ -1,6 +1,6 @@
 from collections.abc import Collection
 from types import UnionType, GenericAlias
-from typing import Annotated, get_origin
+from typing import Annotated, get_origin, get_args
 
 
 def is_subclass_safe(_class, _class_info) -> bool:
@@ -37,6 +37,17 @@ def get_origin_for_generic(t):
     if isinstance(t, GenericAlias):
         return t.__origin__
     return t
+
+
+def get_args_for_generic(t):
+    """
+    If type is Generic, return argument of generic type
+    else return t
+    """
+    args = get_args(t)
+    if len(args) > 0:
+        return None
+    return args
 
 
 def make_collection(t):
