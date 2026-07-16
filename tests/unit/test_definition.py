@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import pytest
 
@@ -14,6 +16,18 @@ from ahttp_client import (
     Response,
     request,
 )
+
+
+@request("POST", "/echo/{resource}")
+async def future_annotations_request(
+    session: BaseSession,
+    resource: Annotated[str, Path],
+    query: Annotated[str, Query],
+    header: Annotated[str, Header],
+    body: Annotated[dict[str, Any], Body],
+    response: Response,
+) -> None:
+    pass
 
 
 @pytest.fixture
@@ -92,6 +106,18 @@ def test_component_parameter_1(test_method_with_parameter):
 
     assert request_core.body_parameter.name == "test_body"
     assert request_core.body_parameter_type == BodyType.JSON
+
+
+def test_future_annotations_are_resolved_into_components():
+    annotations = future_annotations_request.func.__annotations__
+    assert isinstance(annotations["resource"], str)
+
+    assert "resource" in future_annotations_request.path_parameter
+    assert "query" in future_annotations_request.query_parameter
+    assert "header" in future_annotations_request.header_parameter
+    assert "response" in future_annotations_request.response_parameter
+    assert future_annotations_request.body_parameter.name == "body"
+    assert future_annotations_request.body_parameter_type == BodyType.JSON
 
 
 def test_component_parameter_2(test_method_with_decorator_parameter):

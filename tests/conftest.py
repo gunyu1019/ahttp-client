@@ -87,6 +87,7 @@ class EchoServer:
     async def _start(self) -> None:
         app = web.Application()
         app.router.add_route("*", "/echo", _echo)
+        app.router.add_route("*", "/echo/{resource}", _echo)
         self._runner = web.AppRunner(app)
         await self._runner.setup()
         site = web.TCPSite(self._runner, "127.0.0.1", 0)

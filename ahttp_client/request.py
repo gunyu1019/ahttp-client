@@ -176,7 +176,10 @@ class RequestCore(ABC):
 
         # method is related to Session class.
         if len(self._signature.parameters) < 1:
-            raise TypeError("%s missing 1 required parameter: 'self(extends Session)'" % self.func.__name__)
+            raise TypeError(
+                "%s missing 1 required parameter: 'self(extends Session)'"
+                % self.func.__name__
+            )
 
         # if not iscoroutinefunction(func):
         #     raise TypeError("function %s must be coroutine." % func.__name__)
@@ -384,7 +387,9 @@ class RequestCore(ABC):
             )
             > 1
         ):
-            raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
+            raise TypeError(
+                "Duplicated Body Form Parameter, Body Json Parameter or Body Parameter."
+            )
 
     # Setup
     def _add_private_key(self) -> None:
@@ -437,21 +442,38 @@ class RequestCore(ABC):
         body_parameter: str
             Parameter name used as the complete body.
         """
-        form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
+        form_encoding = self.body_form_encoding_type = (
+            form_encoding or BodyFormEncoding.AUTO
+        )
 
         try:
             resolved_hints = get_type_hints(self.func, include_extras=True)
+        except NotImplementedError:
+            # Component factories such as ``Body.to_pascal()`` deliberately
+            # reject unsupported declarations.  Do not hide that contract
+            # when postponed annotations are evaluated here.
+            raise
         except Exception:
             resolved_hints = {}
 
         for parameter in self._signature.parameters.values():
             annotation = resolved_hints.get(parameter.name, parameter.annotation)
-            origin_type = annotation.__origin__ if is_annotated_parameter(annotation) else annotation
-            metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
+            origin_type = (
+                annotation.__origin__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
+            metadata = (
+                annotation.__metadata__
+                if is_annotated_parameter(annotation)
+                else annotation
+            )
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
 
-            component_type: type[Component] | type[_EmptyComponent] | type[Response] = _EmptyComponent
+            component_type: type[Component] | type[_EmptyComponent] | type[Response] = (
+                _EmptyComponent
+            )
             component_instance: Optional[Component] = None
             for annotation in make_collection(separated_annotation):
                 if isinstance(annotation, Component):
@@ -463,11 +485,15 @@ class RequestCore(ABC):
                 if not isinstance(annotation, type):
                     continue
 
-                if issubclass(annotation, Component) or issubclass(annotation, Response):
+                if issubclass(annotation, Component) or issubclass(
+                    annotation, Response
+                ):
                     component_type = annotation
                     break
 
-            instance_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
+            instance_origin = [
+                get_origin_for_generic(t) for t in make_collection(separated_origin)
+            ]
 
             if issubclass(component_type, Header) or (
                 header_parameter is not None and parameter.name in header_parameter
@@ -479,7 +505,9 @@ class RequestCore(ABC):
             ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.query_parameter[name] = parameter
-            elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
+            elif issubclass(component_type, Path) or (
+                path_parameter is not None and parameter.name in path_parameter
+            ):
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, BodyForm) or (
                 form_parameter is not None and parameter.name in form_parameter
@@ -488,20 +516,30 @@ class RequestCore(ABC):
                 is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(
                     component_instance, "is_file_type", False
                 )
-                form_component = component_instance if isinstance(component_instance, BodyForm) else None
+                form_component = (
+                    component_instance
+                    if isinstance(component_instance, BodyForm)
+                    else None
+                )
 
                 if form_encoding != BodyFormEncoding.AUTO:
                     self.body_parameter_type = form_encoding.body_type
                 elif form_encoding == BodyFormEncoding.AUTO and is_file_type:
                     self.body_parameter_type = BodyType.FORM_DATA
-                elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
+                elif (
+                    form_encoding == BodyFormEncoding.AUTO
+                    and self.body_parameter_type is None
+                ):
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, form_component)
+                self.body_form_parameter[name] = BodyFormEntry(
+                    parameter, is_file_type, form_component
+                )
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (
-                body_json_parameter is not None and parameter.name in body_json_parameter
+                body_json_parameter is not None
+                and parameter.name in body_json_parameter
             ):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
@@ -512,7 +550,9 @@ class RequestCore(ABC):
                 self._duplicated_check_body()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
-                body_component = component_instance if isinstance(component_instance, Body) else None
+                body_component = (
+                    component_instance if isinstance(component_instance, Body) else None
+                )
                 is_file_type = is_subclass_safe(instance_origin, _IO_TYPE)
                 self.body_parameter = BodyEntry(parameter, is_file_type, body_component)
                 if is_subclass_safe(instance_origin, _BODY_JSON_TYPE):
@@ -521,7 +561,9 @@ class RequestCore(ABC):
                     self.body_parameter_type = BodyType.RAW
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
-            elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
+            elif issubclass(component_type, Response) or is_subclass_safe(
+                instance_origin, Response
+            ):
                 self.response_parameter.append(parameter.name)
 
     def _delete_response_annotation(self) -> None:
@@ -539,7 +581,9 @@ class RequestCore(ABC):
 
             parameter_without_return_annotation.append(parameter)
 
-        self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
+        self._signature = self._signature.replace(
+            parameters=parameter_without_return_annotation
+        )
         for parameter_name in self.response_parameter:
             if parameter_name not in self.func.__annotations__.keys():
                 continue
@@ -586,14 +630,22 @@ class RequestCore(ABC):
 
         # Body
         self._duplicated_check_body()
-        if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
+        if (
+            self.is_formal_form
+            and self.body_parameter is None
+            and self.body_type == BodyType.FORM_DATA
+        ):  # self.is_body
             self.body = dict()
             self._body_file = dict()
 
             for _name, _entry in self.body_form_parameter.items():
-                if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
+                if (
+                    _entry.component is not None and _entry.component.is_file_type
+                ) or _entry.is_file_type:
                     file_name = getattr(_entry.component, "metadata_filename", None)
-                    content_type = getattr(_entry.component, "metadata_content_type", None)
+                    content_type = getattr(
+                        _entry.component, "metadata_content_type", None
+                    )
                     self._body_file[_name] = (
                         file_name or _name,
                         bounded_argument.get(_entry.parameter.name),
@@ -607,7 +659,9 @@ class RequestCore(ABC):
             if len(self._body_file.keys()) == 0:
                 self._body_file = None
         elif (
-            self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED
+            self.is_formal_form
+            and self.body_parameter is None
+            and self.body_type == BodyType.URL_ENCODED
         ):  # self.is_body
             self.body = {
                 _name: bounded_argument.get(_form_entry.parameter.name)
@@ -623,7 +677,9 @@ class RequestCore(ABC):
                     direction = self.body
                     for part in parts[:-1]:
                         direction = direction.setdefault(part, dict())
-                    direction[parts[-1]] = bounded_argument.get(_json_entry.parameter.name)
+                    direction[parts[-1]] = bounded_argument.get(
+                        _json_entry.parameter.name
+                    )
                     continue
                 self.body[_name] = bounded_argument.get(_json_entry.parameter.name)
             if len(self.body.keys()) == 0:
@@ -640,10 +696,16 @@ class RequestCore(ABC):
                 if body_component.metadata_filename is not None and not any(
                     key.lower() == "content-disposition" for key in self.headers
                 ):
-                    filename = body_component.metadata_filename.replace("\\", "\\\\").replace('"', '\\"')
-                    self.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+                    filename = body_component.metadata_filename.replace(
+                        "\\", "\\\\"
+                    ).replace('"', '\\"')
+                    self.headers["Content-Disposition"] = (
+                        f'attachment; filename="{filename}"'
+                    )
 
-    def _get_request_path(self, bounded_argument: dict[str, Any] | inspect.BoundArguments) -> str:
+    def _get_request_path(
+        self, bounded_argument: dict[str, Any] | inspect.BoundArguments
+    ) -> str:
         """Build the final request path from bound path parameters.
 
         Parameters
@@ -781,7 +843,9 @@ class AsyncRequestCore(RequestCore):
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
+            req_obj, formatted_path = await self._before_hook(
+                session, req_obj, formatted_path
+            )
         raw_response = response = await session._make_request(req_obj, formatted_path)
         close_response = True
         try:
@@ -843,7 +907,9 @@ class SyncRequestCore(RequestCore):
         formatted_path = req_obj._get_request_path(bound_argument)
 
         if self._before_hook is not None:
-            req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
+            req_obj, formatted_path = self._before_hook(
+                session, req_obj, formatted_path
+            )
         raw_response = response = session._make_request(req_obj, formatted_path)
         close_response = True
         try:
@@ -867,7 +933,9 @@ class SyncRequestCore(RequestCore):
 
 
 def _make_request_core(func, method, path, **kwargs):
-    core_cls = AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    core_cls = (
+        AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
+    )
     return core_cls.from_decorator(func, method, path, **kwargs)
 
 
