@@ -1,5 +1,4 @@
 from typing import Optional
-from functools import wraps
 
 from ._types import RequestDecorator
 from .request import RequestCore, AsyncRequestCore, SyncRequestCore
@@ -14,7 +13,7 @@ def serialize(
     if model is None and len(serializer_kwargs) > 0:
         model_cls = BaseSerializer.late_bind(**serializer_kwargs)
 
-    if model is None:
+    if model_cls is None:
         raise TypeError(f"No serializer found for {model}")
 
     def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
@@ -37,7 +36,7 @@ def deserialize(
     if model is None and len(deserializer_kwargs) > 0:
         model_cls = BaseDeserializer.late_bind(**deserializer_kwargs)
 
-    if model is None:
+    if model_cls is None:
         raise TypeError(f"No deserializer found for {model}")
 
     def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
