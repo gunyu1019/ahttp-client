@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, get_type_hints
 
 import pytest
 
@@ -9,6 +9,8 @@ from ahttp_client import (
     Query,
     request,
 )
+from ahttp_client.enum import DirectResponseType
+from ahttp_client.request import RequestCore
 
 
 @pytest.fixture
@@ -92,3 +94,14 @@ def test_async_validator_is_rejected(test_method):
         @test_method.validation("parameter")
         async def validate_parameter(session: BaseSession, value: str) -> str:
             return value
+
+
+def test_directly_response_accepts_direct_response_type():
+    assert get_type_hints(request)["directly_response"] == DirectResponseType | bool
+    assert get_type_hints(RequestCore.__init__)["directly_response"] == DirectResponseType | bool
+
+    @request("GET", "/", directly_response=DirectResponseType.RESPONSE)
+    async def direct_request(session: BaseSession) -> None:
+        pass
+
+    assert direct_request.directly_response is DirectResponseType.RESPONSE

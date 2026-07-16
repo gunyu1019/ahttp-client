@@ -61,7 +61,7 @@ from .component import (
     Path,
     Query,
 )
-from .enum import Method, BodyFormEncoding, BodyType
+from .enum import Method, BodyFormEncoding, BodyType, DirectResponseType
 from .session import BaseSession
 from .serialization.base import BaseSerializer, BaseDeserializer
 from .response import Response
@@ -124,7 +124,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
     path: str
         Path relative to the session base URL, unless the backend manages its
         own base URL.
-    directly_response: bool
+    directly_response: DirectResponseType | bool
         Return the response-pipeline result without executing the decorated
         function.
     params: dict[str, Any]
@@ -163,7 +163,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         path: str,
         *,
         name: Optional[str] = None,
-        directly_response: bool = False,
+        directly_response: DirectResponseType | bool = False,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, Any]] = None,
         body: Optional[Any] = None,
@@ -973,7 +973,7 @@ def request(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1009,7 +1009,7 @@ def request(
         Static request headers.
     body: Optional[Any]
         Static request body.
-    directly_response: bool
+    directly_response: DirectResponseType | bool
         Return the response after hooks without executing the decorated
         function.
     header_parameter: list[str]
@@ -1065,7 +1065,7 @@ def get(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1112,7 +1112,7 @@ def post(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1159,7 +1159,7 @@ def options(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1206,7 +1206,7 @@ def patch(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1253,7 +1253,7 @@ def put(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1300,7 +1300,7 @@ def delete(
     path: str,
     *,
     name: Optional[str] = None,
-    directly_response: bool = False,
+    directly_response: DirectResponseType | bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
