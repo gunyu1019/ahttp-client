@@ -63,8 +63,10 @@ from .component import (
 )
 from .enum import Method, BodyFormEncoding, BodyType
 from .session import BaseSession
+from .serialization.base import BaseSerializer, BaseDeserializer
 from .response import Response
 from .utils import *
+
 
 
 class BodyJsonEntry(NamedTuple):
@@ -216,6 +218,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self._before_hook: Optional[RequestBeforeHookT] = None
         self._after_hook: Optional[RequestAfterHookT] = None
 
+        # Serialization
+        self._serializer: Optional[BaseSerializer] = None
+        self._deserializer: Optional[BaseDeserializer] = None
+
     @classmethod
     def from_decorator(
         cls,
@@ -283,6 +289,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook
+
+        new_cls._serializer = self._serializer
+        new_cls._deserializer = self._deserializer
 
         new_cls.validation_parameter = self.validation_parameter
 
@@ -699,6 +708,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             and other.body_parameter_type == self.body_parameter_type
             and other._before_hook == self._before_hook
             and other._after_hook == self._after_hook
+            and other._serializer == self._serializer
+            and other._deserializer == self._deserializer
         )
 
     def __ne__(self, other):
