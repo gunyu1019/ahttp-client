@@ -37,6 +37,10 @@ class BaseCodec(ABC):
         new_cls._late_bind = True
         return new_cls
 
+    @property
+    def is_late_bind(self) -> bool:
+        return self._late_bind
+
 
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     """Converts models into transport-safe values."""

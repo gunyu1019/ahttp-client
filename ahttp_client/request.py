@@ -253,6 +253,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         )
         new_cls._add_private_key()
         new_cls._delete_response_annotation()
+
         return new_cls
 
     def copy(self) -> Self:
@@ -561,6 +562,21 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 self._duplicated_check_body()
             elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
                 self.response_parameter.append(parameter.name)
+
+        # Deserialize Response
+        if (
+                self.directly_response
+                and self._deserializer is not None
+                and self._deserializer.is_late_bind
+                and self._signature.return_annotation is not inspect.Signature.empty
+        ):
+            annotation = resolved_hints.get(
+                self._signature.return_annotation.__name__,
+                self._signature.return_annotation
+            )
+            new_deserializer = BaseDeserializer.set_model(annotation, self._deserializer)
+            if new_deserializer is not None:
+                self._deserializer = new_deserializer
 
     def _delete_response_annotation(self) -> None:
         """Remove response parameters from the public request signature.
