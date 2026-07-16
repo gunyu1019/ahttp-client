@@ -55,7 +55,7 @@ class RequestBound(ABC):
         pass
 
 
-class RequestAsyncBound(RequestBound):
+class AsyncRequestBound(RequestBound):
     """A request descriptor bound to an :class:`AsyncSession`."""
 
     _session: AsyncSession
@@ -66,7 +66,7 @@ class RequestAsyncBound(RequestBound):
         return await self._core._execute(self._session, *args, **kwargs)
 
 
-class RequestSyncBound(RequestBound):
+class SyncRequestBound(RequestBound):
     """A request descriptor bound to a :class:`Session`."""
 
     _session: Session

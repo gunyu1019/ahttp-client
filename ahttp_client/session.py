@@ -30,7 +30,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
-from .request_bound import RequestBound, RequestAsyncBound, RequestSyncBound
+from .request_bound import RequestBound, AsyncRequestBound, SyncRequestBound
 from .response import Response
 
 if TYPE_CHECKING:
@@ -291,12 +291,12 @@ class AsyncSession(BaseSession):
 
         return decorator
 
-    def _get_request_bound(self, request_obj: RequestCore) -> RequestAsyncBound:
+    def _get_request_bound(self, request_obj: RequestCore) -> AsyncRequestBound:
         bound = self._request_bound_func.get(request_obj.name)
         if bound is None:
-            bound = RequestAsyncBound(request_obj, self)
+            bound = AsyncRequestBound(request_obj, self)
             self._request_bound_func[request_obj.name] = bound
-        return cast(RequestAsyncBound, bound)
+        return cast(AsyncRequestBound, bound)
 
 
 class Session(BaseSession):
@@ -488,9 +488,9 @@ class Session(BaseSession):
 
         return decorator
 
-    def _get_request_bound(self, request_obj: RequestCore) -> RequestSyncBound:
+    def _get_request_bound(self, request_obj: RequestCore) -> SyncRequestBound:
         bound = self._request_bound_func.get(request_obj.name)
         if bound is None:
-            bound = RequestSyncBound(request_obj, self)
+            bound = SyncRequestBound(request_obj, self)
             self._request_bound_func[request_obj.name] = bound
-        return cast(RequestSyncBound, bound)
+        return cast(SyncRequestBound, bound)
