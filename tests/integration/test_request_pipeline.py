@@ -171,24 +171,18 @@ class SyncPipelineAPI(Session):
         return response.json()
 
 
-async def _async_call(
-    backend: type, base_url: str, method_name: str, *args: Any
-) -> dict[str, Any]:
+async def _async_call(backend: type, base_url: str, method_name: str, *args: Any) -> dict[str, Any]:
     async with AsyncPipelineAPI(base_url, backend) as api:
         return await getattr(api, method_name)(*args)
 
 
-def _sync_call(
-    backend: type, base_url: str, method_name: str, *args: Any
-) -> dict[str, Any]:
+def _sync_call(backend: type, base_url: str, method_name: str, *args: Any) -> dict[str, Any]:
     with SyncPipelineAPI(base_url, backend) as api:
         return getattr(api, method_name)(*args)
 
 
 def _header(payload: dict[str, Any], name: str) -> str | None:
-    return {key.lower(): value for key, value in payload["headers"].items()}.get(
-        name.lower()
-    )
+    return {key.lower(): value for key, value in payload["headers"].items()}.get(name.lower())
 
 
 def _assert_components(payload: dict[str, Any]) -> None:
@@ -227,16 +221,12 @@ def _assert_body_variants(
     assert urlencoded["form"] == {"first-name": ["tester"], "count": ["3"]}
     assert multipart["content_type"] == "multipart/form-data"
     assert multipart["form"] == {"title": ["example"], "count": ["3"]}
-    assert inferred_file["files"]["upload"][0]["base64"] == base64.b64encode(
-        FILE_CONTENT
-    ).decode("ascii")
+    assert inferred_file["files"]["upload"][0]["base64"] == base64.b64encode(FILE_CONTENT).decode("ascii")
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_path_query_and_header_are_transmitted(
-    backend: type, base_url: str
-) -> None:
+def test_async_path_query_and_header_are_transmitted(backend: type, base_url: str) -> None:
     payload = asyncio.run(
         _async_call(
             backend,
@@ -258,9 +248,7 @@ def test_async_path_query_and_header_are_transmitted(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_path_query_and_header_are_transmitted(
-    backend: type, base_url: str
-) -> None:
+def test_sync_path_query_and_header_are_transmitted(backend: type, base_url: str) -> None:
     _assert_components(
         _sync_call(
             backend,
@@ -281,33 +269,19 @@ def test_sync_path_query_and_header_are_transmitted(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_body_json_and_form_variants_are_transmitted(
-    backend: type, base_url: str
-) -> None:
+def test_async_body_json_and_form_variants_are_transmitted(backend: type, base_url: str) -> None:
     _assert_body_variants(
-        asyncio.run(
-            _async_call(backend, base_url, "body_json", "tester", "Seoul", True)
-        ),
-        asyncio.run(
-            _async_call(backend, base_url, "form_auto", "tester", ["one", "two"])
-        ),
+        asyncio.run(_async_call(backend, base_url, "body_json", "tester", "Seoul", True)),
+        asyncio.run(_async_call(backend, base_url, "form_auto", "tester", ["one", "two"])),
         asyncio.run(_async_call(backend, base_url, "form_urlencoded", "tester", 3)),
-        asyncio.run(
-            _async_call(backend, base_url, "form_multipart_fields", "example", 3)
-        ),
-        asyncio.run(
-            _async_call(
-                backend, base_url, "form_inferred_file", io.BytesIO(FILE_CONTENT)
-            )
-        ),
+        asyncio.run(_async_call(backend, base_url, "form_multipart_fields", "example", 3)),
+        asyncio.run(_async_call(backend, base_url, "form_inferred_file", io.BytesIO(FILE_CONTENT))),
     )
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_body_json_and_form_variants_are_transmitted(
-    backend: type, base_url: str
-) -> None:
+def test_sync_body_json_and_form_variants_are_transmitted(backend: type, base_url: str) -> None:
     _assert_body_variants(
         _sync_call(backend, base_url, "body_json", "tester", "Seoul", True),
         _sync_call(backend, base_url, "form_auto", "tester", ["one", "two"]),

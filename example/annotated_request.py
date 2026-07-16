@@ -10,9 +10,7 @@ class MetroAPI(AsyncSession):
         super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
 
     @request("GET", "/metro/station")
-    async def station_search_with_query(
-        self, response: Response, name: Annotated[str, Query]
-    ):
+    async def station_search_with_query(self, response: Response, name: Annotated[str, Query]):
         return response.text()
 
 

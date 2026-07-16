@@ -106,9 +106,7 @@ class EchoServer:
 
     def close(self) -> None:
         if self._runner is not None and self._loop.is_running():
-            cleanup = asyncio.run_coroutine_threadsafe(
-                self._runner.cleanup(), self._loop
-            )
+            cleanup = asyncio.run_coroutine_threadsafe(self._runner.cleanup(), self._loop)
             cleanup.result(timeout=10)
             self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join(timeout=10)

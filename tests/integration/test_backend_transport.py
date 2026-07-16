@@ -31,15 +31,11 @@ FILE_CONTENT = "첨부 파일".encode()
 
 class AsyncTransportAPI(AsyncSession):
     @post("/echo")
-    async def json_body(
-        self, value: Annotated[dict[str, Any], BodyJson], response: Response
-    ) -> dict[str, Any]:
+    async def json_body(self, value: Annotated[dict[str, Any], BodyJson], response: Response) -> dict[str, Any]:
         return response.json()
 
     @post("/echo")
-    async def raw_body(
-        self, value: Annotated[bytes, Body], response: Response
-    ) -> dict[str, Any]:
+    async def raw_body(self, value: Annotated[bytes, Body], response: Response) -> dict[str, Any]:
         return response.json()
 
     @post("/echo")
@@ -62,15 +58,11 @@ class AsyncTransportAPI(AsyncSession):
 
 class SyncTransportAPI(Session):
     @post("/echo")
-    def json_body(
-        self, value: Annotated[dict[str, Any], BodyJson], response: Response
-    ) -> dict[str, Any]:
+    def json_body(self, value: Annotated[dict[str, Any], BodyJson], response: Response) -> dict[str, Any]:
         return response.json()
 
     @post("/echo")
-    def raw_body(
-        self, value: Annotated[bytes, Body], response: Response
-    ) -> dict[str, Any]:
+    def raw_body(self, value: Annotated[bytes, Body], response: Response) -> dict[str, Any]:
         return response.json()
 
     @post("/echo")
@@ -91,16 +83,12 @@ class SyncTransportAPI(Session):
         return response.json()
 
 
-async def _async_call(
-    backend: type, base_url: str, method_name: str, *args: Any
-) -> dict[str, Any]:
+async def _async_call(backend: type, base_url: str, method_name: str, *args: Any) -> dict[str, Any]:
     async with AsyncTransportAPI(base_url, backend) as api:
         return await getattr(api, method_name)(*args)
 
 
-def _sync_call(
-    backend: type, base_url: str, method_name: str, *args: Any
-) -> dict[str, Any]:
+def _sync_call(backend: type, base_url: str, method_name: str, *args: Any) -> dict[str, Any]:
     with SyncTransportAPI(base_url, backend) as api:
         return getattr(api, method_name)(*args)
 
@@ -128,9 +116,7 @@ def _assert_multipart(payload: dict[str, Any]) -> None:
     }
 
 
-def _capture_request_kwargs(
-    monkeypatch: pytest.MonkeyPatch, session_type: type
-) -> list[dict[str, Any]]:
+def _capture_request_kwargs(monkeypatch: pytest.MonkeyPatch, session_type: type) -> list[dict[str, Any]]:
     backend_type = BACKEND_BY_SESSION[session_type]
     original = backend_type.get_request_kwargs
     captured: list[dict[str, Any]] = []
@@ -186,34 +172,18 @@ def test_async_backends_convert_payloads_on_the_wire(
     backend: type, base_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured = _capture_request_kwargs(monkeypatch, backend)
-    _assert_json(
-        asyncio.run(
-            _async_call(backend, base_url, "json_body", {"item": {"name": "notebook"}})
-        )
-    )
+    _assert_json(asyncio.run(_async_call(backend, base_url, "json_body", {"item": {"name": "notebook"}})))
     _assert_raw(
         asyncio.run(_async_call(backend, base_url, "raw_body", b"raw\x00body")),
         b"raw\x00body",
     )
     raw_file = io.BytesIO(b"file content")
-    raw_file_payload = asyncio.run(
-        _async_call(backend, base_url, "raw_file_body", raw_file)
-    )
+    raw_file_payload = asyncio.run(_async_call(backend, base_url, "raw_file_body", raw_file))
     _assert_raw(raw_file_payload, b"file content")
-    raw_file_headers = {
-        key.lower(): value for key, value in raw_file_payload["headers"].items()
-    }
+    raw_file_headers = {key.lower(): value for key, value in raw_file_payload["headers"].items()}
     assert raw_file_headers["content-type"] == "text/plain"
-    assert (
-        raw_file_headers["content-disposition"] == 'attachment; filename="report.txt"'
-    )
-    _assert_multipart(
-        asyncio.run(
-            _async_call(
-                backend, base_url, "multipart_body", "quarterly report", FILE_CONTENT
-            )
-        )
-    )
+    assert raw_file_headers["content-disposition"] == 'attachment; filename="report.txt"'
+    _assert_multipart(asyncio.run(_async_call(backend, base_url, "multipart_body", "quarterly report", FILE_CONTENT)))
     _assert_request_kwargs(backend, captured, raw_file)
 
 
@@ -223,25 +193,13 @@ def test_sync_backends_convert_payloads_on_the_wire(
     backend: type, base_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured = _capture_request_kwargs(monkeypatch, backend)
-    _assert_json(
-        _sync_call(backend, base_url, "json_body", {"item": {"name": "notebook"}})
-    )
-    _assert_raw(
-        _sync_call(backend, base_url, "raw_body", b"raw\x00body"), b"raw\x00body"
-    )
+    _assert_json(_sync_call(backend, base_url, "json_body", {"item": {"name": "notebook"}}))
+    _assert_raw(_sync_call(backend, base_url, "raw_body", b"raw\x00body"), b"raw\x00body")
     raw_file = io.BytesIO(b"file content")
     raw_file_payload = _sync_call(backend, base_url, "raw_file_body", raw_file)
     _assert_raw(raw_file_payload, b"file content")
-    raw_file_headers = {
-        key.lower(): value for key, value in raw_file_payload["headers"].items()
-    }
+    raw_file_headers = {key.lower(): value for key, value in raw_file_payload["headers"].items()}
     assert raw_file_headers["content-type"] == "text/plain"
-    assert (
-        raw_file_headers["content-disposition"] == 'attachment; filename="report.txt"'
-    )
-    _assert_multipart(
-        _sync_call(
-            backend, base_url, "multipart_body", "quarterly report", FILE_CONTENT
-        )
-    )
+    assert raw_file_headers["content-disposition"] == 'attachment; filename="report.txt"'
+    _assert_multipart(_sync_call(backend, base_url, "multipart_body", "quarterly report", FILE_CONTENT))
     _assert_request_kwargs(backend, captured, raw_file)

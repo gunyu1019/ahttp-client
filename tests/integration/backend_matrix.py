@@ -43,43 +43,23 @@ def _backend_id(backend_type: type[BaseBackend], module_counts: Counter[str]) ->
     return f"{module}_{_backend_kind(backend_type)}"
 
 
-def _backend_ids(
-    backend_types: tuple[type[BaseBackend], ...], module_counts: Counter[str]
-) -> tuple[str, ...]:
-    ids = tuple(
-        _backend_id(backend_type, module_counts) for backend_type in backend_types
-    )
+def _backend_ids(backend_types: tuple[type[BaseBackend], ...], module_counts: Counter[str]) -> tuple[str, ...]:
+    ids = tuple(_backend_id(backend_type, module_counts) for backend_type in backend_types)
     id_counts = Counter(ids)
     return tuple(
-        (
-            backend_id
-            if id_counts[backend_id] == 1
-            else f"{backend_id}_{backend_type.__name__.lower()}"
-        )
+        (backend_id if id_counts[backend_id] == 1 else f"{backend_id}_{backend_type.__name__.lower()}")
         for backend_type, backend_id in zip(backend_types, ids, strict=True)
     )
 
 
 BACKEND_TYPES = _concrete_backends()
-BACKEND_BY_SESSION = {
-    backend_type.session_cls: backend_type for backend_type in BACKEND_TYPES
-}
+BACKEND_BY_SESSION = {backend_type.session_cls: backend_type for backend_type in BACKEND_TYPES}
 if len(BACKEND_BY_SESSION) != len(BACKEND_TYPES):
     raise RuntimeError("Multiple backend implementations use the same session class")
-_MODULE_COUNTS = Counter(
-    _backend_module(backend_type) for backend_type in BACKEND_TYPES
-)
+_MODULE_COUNTS = Counter(_backend_module(backend_type) for backend_type in BACKEND_TYPES)
 
-ASYNC_BACKEND_TYPES = tuple(
-    backend_type
-    for backend_type in BACKEND_TYPES
-    if issubclass(backend_type, AsyncBackend)
-)
-SYNC_BACKEND_TYPES = tuple(
-    backend_type
-    for backend_type in BACKEND_TYPES
-    if issubclass(backend_type, SyncBackend)
-)
+ASYNC_BACKEND_TYPES = tuple(backend_type for backend_type in BACKEND_TYPES if issubclass(backend_type, AsyncBackend))
+SYNC_BACKEND_TYPES = tuple(backend_type for backend_type in BACKEND_TYPES if issubclass(backend_type, SyncBackend))
 ASYNC_BACKENDS = tuple(backend_type.session_cls for backend_type in ASYNC_BACKEND_TYPES)
 SYNC_BACKENDS = tuple(backend_type.session_cls for backend_type in SYNC_BACKEND_TYPES)
 ASYNC_BACKEND_IDS = _backend_ids(ASYNC_BACKEND_TYPES, _MODULE_COUNTS)

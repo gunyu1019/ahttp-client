@@ -61,9 +61,7 @@ def test_duplicated_body_type():
         ) -> None:
             pass
 
-    assert str(error_message.value) == (
-        "Duplicated Body Form Parameter, Body Json Parameter or Body Parameter."
-    )
+    assert str(error_message.value) == ("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
 
 def test_not_duplicated_body_type():
@@ -163,9 +161,7 @@ def test_body_form_file_field_selects_multipart_and_preserves_metadata():
     ) -> None:
         pass
 
-    filled_request = _filled_component_request(
-        upload, "quarterly report", b"file content"
-    )
+    filled_request = _filled_component_request(upload, "quarterly report", b"file content")
 
     assert upload.body_type == BodyType.FORM_DATA
     assert filled_request.body == {"description": "quarterly report"}

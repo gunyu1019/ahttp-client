@@ -19,9 +19,7 @@ class StationInfo(NamedTuple):
 
 @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
 @request("GET", "/metro/station")
-async def station_search_with_query(
-    session: AsyncSession, response: Response, name: Query | str
-) -> list[StationInfo]:
+async def station_search_with_query(session: AsyncSession, response: Response, name: Query | str) -> list[StationInfo]:
     data = response.json()
     return [StationInfo(**x) for x in data]
 

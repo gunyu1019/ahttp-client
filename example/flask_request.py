@@ -9,9 +9,7 @@ app = Flask(__name__)
 @app.get("/station/<name>")
 @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
 @request("GET", "/metro/station")
-async def station_search_with_query(
-    session: AsyncSession, response: Response, name: Query | str
-):
+async def station_search_with_query(session: AsyncSession, response: Response, name: Query | str):
     return response.json()
 
 

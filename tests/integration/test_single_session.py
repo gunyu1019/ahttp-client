@@ -18,9 +18,7 @@ from tests.integration.backend_matrix import (
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_single_session_executes_request_and_closes(
-    backend: type, base_url: str
-) -> None:
+def test_async_single_session_executes_request_and_closes(backend: type, base_url: str) -> None:
     clients: list[AsyncSession] = []
 
     @AsyncSession.single_session(base_url, backend)
@@ -41,9 +39,7 @@ def test_async_single_session_executes_request_and_closes(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_single_session_executes_request_and_closes(
-    backend: type, base_url: str
-) -> None:
+def test_sync_single_session_executes_request_and_closes(backend: type, base_url: str) -> None:
     clients: list[Session] = []
 
     @Session.single_session(base_url, backend)
@@ -64,9 +60,7 @@ def test_sync_single_session_executes_request_and_closes(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_single_session_closes_after_user_exception(
-    backend: type, base_url: str
-) -> None:
+def test_async_single_session_closes_after_user_exception(backend: type, base_url: str) -> None:
     clients: list[AsyncSession] = []
 
     @AsyncSession.single_session(base_url, backend)
@@ -83,9 +77,7 @@ def test_async_single_session_closes_after_user_exception(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_single_session_closes_after_user_exception(
-    backend: type, base_url: str
-) -> None:
+def test_sync_single_session_closes_after_user_exception(backend: type, base_url: str) -> None:
     clients: list[Session] = []
 
     @Session.single_session(base_url, backend)

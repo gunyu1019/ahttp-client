@@ -58,17 +58,13 @@ def _async_normalize_value(session: AsyncLifecycleAPI, value: str) -> str:
 
 
 @AsyncLifecycleAPI.hooked.before_hook
-async def _async_request_before_hook(
-    session: AsyncLifecycleAPI, request: Any, path: str
-) -> tuple[Any, str]:
+async def _async_request_before_hook(session: AsyncLifecycleAPI, request: Any, path: str) -> tuple[Any, str]:
     request.headers["X-Request-Hook"] = "async"
     return request, path
 
 
 @AsyncLifecycleAPI.hooked.after_hook
-async def _async_request_after_hook(
-    session: AsyncLifecycleAPI, response: Response
-) -> dict[str, Any]:
+async def _async_request_after_hook(session: AsyncLifecycleAPI, response: Response) -> dict[str, Any]:
     payload = response.json()
     payload["request_after"] = "async"
     return payload
@@ -114,17 +110,13 @@ def _sync_normalize_value(session: SyncLifecycleAPI, value: str) -> str:
 
 
 @SyncLifecycleAPI.hooked.before_hook
-def _sync_request_before_hook(
-    session: SyncLifecycleAPI, request: Any, path: str
-) -> tuple[Any, str]:
+def _sync_request_before_hook(session: SyncLifecycleAPI, request: Any, path: str) -> tuple[Any, str]:
     request.headers["X-Request-Hook"] = "sync"
     return request, path
 
 
 @SyncLifecycleAPI.hooked.after_hook
-def _sync_request_after_hook(
-    session: SyncLifecycleAPI, response: Response
-) -> dict[str, Any]:
+def _sync_request_after_hook(session: SyncLifecycleAPI, response: Response) -> dict[str, Any]:
     payload = response.json()
     payload["request_after"] = "sync"
     return payload
@@ -155,16 +147,12 @@ class SyncIsolationAPI(Session):
 
 
 def _header(payload: dict[str, Any], name: str) -> str | None:
-    return {key.lower(): value for key, value in payload["headers"].items()}.get(
-        name.lower()
-    )
+    return {key.lower(): value for key, value in payload["headers"].items()}.get(name.lower())
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_validation_and_request_session_hooks(
-    backend: type, base_url: str
-) -> None:
+def test_async_validation_and_request_session_hooks(backend: type, base_url: str) -> None:
     async def run() -> tuple[dict[str, Any], dict[str, Any], bool]:
         async with AsyncLifecycleAPI(base_url, backend) as api:
             validated = await api.validated(resource="validated", value=" value ")
@@ -182,9 +170,7 @@ def test_async_validation_and_request_session_hooks(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_validation_and_request_session_hooks(
-    backend: type, base_url: str
-) -> None:
+def test_sync_validation_and_request_session_hooks(backend: type, base_url: str) -> None:
     with SyncLifecycleAPI(base_url, backend) as api:
         validated = api.validated(resource="validated", value=" value ")
         hooked = api.hooked()
@@ -200,9 +186,7 @@ def test_sync_validation_and_request_session_hooks(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_direct_response_skips_function_and_can_close(
-    backend: type, base_url: str
-) -> None:
+def test_async_direct_response_skips_function_and_can_close(backend: type, base_url: str) -> None:
     async def run() -> tuple[Response, bool]:
         async with AsyncLifecycleAPI(base_url, backend, directly_response=True) as api:
             response = await api.direct()
@@ -221,9 +205,7 @@ def test_async_direct_response_skips_function_and_can_close(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_direct_response_skips_function_and_can_close(
-    backend: type, base_url: str
-) -> None:
+def test_sync_direct_response_skips_function_and_can_close(backend: type, base_url: str) -> None:
     with SyncLifecycleAPI(base_url, backend, directly_response=True) as api:
         response = api.direct()
         function_called = api.function_called
@@ -234,9 +216,7 @@ def test_sync_direct_response_skips_function_and_can_close(
     assert response.closed is True
 
 
-def _assert_isolated(
-    payload: dict[str, Any], resource: str, value: str, marker: str
-) -> None:
+def _assert_isolated(payload: dict[str, Any], resource: str, value: str, marker: str) -> None:
     assert payload["path"] == f"/echo/{resource}"
     assert payload["query"] == {"value": [value]}
     assert _header(payload, "X-Marker") == marker
@@ -244,9 +224,7 @@ def _assert_isolated(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_concurrent_calls_keep_request_state_isolated(
-    backend: type, base_url: str
-) -> None:
+def test_async_concurrent_calls_keep_request_state_isolated(backend: type, base_url: str) -> None:
     async def run() -> tuple[dict[str, Any], dict[str, Any]]:
         async with AsyncIsolationAPI(base_url, backend) as api:
             first, second = await asyncio.gather(
@@ -262,9 +240,7 @@ def test_async_concurrent_calls_keep_request_state_isolated(
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_sequential_calls_keep_request_state_isolated(
-    backend: type, base_url: str
-) -> None:
+def test_sync_sequential_calls_keep_request_state_isolated(backend: type, base_url: str) -> None:
     with SyncIsolationAPI(base_url, backend) as api:
         first = api.isolated("first", "one", "first-marker")
         second = api.isolated("second", "two", "second-marker")
