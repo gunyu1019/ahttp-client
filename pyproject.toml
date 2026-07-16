@@ -62,7 +62,6 @@ Homepage = "https://github.com/gunyu1019/ahttp-client"
 packages = [
     "ahttp_client",
     "ahttp_client.backend",
-    "ahttp_client.extension",
     "ahttp_client.serialization",
 ]
 include-package-data = true
