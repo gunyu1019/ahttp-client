@@ -74,3 +74,6 @@ dependencies = { file = "requirements.txt"}
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+markers = [
+    "integration: tests that make actual loopback HTTP requests",
+]

@@ -7,11 +7,12 @@ on:
     branches: [ "main", "develop" ]
 
 jobs:
-  test:
+  unit:
+    name: Unit tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.10", "3.11", "3.12" ]
+        python-version: [ "3.11", "3.12", "3.13" ]
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -25,5 +26,36 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install .[test]
-    - name: Test with pytest
-      run: python -m pytest -v -s tests --cov=ahttp_client --cov-report term-missing:skip-covered
+    - name: Unit tests
+      run: python -m pytest -v -s tests/unit --cov=ahttp_client --cov-report term-missing:skip-covered
+
+  integration:
+    name: Integration (${{ matrix.backend.name }}, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.11", "3.12", "3.13" ]
+        backend:
+          - name: aiohttp.ClientSession
+            selector: aiohttp
+          - name: httpx.AsyncClient
+            selector: httpx_async
+          - name: httpx.Client
+            selector: httpx_sync
+          - name: requests.Session
+            selector: requests
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[test]
+    - name: Run backend integration tests
+      run: python -m pytest -v -s tests/integration -k ${{ matrix.backend.selector }}
