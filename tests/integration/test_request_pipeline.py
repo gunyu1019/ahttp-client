@@ -7,10 +7,7 @@ import base64
 import io
 from typing import Annotated, Any
 
-import aiohttp
-import httpx
 import pytest
-import requests
 
 from ahttp_client import (
     AsyncSession,
@@ -26,10 +23,13 @@ from ahttp_client import (
     post,
 )
 
-ASYNC_BACKENDS = (aiohttp.ClientSession, httpx.AsyncClient)
-SYNC_BACKENDS = (httpx.Client, requests.Session)
-ASYNC_BACKEND_IDS = ("aiohttp", "httpx_async")
-SYNC_BACKEND_IDS = ("httpx_sync", "requests")
+from tests.integration.backend_matrix import (
+    ASYNC_BACKEND_IDS,
+    ASYNC_BACKENDS,
+    SYNC_BACKEND_IDS,
+    SYNC_BACKENDS,
+)
+
 FILE_CONTENT = "inferred-file-한글".encode()
 
 

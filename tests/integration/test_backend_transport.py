@@ -7,10 +7,7 @@ import base64
 import io
 from typing import Annotated, Any
 
-import aiohttp
-import httpx
 import pytest
-import requests
 
 from ahttp_client import (
     AsyncSession,
@@ -21,20 +18,14 @@ from ahttp_client import (
     Session,
     post,
 )
-from ahttp_client.backend.aiohttp import AiohttpBackend
-from ahttp_client.backend.httpx import HttpXAsyncSession, HttpXSyncSession
-from ahttp_client.backend.requests import RequestsBackend
+from tests.integration.backend_matrix import (
+    ASYNC_BACKEND_IDS,
+    ASYNC_BACKENDS,
+    BACKEND_BY_SESSION,
+    SYNC_BACKEND_IDS,
+    SYNC_BACKENDS,
+)
 
-ASYNC_BACKENDS = (aiohttp.ClientSession, httpx.AsyncClient)
-SYNC_BACKENDS = (httpx.Client, requests.Session)
-ASYNC_BACKEND_IDS = ("aiohttp", "httpx_async")
-SYNC_BACKEND_IDS = ("httpx_sync", "requests")
-BACKEND_BY_SESSION = {
-    aiohttp.ClientSession: AiohttpBackend,
-    httpx.AsyncClient: HttpXAsyncSession,
-    httpx.Client: HttpXSyncSession,
-    requests.Session: RequestsBackend,
-}
 FILE_CONTENT = "첨부 파일".encode()
 
 
@@ -148,7 +139,7 @@ def _capture_request_kwargs(
         request_kwargs = original(self, request_obj)
         snapshot = dict(request_kwargs)
         form_data = snapshot.get("data")
-        if isinstance(form_data, aiohttp.FormData):
+        if hasattr(form_data, "_is_multipart") and hasattr(form_data, "_fields"):
             snapshot["data"] = {
                 "is_multipart": form_data._is_multipart,
                 "field_count": len(form_data._fields),
@@ -168,7 +159,7 @@ def _assert_request_kwargs(
     json_kwargs, raw_kwargs, raw_file_kwargs, multipart_kwargs = captured
     assert json_kwargs["json"] == {"value": {"item": {"name": "notebook"}}}
 
-    raw_key = "content" if session_type in (httpx.AsyncClient, httpx.Client) else "data"
+    raw_key = "content" if "content" in raw_kwargs else "data"
     assert raw_kwargs[raw_key] == b"raw\x00body"
     assert raw_file_kwargs["headers"] == {
         "Content-Type": "text/plain",
@@ -179,7 +170,7 @@ def _assert_request_kwargs(
     else:
         assert raw_file_kwargs[raw_key] is raw_file
 
-    if session_type is aiohttp.ClientSession:
+    if "data" in multipart_kwargs:
         form_data = multipart_kwargs["data"]
         assert form_data == {"is_multipart": True, "field_count": 2}
     else:
