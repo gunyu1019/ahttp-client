@@ -84,3 +84,11 @@ def test_private_component(test_method_for_private_parameter):
 
     assert test_method_for_private_parameter.headers.get("private_header") == "__PRIVATE_HEADER__"
     assert test_method_for_private_parameter.params.get("private_query") == "__PRIVATE_QUERY__"
+
+
+def test_async_validator_is_rejected(test_method):
+    with pytest.raises(TypeError, match="validator must not be a coroutine"):
+
+        @test_method.validation("parameter")
+        async def validate_parameter(session: BaseSession, value: str) -> str:
+            return value
