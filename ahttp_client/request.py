@@ -241,6 +241,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         new_cls = cls(func, method, path, **kwargs)
 
         # Setup
+        new_cls._parse_extension()
         new_cls._add_parameter_to_component(
             query_parameter=query_parameter or list(),
             header_parameter=header_parameter or list(),
@@ -408,6 +409,17 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
     # Setup
+    def _parse_extension(self) -> None:
+        if not hasattr(self.func, "__extension__"):
+            return
+        extension = self.func.__extension__
+
+        # Serializer
+        if "serializer" in extension.keys():
+            self._serializer = extension["serializer"]
+        if "deserializer" in extension.keys():
+            self._deserializer = extension["deserializer"]
+
     def _add_private_key(self) -> None:
         """Add static headers and query values declared by decorators.
 
