@@ -1,51 +1,165 @@
- # ahttp-client
- 
+# ahttp-client
+
 ![PyPI - Version](https://img.shields.io/pypi/v/ahttp-client?style=flat)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/ahttp-client?style=flat)
 ![PyPI - License](https://img.shields.io/pypi/l/ahttp-client?style=flat)
 
-An ahttp-client is Python package that provides concise and aintuitive asynchronous HTTP request using [annotated type](https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated) and `@decorator`. 
+`ahttp-client` is a decorator-based HTTP client framework
+that maps typed function parameters to HTTP requests.
 
-**Key Feautre**
-- Defining a simple request method with decoration.
-- Managing HTTP Compoents using Annotated Types.
-- Providing Hooks before and after HTTP calls.
+### Key Features
 
-## Getting Started
+- Declare HTTP endpoints using `@request` or the `@get`, `@post`, `@put`,
+  `@patch`, `@delete`, and `@options` decoration methods.
+- Use `typing.Annotated` to set HTTP parameters such as the path, query, header, or body values.
+- Customize the request lifecycle using `before_hook` and `after_hook` decorators.
+- Reduce boilerplate code when using HTTP client packages such as aiohttp, httpx, and requests.
 
-Implement a `GithubService` class extended with `ahttp_client.AsyncSession`.
-Then, create a `list_repositories` method using a request decorator.
+## Installation
 
-An `user` argument define HTTP-component (Path) through annotation types.
+Install the extra for the HTTP client library you want to use.
+Python 3.11 or later is required.
+
+```bash
+pip install "ahttp-client[aiohttp]"
+pip install "ahttp-client[httpx]"
+pip install "ahttp-client[requests]"
+```
+
+
+
+## Quick start
+
+| Style | Supported client classes | Session class |
+| --- | --- | --- |
+| Async | `aiohttp.ClientSession`, `httpx.AsyncClient` | `AsyncSession` |
+| Sync | `requests.Session`, `httpx.Client` | `Session` |
+
+### Asynchronous Client
+Declare a service by extending `AsyncSession`, then decorate coroutine methods
+with an HTTP method and path. `Annotated` parameters determine where values are
+placed in the request.
 
 ```python
-import aiohttp
+import asyncio
 from typing import Annotated, Any
 
-from ahttp_client import AsyncSession, Path, Response, request
+import aiohttp
+
+from ahttp_client import AsyncSession, Path, Response, get
 
 
-class GithubService(AsyncSession):
+class GitHubService(AsyncSession):
     def __init__(self):
         super().__init__("https://api.github.com", aiohttp.ClientSession)
 
-    @request("GET", "/users/{user}/repos")
+    @get("/users/{user}/repos")
     async def list_repositories(
         self, response: Response, user: Annotated[str, Path]
     ) -> list[dict[str, Any]]:
         return response.json()
+
+
+async def main():
+    async with GitHubService() as service:
+        repositories = await service.list_repositories(user="gunyu1019")
+        print(repositories)
+
+
+asyncio.run(main())
 ```
 
-Using the asynchronous context manager(`async with`), create a GithubService instance.
+`AsyncSession` closes its underlying HTTP client when the `async with` block
+ends. Decorated responses are also closed automatically after the handler
+returns.
+
+### Synchronous Client
+
+Use `Session` and a regular function with `requests.Session` or `httpx.Client`.
 
 ```python
-async with GithubService() as service:
-    result = await service.list_repositories(user="gunyu1019")
-    print(result)
+from typing import Annotated, Any
+
+import requests
+
+from ahttp_client import Path, Response, Session, get
+
+
+class GitHubService(Session):
+    def __init__(self):
+        super().__init__("https://api.github.com", requests.Session)
+
+    @get("/users/{user}/repos")
+    def list_repositories(
+        self, response: Response, user: Annotated[str, Path]
+    ) -> list[dict[str, Any]]:
+        return response.json()
+
+
+with GitHubService() as service:
+    repositories = service.list_repositories(user="gunyu1019")
+    print(repositories)
 ```
 
-Client Session in GithubServices are terminated when leave the asynchronous context manager.
+### Request components
 
-## Documentaion
-* English: https://gunyu1019.github.io/ahttp-client/en/
-* Korean: https://gunyu1019.github.io/ahttp-client/ko/
+Use `Annotated` to describe dynamic request values.
+
+```python
+from typing import Annotated
+
+from ahttp_client import BodyJson, Header, Path, Query, Response, post
+
+
+class UserService(AsyncSession):
+    @post("/users/{user_id}")
+    async def update_user(
+        self,
+        response: Response,
+        user_id: Annotated[int, Path],
+        verbose: Annotated[bool, Query],
+        authorization: Annotated[str, Header.custom_name("Authorization")],
+        display_name: Annotated[str, BodyJson.custom_key("profile.displayName")],
+    ) -> dict:
+        return response.json()
+```
+
+| Component | Request location |
+| --- | --- |
+| `Path` | A `{placeholder}` in the path |
+| `Query` | Query string |
+| `Header` | Request header |
+| `BodyJson` | JSON body field; supports nested keys |
+| `BodyForm` | URL-encoded or multipart form field |
+| `Body` | Complete raw or JSON request body |
+
+Set `directly_response=True` on a request (or a session) when you need the
+`Response` object itself instead of running the decorated handler. In that
+case, close it yourself with `await response.async_close()` for async clients
+or `response.close()` for sync clients.
+
+### Hooks
+
+Attach a hook to a decorated request to modify it before dispatch or transform
+its result afterward. Async requests require async hooks; sync requests require
+regular functions.
+
+```python
+class GitHubService(AsyncSession):
+    @get("/user")
+    async def current_user(self, response: Response) -> dict:
+        return response.json()
+
+    @current_user.before_hook
+    async def add_authorization(self, request, path):
+        request.headers["Authorization"] = "Bearer <token>"
+        return request, path
+```
+
+Override `before_request()` or `after_request()` on `AsyncSession` or `Session`
+to apply the same behavior to every request in a service.
+
+## Documentation
+
+- [English documentation](https://gunyu1019.github.io/ahttp-client/en/)
+- [한국어 문서](https://gunyu1019.github.io/ahttp-client/ko/)
