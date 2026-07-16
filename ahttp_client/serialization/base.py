@@ -32,7 +32,8 @@ class BaseCodec(ABC):
 
     @classmethod
     def late_bind(cls, **kwargs):
-        new_cls = cls(**kwargs)
+        new_cls = cls()
+        new_cls._kwargs = kwargs
         new_cls._late_bind = True
         return new_cls
 
@@ -52,7 +53,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         self, model: ModelT | Sequence[ModelT]
     ) -> Any | list[Any]:
         if self._is_sequence(model):
-            return [self.single_serialize(item) for item in model]
+            return self.multiple_serialize(model)
         return self.single_serialize(model)
 
     def __init_subclass__(cls, **kwargs: Any):
