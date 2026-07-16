@@ -52,3 +52,14 @@ class BodyFormEncoding(Flag):
         elif self == BodyFormEncoding.FORM_DATA:
             return BodyType.FORM_DATA
         raise ValueError(f"BodyFormEncoding.{self._name_} is not a valid body type")
+
+
+class DirectResponseType(Flag):
+    """Response types that can be returned directly from a request."""
+    NONE = auto()
+    RESPONSE = auto()
+    RAW_RESPONSE = auto()
+    DESERIALIZED = auto()
+
+    def __bool__(self):
+        return self != DirectResponseType.NONE
