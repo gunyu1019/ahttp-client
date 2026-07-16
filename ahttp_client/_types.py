@@ -22,17 +22,65 @@ SOFTWARE.
 """
 
 from __future__ import annotations
-from typing import Any, TypeVar, Callable, IO, BinaryIO, TYPE_CHECKING
+from typing import (
+    Any,
+    Awaitable,
+    BinaryIO,
+    Callable,
+    Coroutine,
+    IO,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    overload,
+)
 from io import IOBase
 
 T = TypeVar("T")
+P = ParamSpec("P")
+RequestCoreT = TypeVar("RequestCoreT")
+AsyncRequestCoreT_co = TypeVar("AsyncRequestCoreT_co", covariant=True)
+SyncRequestCoreT_co = TypeVar("SyncRequestCoreT_co", covariant=True)
 
-if TYPE_CHECKING:
-    # Request descriptors support both synchronous and asynchronous functions.
-    # Concrete core classes validate the appropriate callable kind at runtime.
-    RequestFunction = Callable[..., Any]
-    RequestBeforeHookFunction = Callable[..., Any]
-    RequestAfterHookFunction = Callable[..., Any]
+# Request descriptors support both synchronous and asynchronous functions.
+# Concrete core classes validate the appropriate callable kind at runtime.
+RequestFunction = Callable[P, T]
+AsyncRequestFunction = Callable[P, Coroutine[Any, Any, T]]
+AsyncRequestBeforeHookFunction = Callable[
+    [Any, RequestCoreT, str], Awaitable[tuple[RequestCoreT, str]]
+]
+SyncRequestBeforeHookFunction = Callable[
+    [Any, RequestCoreT, str], tuple[RequestCoreT, str]
+]
+AsyncRequestAfterHookFunction = Callable[[Any, Any], Awaitable[T]]
+SyncRequestAfterHookFunction = Callable[[Any, Any], T]
+
+RequestBeforeHookFunction = (
+    AsyncRequestBeforeHookFunction[Any] | SyncRequestBeforeHookFunction[Any]
+)
+RequestAfterHookFunction = (
+    AsyncRequestAfterHookFunction[Any] | SyncRequestAfterHookFunction[Any]
+)
+
+
+class RequestDecorator(Protocol[AsyncRequestCoreT_co, SyncRequestCoreT_co]):
+    """Map coroutine functions to async cores and regular functions to sync cores."""
+
+    @overload
+    def __call__(self, func: AsyncRequestFunction[..., T]) -> AsyncRequestCoreT_co: ...
+
+    @overload
+    def __call__(self, func: RequestFunction[..., T]) -> SyncRequestCoreT_co: ...
+
+
+ValidationFunction = Callable[[Any, T], T]
+
+
+class ValidationDecorator(Protocol):
+    """Preserve a validator's value type when it is registered."""
+
+    def __call__(self, func: ValidationFunction[T]) -> ValidationFunction[T]: ...
+
 
 _IO_TYPE = (IO, BinaryIO, IOBase)
 _BODY_JSON_TYPE = (dict, list, tuple)

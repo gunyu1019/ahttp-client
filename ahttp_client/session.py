@@ -273,7 +273,7 @@ class AsyncSession(BaseSession):
 
         """
 
-        def decorator(func: RequestCore) -> RequestFunction:
+        def decorator(func: RequestCore) -> RequestFunction[..., Any]:
             @functools.wraps(func)
             async def wrapper(*args, **kwargs):
                 client = cls(base_url, session, **session_kwargs)
@@ -470,7 +470,7 @@ class Session(BaseSession):
 
         """
 
-        def decorator(func: RequestCore) -> RequestFunction:
+        def decorator(func: RequestCore) -> RequestFunction[..., Any]:
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 client = cls(base_url, session, **session_kwargs)
