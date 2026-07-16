@@ -45,7 +45,7 @@ def get_args_for_generic(t):
     else return t
     """
     args = get_args(t)
-    if len(args) > 0:
+    if len(args) == 0:
         return None
     return args
 
