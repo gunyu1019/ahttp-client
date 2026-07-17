@@ -942,8 +942,8 @@ class AsyncRequestCore(
                     session.directly_response
                     or self.directly_response == DirectResponseType.DESERIALIZED
             ):
-                should_close_raw_response = False
-                return self._deserializer.deserialize(response)
+                data = self._deserializer.get_data(response)
+                return self._deserializer.deserialize(data)
             elif self.directly_response or session.directly_response:
                 should_close_raw_response = False
                 return response
@@ -1019,8 +1019,8 @@ class SyncRequestCore(
                 session.directly_response
                 or self.directly_response == DirectResponseType.DESERIALIZED
             ):
-                should_close_raw_response = False
-                return self._deserializer.deserialize(response)
+                data = self._deserializer.get_data(response)
+                return self._deserializer.deserialize(data)
             elif self.directly_response or session.directly_response:
                 should_close_raw_response = False
                 return response
