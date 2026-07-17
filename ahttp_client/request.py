@@ -263,6 +263,11 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             An independent request instance with copied static headers and
             query parameters.
         """
+        body = (
+            copy.deepcopy(self.body)
+            if isinstance(self.body, (*_BODY_JSON_TYPE, bytearray))
+            else self.body
+        )
         new_cls = self.__class__(
             self.func,
             self.method,
@@ -271,7 +276,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             directly_response=self.directly_response,
             headers=copy.deepcopy(self.headers),
             params=copy.deepcopy(self.params),
-            body=self.body,
+            body=body,
             response_parameter=self.response_parameter[:],
             **self.request_kwargs,
         )
@@ -285,7 +290,11 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
-        new_cls._body_file = self._body_file
+        new_cls._body_file = (
+            self._body_file.copy()
+            if isinstance(self._body_file, dict)
+            else self._body_file
+        )
 
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook

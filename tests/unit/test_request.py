@@ -1,3 +1,4 @@
+import io
 from typing import Annotated, get_type_hints
 
 import pytest
@@ -47,6 +48,41 @@ def test_copy_and_equal(test_method):
 
     other_method._fill_parameter(None, bound_argument)
     assert other_method != test_method
+
+
+def test_copy_isolates_mutable_static_body() -> None:
+    @request(
+        "POST",
+        "/",
+        body={"profile": {"tags": ["original"]}},
+    )
+    def endpoint(session: BaseSession) -> None:
+        pass
+
+    first = endpoint.copy()
+    second = endpoint.copy()
+
+    first.body["profile"]["tags"].append("first")
+
+    assert endpoint.body == {"profile": {"tags": ["original"]}}
+    assert second.body == {"profile": {"tags": ["original"]}}
+
+
+def test_copy_isolates_multipart_map_without_copying_file_stream() -> None:
+    @request("POST", "/")
+    def endpoint(session: BaseSession) -> None:
+        pass
+
+    stream = io.BytesIO(b"content")
+    endpoint._body_file = {
+        "document": ("document.txt", stream, "text/plain"),
+    }
+
+    copied = endpoint.copy()
+    copied._body_file["extra"] = ("extra.txt", b"extra", "text/plain")
+
+    assert "extra" not in endpoint._body_file
+    assert copied._body_file["document"][1] is stream
 
 
 def test_fill_parameter(test_method):
