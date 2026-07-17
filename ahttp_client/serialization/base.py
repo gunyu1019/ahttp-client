@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar, ClassVar, Self, Optional
 
+from ..enum import BodyType
 from ..utils import is_subclass_safe, get_args_for_generic
 
 ModelT = TypeVar("ModelT")
@@ -45,6 +46,7 @@ class BaseCodec(ABC):
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     """Converts models into transport-safe values."""
     _registry: ClassVar[list[type[BaseSerializer]]] = []
+    body_type: ClassVar[BodyType]
 
     @abstractmethod
     def single_serialize(self, model: ModelT) -> Any:

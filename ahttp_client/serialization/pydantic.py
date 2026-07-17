@@ -6,11 +6,13 @@ from pydantic.main import BaseModel, IncEx
 from pydantic.config import ExtraValues
 
 from .base import BaseDeserializer, BaseSerializer
+from ..enum import BodyType
 
 
 class PydanticSerializer(BaseSerializer[BaseModel]):
     """Serialize Pydantic models with :meth:`BaseModel.model_dump`."""
     model_base_type: type[BaseModel] = BaseModel
+    body_type = BodyType.JSON
 
     def __init__(self,
                  include: Optional[IncEx] = None,

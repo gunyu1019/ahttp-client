@@ -557,6 +557,17 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     self.body_parameter_type = BodyType.RAW
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
+
+                # Serializer
+                if self._serializer is None or self._serializer.is_late_bind:
+                    _serializers = [
+                        BaseSerializer.from_model(_io)
+                        if self._serializer is None
+                        else BaseSerializer.set_model(_io, self._serializer)
+                        for _io in instance_origin
+                    ]
+                    if len(_serializers) > 0:
+                        self._serializer = _serializers[0]
             elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
                 self.response_parameter.append(parameter.name)
 
