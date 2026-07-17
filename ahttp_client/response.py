@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from asyncio import iscoroutinefunction
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast, TypeVar
 
 if TYPE_CHECKING:
     from typing import Optional
     from .backend.base import BaseBackend
+    from .serialization.base import BaseDeserializer
+
+ModelT = TypeVar("ModelT")
 
 
 class Response:
@@ -22,9 +25,10 @@ class Response:
         Backend that provides response operations for ``response_obj``.
     """
 
-    def __init__(self, response_obj: Any, backend: BaseBackend):
+    def __init__(self, response_obj: Any, backend: BaseBackend, serializer: Optional[BaseDeserializer] = None):
         self._raw_response_obj = response_obj
         self._backend = backend
+        self._deserializer = serializer
 
         self._closed = False
 
@@ -32,6 +36,13 @@ class Response:
     def raw(self) -> Any:
         """Return the original response object from the HTTP client library."""
         return self._raw_response_obj
+
+    @property
+    def model(self) -> Optional[ModelT]:
+        if self._deserializer is None:
+            return None
+        data = self._deserializer.get_data(self)
+        return self._deserializer.deserialize(data)
 
     @property
     def session(self) -> Any:

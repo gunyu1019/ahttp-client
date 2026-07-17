@@ -212,7 +212,7 @@ class AsyncSession(BaseSession):
         url = self._get_request_url(path)
         raw_response = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
         await self.backend.pre_read_response(raw_response)
-        response = Response(raw_response, self.backend)
+        response = Response(raw_response, self.backend, request._deserializer)
 
         if self._has_overridden_method(self.after_request):
             response = await self.after_request(response)
@@ -409,7 +409,7 @@ class Session(BaseSession):
         url = self._get_request_url(path)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
         raw_response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
-        response = Response(raw_response, self.backend)
+        response = Response(raw_response, self.backend, request._deserializer)
 
         if self._has_overridden_method(self.after_request):
             response = self.after_request(response)
