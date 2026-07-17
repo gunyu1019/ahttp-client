@@ -26,6 +26,7 @@ from __future__ import annotations
 import copy
 import inspect
 from abc import ABC, abstractmethod
+from urllib.parse import quote
 from typing import (
     Any,
     Generic,
@@ -788,7 +789,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         formatted_argument = dict()
         for _name, _parameter in self.path_parameter.items():
-            formatted_argument[_name] = bounded_argument.get(_parameter.name)
+            value = bounded_argument.get(_parameter.name)
+            formatted_argument[_name] = quote(value, safe="") if isinstance(value, str) else value
         formatted_path = self.path.format(**formatted_argument)
         return formatted_path
 

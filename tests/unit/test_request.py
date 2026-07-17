@@ -116,6 +116,37 @@ def test_formatted_path(test_method):
     assert formatted_path == "/TEST_PATH"
 
 
+def test_formatted_path_percent_encodes_string_segments() -> None:
+    @request("GET", "/users/{user}/files/{filename}")
+    def endpoint(
+        session: BaseSession,
+        user: Annotated[str, Path],
+        filename: Annotated[str, Path],
+    ) -> None:
+        pass
+
+    bound_argument = endpoint._signature.bind(
+        None,
+        "team/admin",
+        "한 글%.txt",
+    )
+
+    assert endpoint._get_request_path(bound_argument) == ("/users/team%2Fadmin/files/%ED%95%9C%20%EA%B8%80%25.txt")
+
+
+def test_formatted_path_preserves_non_string_format_specifiers() -> None:
+    @request("GET", "/items/{item_id:04d}")
+    def endpoint(
+        session: BaseSession,
+        item_id: Annotated[int, Path],
+    ) -> None:
+        pass
+
+    bound_argument = endpoint._signature.bind(None, 7)
+
+    assert endpoint._get_request_path(bound_argument) == "/items/0007"
+
+
 def test_private_component(test_method_for_private_parameter):
     assert "private_header" in test_method_for_private_parameter.headers
     assert "private_query" in test_method_for_private_parameter.params
