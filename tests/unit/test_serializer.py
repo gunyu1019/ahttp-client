@@ -2,7 +2,11 @@ from pydantic import BaseModel
 
 from ahttp_client import BodyType, request
 from ahttp_client.enum import DirectResponseType
-from ahttp_client.serialization import PydanticDeserializer, PydanticSerializer
+from ahttp_client.serialization import (
+    BaseDeserializer,
+    PydanticDeserializer,
+    PydanticSerializer,
+)
 from ahttp_client.serializer import deserialize, serialize
 
 
@@ -67,3 +71,25 @@ def test_late_binding_supports_both_decorator_orders() -> None:
     assert serialize_endpoint.body == {"name": "item"}
     assert isinstance(deserialize_endpoint._deserializer, PydanticDeserializer)
     assert deserialize_endpoint._deserializer.strict is True
+
+
+def test_deserializer_converts_each_item_for_a_model_sequence() -> None:
+    deserializer = PydanticDeserializer(Item)
+
+    result = deserializer.deserialize([{"name": "first"}, {"name": "second"}])
+
+    assert result == [Item(name="first"), Item(name="second")]
+
+
+def test_deserializer_validates_generic_model_annotations() -> None:
+    list_deserializer = BaseDeserializer.from_model(list[Item])
+    dict_deserializer = BaseDeserializer.from_model(dict[str, Item])
+
+    assert list_deserializer is not None
+    assert dict_deserializer is not None
+    assert list_deserializer.deserialize([{"name": "first"}]) == [
+        Item(name="first")
+    ]
+    assert dict_deserializer.deserialize({"first": {"name": "item"}}) == {
+        "first": Item(name="item")
+    }

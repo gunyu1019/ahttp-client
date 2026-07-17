@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Callable
+from typing import Any, Optional, Callable, get_origin
 
 from pydantic.main import BaseModel, IncEx
 from pydantic.config import ExtraValues
+from pydantic import TypeAdapter
 
 from .base import BaseDeserializer, BaseSerializer
 from ..response import Response
@@ -60,7 +61,7 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
     base_model_type: type[BaseModel] = BaseModel
 
     def __init__(self,
-                 model: type[BaseModel],
+                 model: Any,
                  strict: Optional[bool] = None,
                  extra: Optional[ExtraValues] = None,
                  context: Optional[Any] = None,
@@ -72,12 +73,13 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
         self.context = context
         self.by_alias = by_alias
         self.by_name = by_name
+        self._type_adapter = TypeAdapter(model)
         super().__init__(model=model)
 
     def single_deserialize(
             self, data: Any
-    ) -> BaseModel:
-        return self._model.model_validate(
+    ) -> Any:
+        return self._type_adapter.validate_python(
             data,
             extra=self.extra,
             strict=self.strict,
@@ -85,3 +87,8 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
             by_alias=self.by_alias,
             by_name=self.by_name
         )
+
+    def deserialize(self, data: Any) -> Any:
+        if self.is_sequence(data) and get_origin(self._model) is None:
+            return self.multiple_deserialize(data)
+        return self.single_deserialize(data)

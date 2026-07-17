@@ -123,12 +123,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     def multiple_deserialize(
             self, data: Sequence[Any]
     ) -> list[ModelT]:
-        return [
-            self.single_deserialize(item)
-            if isinstance(item, self.base_model_type)
-            else item
-            for item in data
-        ]
+        return [self.single_deserialize(item) for item in data]
 
     def deserialize(
         self,
