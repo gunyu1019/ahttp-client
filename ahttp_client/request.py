@@ -965,9 +965,13 @@ class AsyncRequestCore(
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
-        raw_response = response = await session._make_request(req_obj, formatted_path)
+        raw_response = await session._make_request(req_obj, formatted_path)
+        response: Any = raw_response
         should_close_raw_response = True
         try:
+            if session._has_overridden_method(session.after_request):
+                response = await session.after_request(response)
+
             if self._after_hook is not None:
                 response = await self._after_hook(session, response)
 
@@ -987,7 +991,7 @@ class AsyncRequestCore(
                 )
                 return self._deserializer.deserialize(data)
             elif direct_response_type == DirectResponseType.RESPONSE:
-                should_close_raw_response = False
+                should_close_raw_response = response is not raw_response
                 return response
 
             for _parameter in self.response_parameter:
@@ -1050,9 +1054,13 @@ class SyncRequestCore(
 
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
-        raw_response = response = session._make_request(req_obj, formatted_path)
+        raw_response = session._make_request(req_obj, formatted_path)
+        response: Any = raw_response
         should_close_raw_response = True
         try:
+            if session._has_overridden_method(session.after_request):
+                response = session.after_request(response)
+
             if self._after_hook is not None:
                 response = self._after_hook(session, response)
 
@@ -1072,7 +1080,7 @@ class SyncRequestCore(
                 )
                 return self._deserializer.deserialize(data)
             elif direct_response_type == DirectResponseType.RESPONSE:
-                should_close_raw_response = False
+                should_close_raw_response = response is not raw_response
                 return response
 
             for _parameter in self.response_parameter:
