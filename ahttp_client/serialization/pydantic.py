@@ -11,7 +11,7 @@ from ..enum import BodyType
 
 class PydanticSerializer(BaseSerializer[BaseModel]):
     """Serialize Pydantic models with :meth:`BaseModel.model_dump`."""
-    model_base_type: type[BaseModel] = BaseModel
+    base_model_type: type[BaseModel] = BaseModel
     body_type = BodyType.JSON
 
     def __init__(self,
@@ -52,9 +52,10 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
 
 class PydanticDeserializer(BaseDeserializer[BaseModel]):
     """Deserialize values with :meth:`BaseModel.model_validate`."""
-    model_base_type: type[BaseModel] = BaseModel
+    base_model_type: type[BaseModel] = BaseModel
 
     def __init__(self,
+                 model: type[BaseModel],
                  strict: Optional[bool] = None,
                  extra: Optional[ExtraValues] = None,
                  context: Optional[Any] = None,
@@ -66,12 +67,12 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
         self.context = context
         self.by_alias = by_alias
         self.by_name = by_name
-        super().__init__()
+        super().__init__(model=model)
 
     def single_deserialize(
-            self, model_type: type[BaseModel], data: Any
+            self, data: Any
     ) -> BaseModel:
-        return model_type.model_validate(
+        return self._model.model_validate(
             data,
             extra=self.extra,
             strict=self.strict,
