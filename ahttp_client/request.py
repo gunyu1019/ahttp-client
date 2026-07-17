@@ -620,6 +620,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     self.directly_response = DirectResponseType.RESPONSE
         elif isinstance(self.directly_response, bool) and not self.directly_response:
             self.directly_response = DirectResponseType.NONE
+        elif (
+                self.directly_response == DirectResponseType.DESERIALIZED
+                and self._deserializer is None
+        ):
+            self._deserializer = BaseDeserializer.from_model(return_annotation)
+            if self._deserializer is None:
+                raise TypeError(
+                    f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
+                )
 
         # Deserialize Response (late binding)
         if (

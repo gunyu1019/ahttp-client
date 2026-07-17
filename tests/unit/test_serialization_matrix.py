@@ -396,16 +396,22 @@ def test_async_direct_deserialization_closes_on_success_and_failure(payload: Any
     assert session.response.closed is True
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="explicit DESERIALIZED mode does not infer a codec from the return annotation",
-)
 def test_direct_response_type_deserialized_uses_return_annotation() -> None:
     @request("GET", "/", directly_response=DirectResponseType.DESERIALIZED)
     def endpoint(session) -> Item:
         pass
 
     assert isinstance(endpoint._deserializer, PydanticDeserializer)
+
+
+def test_direct_response_type_deserialized_rejects_unknown_return_annotation() -> None:
+    class Unknown:
+        pass
+
+    with pytest.raises(TypeError, match="Unknown deserializer type"):
+        @request("GET", "/", directly_response=DirectResponseType.DESERIALIZED)
+        def endpoint(session) -> Unknown:
+            pass
 
 
 @pytest.mark.xfail(
