@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Callable
 
-from pydantic import BaseModel, IncEx
+from pydantic.main import BaseModel, IncEx
 from pydantic.config import ExtraValues
 
 from .base import BaseDeserializer, BaseSerializer
