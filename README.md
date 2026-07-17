@@ -12,6 +12,7 @@ that maps typed function parameters to HTTP requests.
 - Declare HTTP endpoints using `@request` or the `@get`, `@post`, `@put`,
   `@patch`, `@delete`, and `@options` decoration methods.
 - Use `typing.Annotated` to set HTTP parameters such as the path, query, header, or body values.
+- Serialize typed request models and deserialize responses using registered codecs.
 - Customize the request lifecycle using `before_hook` and `after_hook` decorators.
 - Reduce boilerplate code when using HTTP client packages such as aiohttp, httpx, and requests.
 
@@ -26,7 +27,11 @@ pip install "ahttp-client[httpx]"
 pip install "ahttp-client[requests]"
 ```
 
+Include the `pydantic` extra to serialize and deserialize Pydantic models.
 
+```bash
+pip install "ahttp-client[aiohttp,pydantic]"
+```
 
 ## Quick start
 
@@ -137,6 +142,54 @@ Set `directly_response=True` on a request (or a session) when you need the
 `Response` object itself instead of running the decorated handler. In that
 case, close it yourself with `await response.async_close()` for async clients
 or `response.close()` for sync clients.
+
+### Model serialization
+
+Registered codecs can convert a complete `Body` parameter before transport and
+validate a direct response from its return annotation. When Pydantic is
+installed, `BaseModel` types and nested model containers are supported
+automatically.
+
+Use `@serialize` and `@deserialize` to pass codec options. If the model argument
+is omitted, the request body and return annotations select the codec after the
+request decorator is applied.
+
+```python
+from typing import Annotated
+
+from pydantic import BaseModel
+
+from ahttp_client import AsyncSession, Body, post
+from ahttp_client.serializer import deserialize, serialize
+
+
+class CreateUser(BaseModel):
+    name: str
+    nickname: str | None = None
+
+
+class User(BaseModel):
+    id: int
+    name: str
+
+
+class UserService(AsyncSession):
+    @post("/users", directly_response=True)
+    @serialize(exclude_none=True)
+    @deserialize(strict=True)
+    async def create_user(
+        self,
+        user: Annotated[CreateUser, Body],
+    ) -> User:
+        ...
+```
+
+In this example, the request body is produced with
+`BaseModel.model_dump(mode="json", exclude_none=True)`, and the JSON response is
+validated as `User`. Because `directly_response=True` selects deserialized mode
+from the registered return type, the decorated method body is not executed.
+Pass a model explicitly, such as `@serialize(CreateUser)`, when it cannot be
+inferred from an annotation.
 
 ### Hooks
 
