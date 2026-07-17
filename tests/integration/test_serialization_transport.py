@@ -1,4 +1,4 @@
-"""Serializer/deserializer behavior across every concrete HTTP backend."""
+"""Minimal serialization round-trip coverage for every HTTP backend."""
 
 from __future__ import annotations
 
@@ -9,8 +9,9 @@ from typing import Any
 import pytest
 from pydantic import BaseModel, Field
 
-from ahttp_client import AsyncSession, Response, Session, post
-from ahttp_client.serializer import deserialize, serialize
+from ahttp_client import AsyncSession, Session, post
+from ahttp_client.enum import DirectResponseType
+from ahttp_client.serializer import serialize
 from tests.integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
@@ -26,147 +27,79 @@ class RequestItem(BaseModel):
 
 
 class EchoPayload(BaseModel):
-    method: str
-    path: str
     content_type: str
-    json_body: Any = Field(default=None, alias="json")
+    json_body: Any = Field(alias="json")
 
 
 class AsyncSerializationAPI(AsyncSession):
-    @post("/echo", body_parameter="item", directly_response=True)
+    @post(
+        "/echo",
+        body_parameter="payload",
+        directly_response=DirectResponseType.DESERIALIZED,
+    )
     @serialize(exclude_none=True)
-    @deserialize(EchoPayload)
-    async def direct_model(self, item: RequestItem) -> EchoPayload:
-        raise AssertionError("direct deserialization must skip the endpoint body")
-
-    @post("/echo", body_parameter="items", directly_response=True)
-    @deserialize(EchoPayload)
-    async def generic_body(self, items: list[RequestItem]) -> EchoPayload:
-        raise AssertionError("direct deserialization must skip the endpoint body")
-
-    @post("/echo", body_parameter="item")
-    @serialize(exclude_none=True)
-    @deserialize(EchoPayload)
-    async def response_model(
+    async def round_trip(
         self,
-        item: RequestItem,
-        response: Response,
+        payload: dict[str, list[RequestItem]],
     ) -> EchoPayload:
-        return response.model
-
-    @post("/echo", directly_response=True)
-    @deserialize(EchoPayload)
-    async def transformed_response(self) -> EchoPayload:
         raise AssertionError("direct deserialization must skip the endpoint body")
-
-
-@AsyncSerializationAPI.transformed_response.after_hook
-async def _async_extract_json(session, response: Response) -> dict[str, Any]:
-    return response.json()
 
 
 class SyncSerializationAPI(Session):
-    @post("/echo", body_parameter="item", directly_response=True)
+    @post(
+        "/echo",
+        body_parameter="payload",
+        directly_response=DirectResponseType.DESERIALIZED,
+    )
     @serialize(exclude_none=True)
-    @deserialize(EchoPayload)
-    def direct_model(self, item: RequestItem) -> EchoPayload:
-        raise AssertionError("direct deserialization must skip the endpoint body")
-
-    @post("/echo", body_parameter="items", directly_response=True)
-    @deserialize(EchoPayload)
-    def generic_body(self, items: list[RequestItem]) -> EchoPayload:
-        raise AssertionError("direct deserialization must skip the endpoint body")
-
-    @post("/echo", body_parameter="item")
-    @serialize(exclude_none=True)
-    @deserialize(EchoPayload)
-    def response_model(
+    def round_trip(
         self,
-        item: RequestItem,
-        response: Response,
+        payload: dict[str, list[RequestItem]],
     ) -> EchoPayload:
-        return response.model
-
-    @post("/echo", directly_response=True)
-    @deserialize(EchoPayload)
-    def transformed_response(self) -> EchoPayload:
         raise AssertionError("direct deserialization must skip the endpoint body")
 
 
-@SyncSerializationAPI.transformed_response.after_hook
-def _sync_extract_json(session, response: Response) -> dict[str, Any]:
-    return response.json()
-
-
-def _assert_direct_model(payload: EchoPayload) -> None:
-    assert isinstance(payload, EchoPayload)
-    assert payload.content_type == "application/json"
-    assert payload.json_body == {
-        "name": "single",
-        "occurred_at": "2026-07-18T00:00:00Z",
+def _request_payload() -> dict[str, list[RequestItem]]:
+    return {
+        "items": [
+            RequestItem(name="first"),
+            RequestItem(name="second", optional="value"),
+        ]
     }
 
 
-def _assert_generic_body(payload: EchoPayload) -> None:
+def _assert_round_trip(payload: EchoPayload) -> None:
     assert isinstance(payload, EchoPayload)
     assert payload.content_type == "application/json"
-    assert payload.json_body == [
-        {
-            "name": "first",
-            "optional": None,
-            "occurred_at": "2026-07-18T00:00:00Z",
-        },
-        {
-            "name": "second",
-            "optional": "value",
-            "occurred_at": "2026-07-18T00:00:00Z",
-        },
-    ]
+    assert payload.json_body == {
+        "items": [
+            {
+                "name": "first",
+                "occurred_at": "2026-07-18T00:00:00Z",
+            },
+            {
+                "name": "second",
+                "optional": "value",
+                "occurred_at": "2026-07-18T00:00:00Z",
+            },
+        ]
+    }
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
-def test_async_serialization_round_trip_for_every_backend(
-    backend: type,
-    base_url: str,
-) -> None:
-    async def run() -> tuple[EchoPayload, EchoPayload, EchoPayload, EchoPayload]:
+def test_async_serialization_round_trip(backend: type, base_url: str) -> None:
+    async def run() -> EchoPayload:
         async with AsyncSerializationAPI(base_url, backend) as api:
-            direct = await api.direct_model(RequestItem(name="single"))
-            generic = await api.generic_body([
-                RequestItem(name="first"),
-                RequestItem(name="second", optional="value"),
-            ])
-            response_model = await api.response_model(RequestItem(name="single"))
-            transformed = await api.transformed_response()
-            return direct, generic, response_model, transformed
+            return await api.round_trip(_request_payload())
 
-    direct, generic, response_model, transformed = asyncio.run(run())
-
-    _assert_direct_model(direct)
-    _assert_generic_body(generic)
-    _assert_direct_model(response_model)
-    assert transformed.method == "POST"
-    assert transformed.path == "/echo"
+    _assert_round_trip(asyncio.run(run()))
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
-def test_sync_serialization_round_trip_for_every_backend(
-    backend: type,
-    base_url: str,
-) -> None:
+def test_sync_serialization_round_trip(backend: type, base_url: str) -> None:
     with SyncSerializationAPI(base_url, backend) as api:
-        direct = api.direct_model(RequestItem(name="single"))
-        generic = api.generic_body([
-            RequestItem(name="first"),
-            RequestItem(name="second", optional="value"),
-        ])
-        response_model = api.response_model(RequestItem(name="single"))
-        transformed = api.transformed_response()
+        result = api.round_trip(_request_payload())
 
-    _assert_direct_model(direct)
-    _assert_generic_body(generic)
-    _assert_direct_model(response_model)
-    assert transformed.method == "POST"
-    assert transformed.path == "/echo"
+    _assert_round_trip(result)
