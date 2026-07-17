@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import Any, Generic, TypeVar, ClassVar, Self, Optional
 
 from ..enum import BodyType
+from ..response import Response
 from ..utils import is_subclass_safe, get_args_for_generic
 
 ModelT = TypeVar("ModelT")
@@ -109,6 +110,10 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         self, data: Any
     ) -> ModelT:
         """Deserialize one value into ``model_type``."""
+
+    @abstractmethod
+    def get_data(self, response: Response) -> Any:
+        pass
 
     def multiple_deserialize(
             self, data: Sequence[Any]

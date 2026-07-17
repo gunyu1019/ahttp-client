@@ -6,6 +6,7 @@ from pydantic.main import BaseModel, IncEx
 from pydantic.config import ExtraValues
 
 from .base import BaseDeserializer, BaseSerializer
+from ..response import Response
 from ..enum import BodyType
 
 
@@ -52,6 +53,10 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
 
 class PydanticDeserializer(BaseDeserializer[BaseModel]):
     """Deserialize values with :meth:`BaseModel.model_validate`."""
+
+    def get_data(self, response: Response) -> Any:
+        return response.json()
+
     base_model_type: type[BaseModel] = BaseModel
 
     def __init__(self,
