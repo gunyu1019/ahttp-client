@@ -555,8 +555,6 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     self.body_parameter_type = BodyType.JSON
                 else:
                     self.body_parameter_type = BodyType.RAW
-                self._duplicated_check_body_parameter()
-                self._duplicated_check_body()
 
                 # Serializer
                 if self._serializer is None or self._serializer.is_late_bind:
@@ -568,6 +566,16 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     ]
                     if len(_serializers) > 0:
                         self._serializer = _serializers[0]
+
+                if self._serializer is not None:
+                    if self._serializer.is_late_bind:
+                        raise TypeError(
+                            f"Unknown serializer type. Please check body type of {self.func.__name__} method."
+                        )
+                    self.body_parameter_type =  self._serializer.body_type
+
+                self._duplicated_check_body_parameter()
+                self._duplicated_check_body()
             elif issubclass(component_type, Response) or is_subclass_safe(instance_origin, Response):
                 self.response_parameter.append(parameter.name)
 
@@ -728,6 +736,13 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         elif self.body_parameter is not None:
             value = bounded_argument.get(self.body_parameter.parameter.name)
             body_component = self.body_parameter.component
+
+            if self._serializer is not None:
+                if isinstance(value, self._serializer.model_base_type):
+                    value = self._serializer.serialize(value)
+                elif self._serializer.is_sequence(value):
+                    value = self._serializer.multiple_serialize(value)
+
             self.body = value
             if body_component is not None:
                 if body_component.metadata_content_type is not None and not any(

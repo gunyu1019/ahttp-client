@@ -18,7 +18,7 @@ class BaseCodec(ABC):
         self._late_bind = False
 
     @staticmethod
-    def _is_sequence(value: Any) -> bool:
+    def is_sequence(value: Any) -> bool:
         """Return whether *value* is a collection of values to convert."""
         return isinstance(value, Sequence) and not isinstance(
             value, (str, bytes, bytearray)
@@ -53,12 +53,17 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         """Serialize one model."""
 
     def multiple_serialize(self, model: Sequence[ModelT]) -> list[Any]:
-        return [self.single_serialize(item) for item in model]
+        return [
+            self.single_serialize(item)
+            if isinstance(item, self.model_base_type)
+            else item
+            for item in model
+        ]
 
     def serialize(
         self, model: ModelT | Sequence[ModelT]
     ) -> Any | list[Any]:
-        if self._is_sequence(model):
+        if self.is_sequence(model):
             return self.multiple_serialize(model)
         return self.single_serialize(model)
 
@@ -105,7 +110,10 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
             self, model_type: type[ModelT], data: Sequence[Any]
     ) -> list[ModelT]:
         return [
-            self.single_deserialize(model_type, item) for item in data
+            self.single_deserialize(model_type, item)
+            if isinstance(item, self.model_base_type)
+            else item
+            for item in data
         ]
 
     def deserialize(
@@ -113,7 +121,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         model_type: type[ModelT],
         data: Any | Sequence[Any],
     ) -> ModelT | list[ModelT]:
-        if self._is_sequence(data):
+        if self.is_sequence(data):
             return self.multiple_deserialize(model_type, data)
         return self.single_deserialize(model_type, data)
 
