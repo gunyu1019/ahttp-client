@@ -33,15 +33,20 @@ class BaseCodec(ABC):
         return is_subclass_safe(model_type, cls.base_model_type)
 
     @classmethod
-    def late_bind(cls, **kwargs):
-        new_cls = cls()
-        new_cls._kwargs = kwargs
-        new_cls._late_bind = True
-        return new_cls
+    def late_bind(cls, **kwargs) -> BaseCodec:
+        return _LateBoundCodec(**kwargs)
 
     @property
     def is_late_bind(self) -> bool:
         return self._late_bind
+
+
+class _LateBoundCodec(BaseCodec):
+    """Store codec options until a concrete model backend is known."""
+
+    def __init__(self, **kwargs: Any):
+        super().__init__(**kwargs)
+        self._late_bind = True
 
 
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):

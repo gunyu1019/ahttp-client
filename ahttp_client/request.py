@@ -625,7 +625,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 and self._deserializer.is_late_bind  # not bind
         ):
             new_deserializer = BaseDeserializer.set_model(return_annotation, self._deserializer)
-            if new_deserializer is not None:
+            if new_deserializer is None:
                 raise TypeError(
                     f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
                 )
