@@ -222,10 +222,6 @@ def test_pydantic_serializer_exclude_unset_context_and_fallback() -> None:
     }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="nested sequences inside mappings are not recursively serialized",
-)
 def test_pydantic_serializer_nested_mapping_and_sequence() -> None:
     serializer = PydanticSerializer(exclude_none=True)
 

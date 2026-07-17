@@ -55,6 +55,8 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
             )
         if isinstance(model, Mapping):
             return {key: self.single_serialize(value) for key, value in model.items()}
+        if self.is_sequence(model):
+            return self.multiple_serialize(model)
         return model
 
     def multiple_serialize(self, model: Sequence[Any]) -> list[Any]:
