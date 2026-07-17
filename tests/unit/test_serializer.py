@@ -188,3 +188,41 @@ def test_async_deserializer_accepts_data_transformed_by_after_hook() -> None:
 
     assert asyncio.run(endpoint._execute(session)) == Item(name="hooked")
     assert session.response.closed is True
+
+
+def test_request_infers_serializer_for_generic_model_bodies() -> None:
+    @request("POST", "/", body_parameter="items")
+    def list_endpoint(session, items: list[Item]):
+        pass
+
+    @request("POST", "/", body_parameter="items")
+    def dict_endpoint(session, items: dict[str, Item]):
+        pass
+
+    list_endpoint._fill_parameter(
+        object(),
+        {"items": [Item(name="first"), Item(name="second")]},
+    )
+    dict_endpoint._fill_parameter(
+        object(),
+        {"items": {"first": Item(name="item")}},
+    )
+
+    assert list_endpoint.body == [{"name": "first", "optional": None}, {
+        "name": "second",
+        "optional": None,
+    }]
+    assert dict_endpoint.body == {
+        "first": {"name": "item", "optional": None},
+    }
+
+
+def test_late_bound_serializer_supports_generic_model_bodies() -> None:
+    @request("POST", "/", body_parameter="items")
+    @serialize(exclude_none=True)
+    def endpoint(session, items: list[Item]):
+        pass
+
+    endpoint._fill_parameter(object(), {"items": [Item(name="item")]})
+
+    assert endpoint.body == [{"name": "item"}]

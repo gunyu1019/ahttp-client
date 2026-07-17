@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import Any, Optional, Callable, get_origin
 
 from pydantic.main import BaseModel, IncEx
@@ -38,19 +39,26 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
         self.fallback = fallback
         super().__init__()
 
-    def single_serialize(self, model: BaseModel) -> dict[str, Any]:
-        return model.model_dump(
-            mode="json",
-            include=self.include,
-            exclude=self.exclude,
-            by_alias=self.by_alias,
-            exclude_unset=self.exclude_unset,
-            exclude_defaults=self.exclude_defaults,
-            exclude_none=self.exclude_none,
-            exclude_computed_fields=self.exclude_computed_fields,
-            context=self.context,
-            fallback=self.fallback
-        )
+    def single_serialize(self, model: Any) -> Any:
+        if isinstance(model, BaseModel):
+            return model.model_dump(
+                mode="json",
+                include=self.include,
+                exclude=self.exclude,
+                by_alias=self.by_alias,
+                exclude_unset=self.exclude_unset,
+                exclude_defaults=self.exclude_defaults,
+                exclude_none=self.exclude_none,
+                exclude_computed_fields=self.exclude_computed_fields,
+                context=self.context,
+                fallback=self.fallback
+            )
+        if isinstance(model, Mapping):
+            return {key: self.single_serialize(value) for key, value in model.items()}
+        return model
+
+    def multiple_serialize(self, model: Sequence[Any]) -> list[Any]:
+        return [self.single_serialize(item) for item in model]
 
 
 class PydanticDeserializer(BaseDeserializer[BaseModel]):

@@ -487,6 +487,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             metadata = annotation.__metadata__ if is_annotated_parameter(annotation) else annotation
             separated_origin = separate_union_type(origin_type)
             separated_annotation = separate_union_type(metadata)
+            model_candidates = make_collection(separated_origin)
 
             component_type: type[Component] | type[_EmptyComponent] | type[Response] = _EmptyComponent
             component_instance: Optional[Component] = None
@@ -504,7 +505,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     component_type = annotation
                     break
 
-            instance_origin = [get_origin_for_generic(t) for t in make_collection(separated_origin)]
+            instance_origin = [get_origin_for_generic(t) for t in model_candidates]
 
             if issubclass(component_type, Header) or (
                     header_parameter is not None and parameter.name in header_parameter
@@ -560,13 +561,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 # Serializer
                 if self._serializer is None or self._serializer.is_late_bind:
                     _serializers = [
-                        BaseSerializer.from_model(_io)
+                        BaseSerializer.from_model(model_candidate)
                         if self._serializer is None
-                        else BaseSerializer.set_model(_io, self._serializer)
-                        for _io in instance_origin
+                        else BaseSerializer.set_model(model_candidate, self._serializer)
+                        for model_candidate in model_candidates
                     ]
-                    if len(_serializers) > 0:
-                        self._serializer = _serializers[0]
+                    self._serializer = next(
+                        (serializer for serializer in _serializers if serializer is not None),
+                        self._serializer,
+                    )
 
                 if self._serializer is not None:
                     if self._serializer.is_late_bind:
@@ -740,10 +743,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             body_component = self.body_parameter.component
 
             if self._serializer is not None:
-                if isinstance(value, self._serializer.base_model_type):
-                    value = self._serializer.serialize(value)
-                elif self._serializer.is_sequence(value):
-                    value = self._serializer.multiple_serialize(value)
+                value = self._serializer.serialize(value)
 
             self.body = value
             if body_component is not None:
