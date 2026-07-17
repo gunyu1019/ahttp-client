@@ -864,6 +864,29 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         return decorator
 
+    def _get_direct_response_type(
+            self,
+            session_directly_response: DirectResponseType | bool,
+    ) -> DirectResponseType:
+        """Resolve the request and session direct-response settings.
+
+        A request-level mode takes precedence over the session default. A
+        boolean session setting preserves the legacy automatic behavior:
+        return a deserialized model when a deserializer is available,
+        otherwise return the response wrapper.
+        """
+        if self.directly_response != DirectResponseType.NONE:
+            return self.directly_response
+
+        if isinstance(session_directly_response, bool):
+            if not session_directly_response:
+                return DirectResponseType.NONE
+            if self._deserializer is not None:
+                return DirectResponseType.DESERIALIZED
+            return DirectResponseType.RESPONSE
+
+        return session_directly_response
+
     @abstractmethod
     def _execute(self, session: Any, *args, **kwargs) -> Any:
         pass
@@ -949,17 +972,21 @@ class AsyncRequestCore(
                 response = await self._after_hook(session, response)
 
             # Detect directly response
-            if self._deserializer is not None and (
-                    session.directly_response
-                    or self.directly_response == DirectResponseType.DESERIALIZED
-            ):
+            direct_response_type = self._get_direct_response_type(
+                session.directly_response
+            )
+            if direct_response_type == DirectResponseType.DESERIALIZED:
+                if self._deserializer is None:
+                    raise TypeError(
+                        f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
+                    )
                 data = (
                     self._deserializer.get_data(response)
                     if isinstance(response, Response)
                     else response
                 )
                 return self._deserializer.deserialize(data)
-            elif self.directly_response or session.directly_response:
+            elif direct_response_type == DirectResponseType.RESPONSE:
                 should_close_raw_response = False
                 return response
 
@@ -1030,17 +1057,21 @@ class SyncRequestCore(
                 response = self._after_hook(session, response)
 
             # Detect directly response
-            if self._deserializer is not None and (
+            direct_response_type = self._get_direct_response_type(
                 session.directly_response
-                or self.directly_response == DirectResponseType.DESERIALIZED
-            ):
+            )
+            if direct_response_type == DirectResponseType.DESERIALIZED:
+                if self._deserializer is None:
+                    raise TypeError(
+                        f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
+                    )
                 data = (
                     self._deserializer.get_data(response)
                     if isinstance(response, Response)
                     else response
                 )
                 return self._deserializer.deserialize(data)
-            elif self.directly_response or session.directly_response:
+            elif direct_response_type == DirectResponseType.RESPONSE:
                 should_close_raw_response = False
                 return response
 
