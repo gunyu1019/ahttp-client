@@ -58,7 +58,6 @@ class DirectResponseType(Flag):
     """Response types that can be returned directly from a request."""
     NONE = auto()
     RESPONSE = auto()
-    RAW_RESPONSE = auto()
     DESERIALIZED = auto()
 
     def __bool__(self):
