@@ -131,7 +131,10 @@ def test_registry_resolves_supported_pydantic_annotations(model_type: Any) -> No
     assert isinstance(BaseDeserializer.from_model(model_type), PydanticDeserializer)
 
 
-@pytest.mark.parametrize("model_type", [int, str, list[int], dict[str, int]])
+@pytest.mark.parametrize(
+    "model_type",
+    [int, str, list[int], dict[str, int], list[dict[str, int]]],
+)
 def test_registry_rejects_annotations_without_registered_models(model_type: Any) -> None:
     assert BaseSerializer.from_model(model_type) is None
     assert BaseDeserializer.from_model(model_type) is None
@@ -414,10 +417,6 @@ def test_direct_response_type_deserialized_rejects_unknown_return_annotation() -
             pass
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="registry model detection only inspects the first generic level",
-)
 def test_nested_generic_registry_resolution() -> None:
     annotation = list[dict[str, Item | None]]
 
@@ -427,3 +426,17 @@ def test_nested_generic_registry_resolution() -> None:
     assert deserializer.deserialize([{"item": {"name": "value"}, "none": None}]) == [
         {"item": Item(name="value"), "none": None}
     ]
+
+
+def test_nested_generic_request_body_serialization() -> None:
+    @request("POST", "/", body_parameter="items")
+    @serialize(exclude_none=True)
+    def endpoint(session, items: list[dict[str, Item | None]]):
+        pass
+
+    endpoint._fill_parameter(
+        object(),
+        {"items": [{"item": Item(name="value"), "none": None}]},
+    )
+
+    assert endpoint.body == [{"item": {"name": "value"}, "none": None}]

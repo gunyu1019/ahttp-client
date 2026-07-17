@@ -27,10 +27,12 @@ class BaseCodec(ABC):
 
     @classmethod
     def is_model_type(cls, model_type: type[Any]) -> bool:
+        if is_subclass_safe(model_type, cls.base_model_type):
+            return True
         generic_args = get_args_for_generic(model_type)
-        if generic_args is not None:
-            return is_subclass_safe(generic_args, cls.base_model_type)
-        return is_subclass_safe(model_type, cls.base_model_type)
+        if generic_args is None:
+            return False
+        return any(cls.is_model_type(arg) for arg in generic_args)
 
     @classmethod
     def late_bind(cls, **kwargs) -> BaseCodec:
