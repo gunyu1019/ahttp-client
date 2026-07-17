@@ -30,6 +30,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
+from .enum import DirectResponseType
 from .request_bound import RequestBound, AsyncRequestBound, SyncRequestBound
 from .response import Response
 
@@ -53,7 +54,7 @@ class BaseSession(ABC):
 
     backend: BaseBackend
 
-    def __init__(self, base_url: str, *, directly_response: bool = False):
+    def __init__(self, base_url: str, *, directly_response: DirectResponseType | bool = False):
         self.directly_response = directly_response
         self.base_url = base_url
 
@@ -114,7 +115,7 @@ class AsyncSession(BaseSession):
         Base URL used for request paths.
     session: type
         Supported asynchronous HTTP client session class.
-    directly_response: bool
+    directly_response: DirectResponseType | bool
         Return the response-pipeline result instead of executing decorated
         request functions.
     **kwargs
@@ -126,7 +127,7 @@ class AsyncSession(BaseSession):
         base_url: str,
         session: type,
         *,
-        directly_response: bool = False,
+        directly_response: DirectResponseType | bool = False,
         **kwargs,
     ):
         self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
@@ -312,7 +313,7 @@ class Session(BaseSession):
         Base URL used for request paths.
     session: type
         Supported synchronous HTTP client session class.
-    directly_response: bool
+    directly_response: DirectResponseType | bool
         Return the response-pipeline result instead of executing decorated
         request functions.
     **kwargs
@@ -324,7 +325,7 @@ class Session(BaseSession):
         base_url: str,
         session: type,
         *,
-        directly_response: bool = False,
+        directly_response: DirectResponseType | bool = False,
         **kwargs,
     ):
         self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
