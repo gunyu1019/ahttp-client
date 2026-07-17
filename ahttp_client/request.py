@@ -33,6 +33,8 @@ from typing import (
     TYPE_CHECKING,
     Callable,
     NamedTuple,
+    Optional,
+    Self,
     get_type_hints,
     overload,
 )
@@ -91,7 +93,6 @@ class BodyEntry(NamedTuple):
 
 
 if TYPE_CHECKING:
-    from typing import Optional, Self
     from .request_bound import RequestBound
     from .session import AsyncSession, Session
 
@@ -581,8 +582,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         # Auto set directly_response field.
         return_annotation = resolved_hints.get(
-            self._signature.return_annotation.__name__,
-            self._signature.return_annotation
+            "return",
+            self._signature.return_annotation,
         )
 
         # A boolean directly_response value enables automatic mode selection.
@@ -620,6 +621,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         # Deserialize Response (late binding)
         if (
                 self.directly_response == DirectResponseType.DESERIALIZED
+                and self._deserializer is not None
                 and self._deserializer.is_late_bind  # not bind
         ):
             new_deserializer = BaseDeserializer.set_model(return_annotation, self._deserializer)
