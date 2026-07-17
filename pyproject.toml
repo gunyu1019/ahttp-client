@@ -30,6 +30,9 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+pydantic = [
+    "pydantic>=2.12",
+]
 aiohttp = [
     "aiohttp>=3.11.2",
 ]
