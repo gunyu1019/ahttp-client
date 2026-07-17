@@ -116,9 +116,13 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     ) -> ModelT:
         """Deserialize one value into ``model_type``."""
 
-    @abstractmethod
     def get_data(self, response: Response) -> Any:
-        pass
+        """Extract deserializer input from a response.
+
+        Custom deserializers that consume the response object directly can
+        rely on this identity implementation.
+        """
+        return response
 
     def multiple_deserialize(
             self, data: Sequence[Any]

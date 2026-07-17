@@ -40,6 +40,7 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
 
     def single_serialize(self, model: BaseModel) -> dict[str, Any]:
         return model.model_dump(
+            mode="json",
             include=self.include,
             exclude=self.exclude,
             by_alias=self.by_alias,
