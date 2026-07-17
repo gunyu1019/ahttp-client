@@ -9,6 +9,24 @@ def serialize(
         model: Optional[type[ModelT]] = None,
         **serializer_kwargs,
 ):
+    """Decorate a request to serialize its complete body.
+
+    When ``model`` is empty, the serializer is selected from the complete body
+    parameter annotation. Serializer keyword arguments are applied after the
+    model type is resolved.
+
+    Parameters
+    ----------
+    model: Optional[type[ModelT]]
+        Model type used to select a registered serializer.
+    **serializer_kwargs
+        Keyword arguments forwarded to the serializer constructor.
+
+    Raises
+    ------
+    TypeError
+        If no serializer is registered for the model type.
+    """
     if model is None:
         model_cls = BaseSerializer.late_bind(**serializer_kwargs)
     else:
@@ -41,6 +59,24 @@ def deserialize(
         model: Optional[type[ModelT]] = None,
         **deserializer_kwargs,
 ):
+    """Decorate a request to deserialize its HTTP response.
+
+    When ``model`` is empty, the deserializer is selected from the return
+    annotation. Deserializer keyword arguments are applied after the model type
+    is resolved.
+
+    Parameters
+    ----------
+    model: Optional[type[ModelT]]
+        Model type used to select a registered deserializer.
+    **deserializer_kwargs
+        Keyword arguments forwarded to the deserializer constructor.
+
+    Raises
+    ------
+    TypeError
+        If no deserializer is registered for the model type.
+    """
     if model is None:
         model_cls = BaseDeserializer.late_bind(**deserializer_kwargs)
     else:

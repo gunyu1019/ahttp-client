@@ -12,6 +12,8 @@ ModelT = TypeVar("ModelT")
 
 
 class BaseCodec(ABC):
+    """Base class for codecs that resolve model-specific implementations."""
+
     base_model_type: type[Any]
 
     def __init__(self, **kwargs):
@@ -27,6 +29,7 @@ class BaseCodec(ABC):
 
     @classmethod
     def is_model_type(cls, model_type: type[Any]) -> bool:
+        """Return whether an annotation contains the configured model type."""
         if is_subclass_safe(model_type, cls.base_model_type):
             return True
         generic_args = get_args_for_generic(model_type)
@@ -36,10 +39,12 @@ class BaseCodec(ABC):
 
     @classmethod
     def late_bind(cls, **kwargs) -> BaseCodec:
+        """Return a placeholder that stores options until a model type is known."""
         return _LateBoundCodec(**kwargs)
 
     @property
     def is_late_bind(self) -> bool:
+        """Return whether this codec is waiting for a model type."""
         return self._late_bind
 
 
@@ -52,7 +57,7 @@ class _LateBoundCodec(BaseCodec):
 
 
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
-    """Converts models into transport-safe values."""
+    """Base codec that converts models into transport-safe values."""
     _registry: ClassVar[list[type[BaseSerializer]]] = []
     body_type: ClassVar[BodyType]
 
@@ -61,6 +66,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         """Serialize one model."""
 
     def multiple_serialize(self, model: Sequence[ModelT]) -> list[Any]:
+        """Serialize a sequence of models."""
         return [
             self.single_serialize(item)
             if isinstance(item, self.base_model_type)
@@ -71,12 +77,13 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     def serialize(
         self, model: ModelT | Sequence[ModelT]
     ) -> Any | list[Any]:
+        """Serialize one model or a sequence of models."""
         if self.is_sequence(model):
             return self.multiple_serialize(model)
         return self.single_serialize(model)
 
     def __init_subclass__(cls, **kwargs: Any):
-        """Register a concrete backend for its configured session class."""
+        """Register a serializer for its configured model type."""
         super(BaseSerializer, cls).__init_subclass__(**kwargs)
 
         if not hasattr(cls, "base_model_type"):
@@ -86,6 +93,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
     @classmethod
     def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
+        """Return the serializer registered for a model annotation, if any."""
         for serializer_cls in cls._registry:
             if serializer_cls.is_model_type(model):
                 return serializer_cls(**kwargs)
@@ -93,6 +101,15 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
     @classmethod
     def set_model(cls, model: type[ModelT], origin_cls: BaseCodec, **kwargs) -> Optional[Self]:
+        """Resolve a late-bound serializer for a model annotation.
+
+        Keyword arguments override options stored by ``origin_cls``.
+
+        Raises
+        ------
+        ValueError
+            If ``origin_cls`` is not late-bound.
+        """
         if not origin_cls._late_bind:
             raise ValueError("Cannot set model for non-late-bound serializer")
         _kwargs = origin_cls._kwargs.copy()
@@ -105,7 +122,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
 
 class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
-    """Converts transport-safe values into models."""
+    """Base codec that converts transport-safe values into models."""
     _registry: ClassVar[list[type[BaseDeserializer]]] = []
 
     def __init__(self, model: Optional[ModelT], **kwargs):
@@ -116,7 +133,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     def single_deserialize(
         self, data: Any
     ) -> ModelT:
-        """Deserialize one value into ``model_type``."""
+        """Deserialize one value into a model."""
 
     def get_data(self, response: Response) -> Any:
         """Extract deserializer input from a response.
@@ -129,18 +146,20 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     def multiple_deserialize(
             self, data: Sequence[Any]
     ) -> list[ModelT]:
+        """Deserialize a sequence of values into models."""
         return [self.single_deserialize(item) for item in data]
 
     def deserialize(
         self,
         data: Any | Sequence[Any],
     ) -> ModelT | list[ModelT]:
+        """Deserialize one value or a sequence of values."""
         if self.is_sequence(data):
             return self.multiple_deserialize(data)
         return self.single_deserialize(data)
 
     def __init_subclass__(cls, **kwargs: Any):
-        """Register a concrete backend for its configured session class."""
+        """Register a deserializer for its configured model type."""
         super(BaseDeserializer, cls).__init_subclass__(**kwargs)
 
         if not hasattr(cls, "base_model_type"):
@@ -150,6 +169,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
 
     @classmethod
     def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
+        """Return the deserializer registered for a model annotation, if any."""
         for deserializer_cls in cls._registry:
             if deserializer_cls.is_model_type(model):
                 return deserializer_cls(model, **kwargs)
@@ -157,6 +177,15 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
 
     @classmethod
     def set_model(cls, model: type[ModelT], origin_cls: BaseCodec, **kwargs) -> Optional[Self]:
+        """Resolve a late-bound deserializer for a model annotation.
+
+        Keyword arguments override options stored by ``origin_cls``.
+
+        Raises
+        ------
+        ValueError
+            If ``origin_cls`` is not late-bound.
+        """
         if not origin_cls._late_bind:
             raise ValueError("Cannot set model for non-late-bound deserializer")
         _kwargs = origin_cls._kwargs.copy()

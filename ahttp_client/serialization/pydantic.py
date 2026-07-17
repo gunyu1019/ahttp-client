@@ -40,6 +40,7 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
         super().__init__()
 
     def single_serialize(self, model: Any) -> Any:
+        """Serialize nested Pydantic models into JSON-safe values."""
         if isinstance(model, BaseModel):
             return model.model_dump(
                 mode="json",
@@ -64,9 +65,10 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
 
 
 class PydanticDeserializer(BaseDeserializer[BaseModel]):
-    """Deserialize values with :meth:`BaseModel.model_validate`."""
+    """Deserialize values with :meth:`TypeAdapter.validate_python`."""
 
     def get_data(self, response: Response) -> Any:
+        """Parse a response body as deserializer input."""
         return response.json()
 
     base_model_type: type[BaseModel] = BaseModel
@@ -90,6 +92,7 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
     def single_deserialize(
             self, data: Any
     ) -> Any:
+        """Validate one value against the configured model annotation."""
         return self._type_adapter.validate_python(
             data,
             extra=self.extra,
@@ -100,6 +103,7 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
         )
 
     def deserialize(self, data: Any) -> Any:
+        """Validate data while preserving collection model annotations."""
         if self.is_sequence(data) and get_origin(self._model) is None:
             return self.multiple_deserialize(data)
         return self.single_deserialize(data)
