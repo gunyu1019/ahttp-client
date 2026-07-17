@@ -71,7 +71,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         """Register a concrete backend for its configured session class."""
         super(BaseSerializer, cls).__init_subclass__(**kwargs)
 
-        if not hasattr(cls, "model_base_type"):
+        if not hasattr(cls, "base_model_type"):
             return
 
         BaseSerializer._registry.append(cls)
@@ -132,7 +132,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         """Register a concrete backend for its configured session class."""
         super(BaseDeserializer, cls).__init_subclass__(**kwargs)
 
-        if not hasattr(cls, "model_base_type"):
+        if not hasattr(cls, "base_model_type"):
             return
 
         BaseDeserializer._registry.append(cls)
