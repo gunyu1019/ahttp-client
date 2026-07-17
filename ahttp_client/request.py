@@ -738,7 +738,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             body_component = self.body_parameter.component
 
             if self._serializer is not None:
-                if isinstance(value, self._serializer.model_base_type):
+                if isinstance(value, self._serializer.base_model_type):
                     value = self._serializer.serialize(value)
                 elif self._serializer.is_sequence(value):
                     value = self._serializer.multiple_serialize(value)
@@ -932,14 +932,20 @@ class AsyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
         raw_response = response = await session._make_request(req_obj, formatted_path)
-        close_response = True
+        should_close_raw_response = True
         try:
             if self._after_hook is not None:
                 response = await self._after_hook(session, response)
 
             # Detect directly response
-            if self.directly_response or session.directly_response:
-                close_response = False
+            if self._deserializer is not None and (
+                    session.directly_response
+                    or self.directly_response == DirectResponseType.DESERIALIZED
+            ):
+                should_close_raw_response = False
+                return self._deserializer.deserialize(response)
+            elif self.directly_response or session.directly_response:
+                should_close_raw_response = False
                 return response
 
             for _parameter in self.response_parameter:
@@ -948,7 +954,7 @@ class AsyncRequestCore(
 
             result = await self.func(**kwargs)
         finally:
-            if close_response and not raw_response.closed:
+            if should_close_raw_response and not raw_response.closed:
                 await raw_response.async_close()
         return result
 
@@ -1003,14 +1009,20 @@ class SyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
         raw_response = response = session._make_request(req_obj, formatted_path)
-        close_response = True
+        should_close_raw_response = True
         try:
             if self._after_hook is not None:
                 response = self._after_hook(session, response)
 
             # Detect directly response
-            if self.directly_response or session.directly_response:
-                close_response = False
+            if self._deserializer is not None and (
+                session.directly_response
+                or self.directly_response == DirectResponseType.DESERIALIZED
+            ):
+                should_close_raw_response = False
+                return self._deserializer.deserialize(response)
+            elif self.directly_response or session.directly_response:
+                should_close_raw_response = False
                 return response
 
             for _parameter in self.response_parameter:
@@ -1019,7 +1031,7 @@ class SyncRequestCore(
 
             result = self.func(**kwargs)
         finally:
-            if close_response and not raw_response.closed:
+            if should_close_raw_response and not raw_response.closed:
                 raw_response.close()
         return result
 
