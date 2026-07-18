@@ -1,14 +1,43 @@
-from typing import Optional
+from typing import Any, Optional, Unpack, overload
 
 from ._types import RequestDecorator
 from .request import RequestCore, AsyncRequestCore, SyncRequestCore
 from .serialization.base import BaseSerializer, BaseDeserializer, ModelT
+from .serialization._types import (
+    DataclassDeserializeOptions,
+    DataclassSerializeOptions,
+    MarshmallowDeserializeOptions,
+    MarshmallowSerializeOptions,
+    PydanticDeserializeOptions,
+    PydanticSerializeOptions,
+)
+
+
+@overload
+def serialize(
+        model: Optional[type[ModelT]] = None,
+        **serializer_kwargs: Unpack[PydanticSerializeOptions],
+) -> RequestDecorator[Any, Any]: ...
+
+
+@overload
+def serialize(
+        model: Optional[type[ModelT]] = None,
+        **serializer_kwargs: Unpack[DataclassSerializeOptions],
+) -> RequestDecorator[Any, Any]: ...
+
+
+@overload
+def serialize(
+        model: Optional[type[ModelT]] = None,
+        **serializer_kwargs: Unpack[MarshmallowSerializeOptions],
+) -> RequestDecorator[Any, Any]: ...
 
 
 def serialize(
         model: Optional[type[ModelT]] = None,
-        **serializer_kwargs,
-):
+        **serializer_kwargs: Any,
+) -> RequestDecorator[Any, Any]:
     """Decorate a request to serialize its complete body.
 
     When ``model`` is empty, the serializer is selected from the complete body
@@ -47,10 +76,31 @@ def serialize(
     return decorator
 
 
+@overload
 def deserialize(
         model: Optional[type[ModelT]] = None,
-        **deserializer_kwargs,
-):
+        **deserializer_kwargs: Unpack[PydanticDeserializeOptions],
+) -> RequestDecorator[Any, Any]: ...
+
+
+@overload
+def deserialize(
+        model: Optional[type[ModelT]] = None,
+        **deserializer_kwargs: Unpack[DataclassDeserializeOptions],
+) -> RequestDecorator[Any, Any]: ...
+
+
+@overload
+def deserialize(
+        model: Optional[type[ModelT]] = None,
+        **deserializer_kwargs: Unpack[MarshmallowDeserializeOptions],
+) -> RequestDecorator[Any, Any]: ...
+
+
+def deserialize(
+        model: Optional[type[ModelT]] = None,
+        **deserializer_kwargs: Any,
+) -> RequestDecorator[Any, Any]:
     """Decorate a request to deserialize its HTTP response.
 
     When ``model`` is empty, the deserializer is selected from the return
