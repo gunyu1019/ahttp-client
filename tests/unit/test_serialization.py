@@ -111,6 +111,17 @@ def test_serialize_options_can_wrap_an_already_created_request() -> None:
     assert endpoint.body_type is BodyType.JSON
 
 
+def test_deserialize_options_can_wrap_an_already_created_request() -> None:
+    @deserialize(prefix="outer-")
+    @request("GET", "/", directly_response=True)
+    def endpoint(session) -> Model:
+        pass
+
+    assert endpoint.directly_response is DirectResponseType.DESERIALIZED
+    assert isinstance(endpoint._deserializer, ModelDeserializer)
+    assert endpoint._deserializer.prefix == "outer-"
+
+
 def test_explicit_deserialized_mode_and_response_model_use_registered_codec() -> None:
     @request("GET", "/", directly_response=DirectResponseType.DESERIALIZED)
     def endpoint(session) -> Model:
