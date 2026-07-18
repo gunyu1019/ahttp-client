@@ -25,6 +25,12 @@ from typing import NamedTuple, Literal, Optional
 
 from .component import Body, BodyJson, BodyForm, Header, Path, Query
 from .enum import BodyType, Method, BodyFormEncoding
+from .exception import (
+    HTTPClientError,
+    HTTPException,
+    HTTPServerError,
+    exception_for_status,
+)
 from .request import RequestCore, request, get, post, options, patch, put, delete
 from .response import Response
 from .session import BaseSession, AsyncSession, Session

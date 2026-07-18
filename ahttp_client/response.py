@@ -108,3 +108,16 @@ class Response:
     def content(self) -> bytes:
         """Return the response body as bytes."""
         return self._backend.response_data(self._raw_response_obj)
+
+    def raise_for_status(self) -> None:
+        """Raise the exception matching this response's 4xx or 5xx status.
+
+        Unknown statuses in either error range raise :class:`HTTPClientError`
+        or :class:`HTTPServerError` respectively.  Other status codes return
+        without raising an exception.
+        """
+        from .exception import exception_for_status
+
+        exception = exception_for_status(self.status)
+        if exception is not None:
+            raise exception(self)
