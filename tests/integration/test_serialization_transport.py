@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
@@ -31,6 +32,19 @@ class EchoPayload(BaseModel):
     json_body: Any = Field(alias="json")
 
 
+@dataclass
+class DataclassRequestItem:
+    name: str
+    optional: str | None = None
+    occurred_at: datetime = datetime(2026, 7, 18, tzinfo=timezone.utc)
+
+
+@dataclass
+class DataclassEchoPayload:
+    content_type: str
+    json: Any
+
+
 class AsyncSerializationAPI(AsyncSession):
     @post(
         "/echo",
@@ -42,6 +56,17 @@ class AsyncSerializationAPI(AsyncSession):
         self,
         payload: dict[str, list[RequestItem]],
     ) -> EchoPayload:
+        raise AssertionError("direct deserialization must skip the endpoint body")
+
+    @post(
+        "/echo",
+        body_parameter="payload",
+        directly_response=DirectResponseType.DESERIALIZED,
+    )
+    async def dataclass_round_trip(
+        self,
+        payload: dict[str, list[DataclassRequestItem]],
+    ) -> DataclassEchoPayload:
         raise AssertionError("direct deserialization must skip the endpoint body")
 
 
@@ -58,12 +83,32 @@ class SyncSerializationAPI(Session):
     ) -> EchoPayload:
         raise AssertionError("direct deserialization must skip the endpoint body")
 
+    @post(
+        "/echo",
+        body_parameter="payload",
+        directly_response=DirectResponseType.DESERIALIZED,
+    )
+    def dataclass_round_trip(
+        self,
+        payload: dict[str, list[DataclassRequestItem]],
+    ) -> DataclassEchoPayload:
+        raise AssertionError("direct deserialization must skip the endpoint body")
+
 
 def _request_payload() -> dict[str, list[RequestItem]]:
     return {
         "items": [
             RequestItem(name="first"),
             RequestItem(name="second", optional="value"),
+        ]
+    }
+
+
+def _dataclass_request_payload() -> dict[str, list[DataclassRequestItem]]:
+    return {
+        "items": [
+            DataclassRequestItem(name="first"),
+            DataclassRequestItem(name="second", optional="value"),
         ]
     }
 
@@ -86,20 +131,47 @@ def _assert_round_trip(payload: EchoPayload) -> None:
     }
 
 
+def _assert_dataclass_round_trip(payload: DataclassEchoPayload) -> None:
+    assert isinstance(payload, DataclassEchoPayload)
+    assert payload.content_type == "application/json"
+    assert payload.json == {
+        "items": [
+            {
+                "name": "first",
+                "optional": None,
+                "occurred_at": "2026-07-18T00:00:00+00:00",
+            },
+            {
+                "name": "second",
+                "optional": "value",
+                "occurred_at": "2026-07-18T00:00:00+00:00",
+            },
+        ]
+    }
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_serialization_round_trip(backend: type, base_url: str) -> None:
-    async def run() -> EchoPayload:
+    async def run() -> tuple[EchoPayload, DataclassEchoPayload]:
         async with AsyncSerializationAPI(base_url, backend) as api:
-            return await api.round_trip(_request_payload())
+            pydantic_payload = await api.round_trip(_request_payload())
+            dataclass_payload = await api.dataclass_round_trip(
+                _dataclass_request_payload()
+            )
+            return pydantic_payload, dataclass_payload
 
-    _assert_round_trip(asyncio.run(run()))
+    pydantic_payload, dataclass_payload = asyncio.run(run())
+    _assert_round_trip(pydantic_payload)
+    _assert_dataclass_round_trip(dataclass_payload)
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_serialization_round_trip(backend: type, base_url: str) -> None:
     with SyncSerializationAPI(base_url, backend) as api:
-        result = api.round_trip(_request_payload())
+        pydantic_payload = api.round_trip(_request_payload())
+        dataclass_payload = api.dataclass_round_trip(_dataclass_request_payload())
 
-    _assert_round_trip(result)
+    _assert_round_trip(pydantic_payload)
+    _assert_dataclass_round_trip(dataclass_payload)

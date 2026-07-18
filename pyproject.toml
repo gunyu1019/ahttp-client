@@ -33,6 +33,9 @@ classifiers = [
 pydantic = [
     "pydantic>=2.12",
 ]
+marshmallow = [
+    "marshmallow>=3",
+]
 aiohttp = [
     "aiohttp>=3.11.2",
 ]
