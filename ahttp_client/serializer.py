@@ -66,7 +66,16 @@ def serialize(
 
     def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
         if isinstance(func, RequestCore):
-            func._serializer = model_cls
+            if model_cls.is_late_bind:
+                if func._serializer is None or func._serializer.is_late_bind:
+                    raise TypeError(
+                        f"Unknown serializer type. Please check body type of "
+                        f"{func.func.__name__} method."
+                    )
+                func._serializer = type(func._serializer)(**model_cls._kwargs)
+            else:
+                func._serializer = model_cls
+            func.body_parameter_type = func._serializer.body_type
             return func
         if not hasattr(func, "__extension__"):
             func.__extension__ = dict()

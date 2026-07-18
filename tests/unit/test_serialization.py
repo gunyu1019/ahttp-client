@@ -97,6 +97,20 @@ def test_request_decorators_bind_serialization_from_annotations() -> None:
     assert deserialize_endpoint._deserializer.prefix == "response-"
 
 
+def test_serialize_options_can_wrap_an_already_created_request() -> None:
+    @serialize(prefix="outer-")
+    @request("POST", "/", body_parameter="model")
+    def endpoint(session, model: Model):
+        pass
+
+    endpoint._fill_parameter(object(), {"model": Model("value")})
+
+    assert isinstance(endpoint._serializer, ModelSerializer)
+    assert endpoint._serializer.prefix == "outer-"
+    assert endpoint.body == {"value": "outer-value"}
+    assert endpoint.body_type is BodyType.JSON
+
+
 def test_explicit_deserialized_mode_and_response_model_use_registered_codec() -> None:
     @request("GET", "/", directly_response=DirectResponseType.DESERIALIZED)
     def endpoint(session) -> Model:
