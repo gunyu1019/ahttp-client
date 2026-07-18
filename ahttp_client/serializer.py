@@ -66,16 +66,7 @@ def serialize(
 
     def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
         if isinstance(func, RequestCore):
-            if model_cls.is_late_bind:
-                if func._serializer is None or func._serializer.is_late_bind:
-                    raise TypeError(
-                        f"Unknown serializer type. Please check body type of "
-                        f"{func.func.__name__} method."
-                    )
-                func._serializer = type(func._serializer)(**model_cls._kwargs)
-            else:
-                func._serializer = model_cls
-            func.body_parameter_type = func._serializer.body_type
+            func._bind_serializer(model_cls)
             return func
         if not hasattr(func, "__extension__"):
             func.__extension__ = dict()
@@ -138,24 +129,7 @@ def deserialize(
 
     def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
         if isinstance(func, RequestCore):
-            if model_cls.is_late_bind:
-                if func._deserializer is None or func._deserializer.is_late_bind:
-                    raise TypeError(
-                        f"Unknown deserializer type. Please check return "
-                        f"annotation of {func.func.__name__} method."
-                    )
-                bound_deserializer = BaseDeserializer.from_model(
-                    func._deserializer._model,
-                    **model_cls._kwargs,
-                )
-                if bound_deserializer is None:
-                    raise TypeError(
-                        f"Unknown deserializer type. Please check return "
-                        f"annotation of {func.func.__name__} method."
-                    )
-                func._deserializer = bound_deserializer
-            else:
-                func._deserializer = model_cls
+            func._bind_deserializer(model_cls)
             return func
         if not hasattr(func, "__extension__"):
             func.__extension__ = dict()

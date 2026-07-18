@@ -36,6 +36,7 @@ from typing import (
     NamedTuple,
     Optional,
     Self,
+    cast,
     get_type_hints,
     overload,
 )
@@ -64,7 +65,7 @@ from .component import (
 )
 from .enum import Method, BodyFormEncoding, BodyType, DirectResponseType
 from .response import Response
-from .serialization.base import BaseSerializer, BaseDeserializer
+from .serialization.base import BaseCodec, BaseSerializer, BaseDeserializer
 from .session import BaseSession
 from .utils import *
 
@@ -220,6 +221,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         # Serialization
         self._serializer: Optional[BaseSerializer] = None
         self._deserializer: Optional[BaseDeserializer] = None
+        self._body_model_candidates: tuple[Any, ...] = ()
+        self._return_model: Any = inspect.Signature.empty
 
     @classmethod
     def from_decorator(
@@ -302,6 +305,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         new_cls._serializer = self._serializer
         new_cls._deserializer = self._deserializer
+        new_cls._body_model_candidates = self._body_model_candidates
+        new_cls._return_model = self._return_model
 
         new_cls.validation_parameter = self.validation_parameter
 
@@ -428,6 +433,77 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             self._serializer = extension["serializer"]
         if "deserializer" in extension.keys():
             self._deserializer = extension["deserializer"]
+
+    def _bind_serializer(self, serializer: Optional[BaseCodec]) -> bool:
+        """Resolve and attach a serializer using the stored body annotation.
+
+        Returns whether a concrete serializer was found. An absent serializer
+        is optional during automatic body inference, while a late-bound
+        serializer must resolve successfully.
+        """
+        resolved_serializer: Optional[BaseSerializer]
+
+        if serializer is not None and not serializer.is_late_bind:
+            resolved_serializer = cast(BaseSerializer, serializer)
+        else:
+            resolved_serializer = None
+            for model_candidate in self._body_model_candidates:
+                if serializer is None:
+                    candidate = BaseSerializer.from_model(model_candidate)
+                else:
+                    candidate = BaseSerializer.set_model(
+                        model_candidate,
+                        serializer,
+                    )
+                if candidate is not None:
+                    resolved_serializer = candidate
+                    break
+
+        if resolved_serializer is None:
+            if serializer is not None:
+                raise TypeError(
+                    f"Unknown serializer type. Please check body type of "
+                    f"{self.func.__name__} method."
+                )
+            self._serializer = None
+            return False
+
+        self._serializer = resolved_serializer
+        self.body_parameter_type = resolved_serializer.body_type
+        return True
+
+    def _bind_deserializer(
+            self,
+            deserializer: Optional[BaseCodec],
+            *,
+            required: bool = True,
+    ) -> bool:
+        """Resolve and attach a deserializer using the stored return model."""
+        resolved_deserializer: Optional[BaseDeserializer]
+
+        if deserializer is not None and not deserializer.is_late_bind:
+            resolved_deserializer = cast(BaseDeserializer, deserializer)
+        elif self._return_model is inspect.Signature.empty:
+            resolved_deserializer = None
+        elif deserializer is None:
+            resolved_deserializer = BaseDeserializer.from_model(self._return_model)
+        else:
+            resolved_deserializer = BaseDeserializer.set_model(
+                self._return_model,
+                deserializer,
+            )
+
+        if resolved_deserializer is None:
+            if required:
+                raise TypeError(
+                    f"Unknown deserializer type. Please check return annotation "
+                    f"of {self.func.__name__} method."
+                )
+            self._deserializer = None
+            return False
+
+        self._deserializer = resolved_deserializer
+        return True
 
     def _add_private_key(self) -> None:
         """Add static headers and query values declared by decorators.
@@ -568,25 +644,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 else:
                     self.body_parameter_type = BodyType.RAW
 
-                # Serializer
-                if self._serializer is None or self._serializer.is_late_bind:
-                    _serializers = [
-                        BaseSerializer.from_model(model_candidate)
-                        if self._serializer is None
-                        else BaseSerializer.set_model(model_candidate, self._serializer)
-                        for model_candidate in model_candidates
-                    ]
-                    self._serializer = next(
-                        (serializer for serializer in _serializers if serializer is not None),
-                        self._serializer,
-                    )
-
-                if self._serializer is not None:
-                    if self._serializer.is_late_bind:
-                        raise TypeError(
-                            f"Unknown serializer type. Please check body type of {self.func.__name__} method."
-                        )
-                    self.body_parameter_type =  self._serializer.body_type
+                self._body_model_candidates = tuple(model_candidates)
+                self._bind_serializer(self._serializer)
 
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
@@ -598,6 +657,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             "return",
             self._signature.return_annotation,
         )
+        self._return_model = return_annotation
 
         # A boolean directly_response value enables automatic mode selection.
         if isinstance(self.directly_response, bool) and self.directly_response:
@@ -607,6 +667,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 # @deserializer()
                 # def request_method(...):
                 #   pass
+                self._bind_deserializer(self._deserializer)
                 self.directly_response = DirectResponseType.DESERIALIZED
             # elif isinstance(return_annotation, type) and issubclass(return_annotation, Response):
             else:
@@ -614,10 +675,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 # @request(directly_response=True)
                 # def request_method(...) -> Model:
                 #   pass
-                temp_deserializer = BaseDeserializer.from_model(return_annotation)
-                if temp_deserializer is not None:
+                if self._bind_deserializer(None, required=False):
                     self.directly_response = DirectResponseType.DESERIALIZED
-                    self._deserializer = temp_deserializer
                 else:
                     # CASE-3(default): deserializer, return annotation not defined.
                     # @request(directly_response=True)
@@ -630,28 +689,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     self.directly_response = DirectResponseType.RESPONSE
         elif isinstance(self.directly_response, bool) and not self.directly_response:
             self.directly_response = DirectResponseType.NONE
-        elif (
-                self.directly_response == DirectResponseType.DESERIALIZED
-                and self._deserializer is None
-        ):
-            self._deserializer = BaseDeserializer.from_model(return_annotation)
-            if self._deserializer is None:
-                raise TypeError(
-                    f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
-                )
-
-        # Deserialize Response (late binding)
-        if (
-                self.directly_response == DirectResponseType.DESERIALIZED
-                and self._deserializer is not None
-                and self._deserializer.is_late_bind  # not bind
-        ):
-            new_deserializer = BaseDeserializer.set_model(return_annotation, self._deserializer)
-            if new_deserializer is None:
-                raise TypeError(
-                    f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
-                )
-            self._deserializer = new_deserializer
+        elif self.directly_response == DirectResponseType.DESERIALIZED:
+            self._bind_deserializer(self._deserializer)
 
     def _delete_response_annotation(self) -> None:
         """Remove response parameters from the public request signature.
