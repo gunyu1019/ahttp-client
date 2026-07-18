@@ -1,6 +1,6 @@
 from collections.abc import Collection
-from types import UnionType, GenericAlias
-from typing import Annotated, get_origin, get_args
+from types import UnionType
+from typing import Annotated, Union, get_args, get_origin
 
 
 def is_subclass_safe(_class, _class_info) -> bool:
@@ -13,12 +13,9 @@ def is_subclass_safe(_class, _class_info) -> bool:
 
 
 def separate_union_type(t):
-    """
-    If type is Union, return list of type
-    else return t
-    """
-    if isinstance(t, UnionType):
-        return t.__args__
+    """Return union members for ``Union`` and ``|`` annotations, else *t*."""
+    if isinstance(t, UnionType) or get_origin(t) in (Union, UnionType):
+        return get_args(t)
     return t
 
 
@@ -30,13 +27,8 @@ def is_annotated_parameter(t) -> bool:
 
 
 def get_origin_for_generic(t):
-    """
-    If type is Generic, return origin of generic type
-    else return t
-    """
-    if isinstance(t, GenericAlias):
-        return t.__origin__
-    return t
+    """Return a generic annotation's origin, or *t* when it has no origin."""
+    return get_origin(t) or t
 
 
 def get_args_for_generic(t):
@@ -51,6 +43,9 @@ def get_args_for_generic(t):
 
 
 def make_collection(t):
-    if not isinstance(t, Collection):
+    # ``Enum`` classes and other class objects can satisfy ``Collection``
+    # through their metaclass, but still represent one type for callers such
+    # as ``is_subclass_safe``.
+    if isinstance(t, type) or not isinstance(t, Collection):
         return (t,)
     return t
