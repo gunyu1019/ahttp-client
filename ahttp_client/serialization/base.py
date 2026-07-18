@@ -94,7 +94,9 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     @classmethod
     def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
         """Return the serializer registered for a model annotation, if any."""
-        for serializer_cls in cls._registry:
+        # User-defined codecs are registered after built-in fallback codecs
+        # such as the dataclasses codec, and therefore take precedence.
+        for serializer_cls in reversed(cls._registry):
             if serializer_cls.is_model_type(model):
                 return serializer_cls(**kwargs)
         return None
@@ -115,7 +117,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         _kwargs = origin_cls._kwargs.copy()
         _kwargs.update(kwargs)
 
-        for serializer_cls in cls._registry:
+        for serializer_cls in reversed(cls._registry):
             if serializer_cls.is_model_type(model):
                 return serializer_cls(**_kwargs)
         return None
@@ -170,7 +172,9 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     @classmethod
     def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
         """Return the deserializer registered for a model annotation, if any."""
-        for deserializer_cls in cls._registry:
+        # User-defined codecs are registered after built-in fallback codecs
+        # such as the dataclasses codec, and therefore take precedence.
+        for deserializer_cls in reversed(cls._registry):
             if deserializer_cls.is_model_type(model):
                 return deserializer_cls(model, **kwargs)
         return None
@@ -191,7 +195,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         _kwargs = origin_cls._kwargs.copy()
         _kwargs.update(kwargs)
 
-        for deserializer_cls in cls._registry:
+        for deserializer_cls in reversed(cls._registry):
             if deserializer_cls.is_model_type(model):
                 return deserializer_cls(model=model, **_kwargs)
         return None
