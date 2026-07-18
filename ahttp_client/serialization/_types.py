@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time
-from typing import Any, Callable, Literal, Protocol, TypedDict
+from collections.abc import Sequence
+from typing import AbstractSet, Any, Callable, Literal, NotRequired, Optional, Protocol, TypedDict
 
 
 class PydanticSerializeOptions(TypedDict, total=False):
@@ -55,22 +56,33 @@ class DataclassDeserializeOptions(TypedDict, total=False):
 class MarshmallowDumpSchema(Protocol):
     """Dependency-free structural type for a Marshmallow dump schema."""
 
-    def dump(self, obj: Any) -> Any: ...
+    def dump(self, obj: Any, *, many: Optional[bool] = None) -> Any: ...
 
 
 class MarshmallowLoadSchema(Protocol):
     """Dependency-free structural type for a Marshmallow load schema."""
 
-    def load(self, data: Any) -> Any: ...
+    def load(
+        self,
+        data: Any,
+        *,
+        many: Optional[bool] = None,
+        partial: Optional[bool | Sequence[str] | AbstractSet[str]] = None,
+        unknown: Optional[Literal["exclude", "include", "raise"]] = None,
+    ) -> Any: ...
 
 
 class MarshmallowSerializeOptions(TypedDict):
     """Keyword arguments supported by the Marshmallow request serializer."""
 
     schema: MarshmallowDumpSchema
+    many: NotRequired[Optional[bool]]
 
 
 class MarshmallowDeserializeOptions(TypedDict):
     """Keyword arguments supported by the Marshmallow response deserializer."""
 
     schema: MarshmallowLoadSchema
+    many: NotRequired[Optional[bool]]
+    partial: NotRequired[Optional[bool | Sequence[str] | AbstractSet[str]]]
+    unknown: NotRequired[Optional[Literal["exclude", "include", "raise"]]]

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional, get_args
+from typing import AbstractSet, Any, Literal, Optional, get_args
 
 from marshmallow import Schema
 
@@ -58,13 +58,15 @@ class MarshmallowSerializer(_MarshmallowCodec, BaseSerializer[Any]):
         self,
         *,
         schema: Schema,
+        many: Optional[bool] = None,
     ):
         self._initialize_schema(schema)
+        self.many = many
         super().__init__()
 
     def single_serialize(self, model: Any) -> Any:
         """Delegate serialization to the configured Marshmallow schema."""
-        return self.schema.dump(model)
+        return self.schema.dump(model, many=self.many)
 
     def serialize(self, model: Any) -> Any:
         """Dump the complete body once, including ``many=True`` collections."""
@@ -81,8 +83,14 @@ class MarshmallowDeserializer(_MarshmallowCodec, BaseDeserializer[Any]):
         model: Any = None,
         *,
         schema: Schema,
+        many: Optional[bool] = None,
+        partial: Optional[bool | Sequence[str] | AbstractSet[str]] = None,
+        unknown: Optional[Literal["exclude", "include", "raise"]] = None,
     ):
         self._initialize_schema(schema)
+        self.many = many
+        self.partial = partial
+        self.unknown = unknown
         super().__init__(model=model)
 
     """Deserialize JSON response bodies with :meth:`marshmallow.Schema.load`.
@@ -97,7 +105,12 @@ class MarshmallowDeserializer(_MarshmallowCodec, BaseDeserializer[Any]):
 
     def single_deserialize(self, data: Any) -> Any:
         """Delegate deserialization and validation to the Marshmallow schema."""
-        return self.schema.load(data)
+        return self.schema.load(
+            data,
+            many=self.many,
+            partial=self.partial,
+            unknown=self.unknown,
+        )
 
     def deserialize(self, data: Any) -> Any:
         """Load the complete response once, including ``many=True`` collections."""
