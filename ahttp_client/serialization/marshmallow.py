@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Self, Optional, get_args
+from typing import Any, Optional, get_args
 
 from marshmallow import Schema
 
@@ -29,24 +29,15 @@ class _MarshmallowCodec:
 
     def _initialize_schema(
         self,
-        model: Any,
-        schema: Optional[Schema],
-        schema_kwargs: dict[str, Any],
+        schema: Schema,
     ) -> None:
-        schema_type = self._schema_type(model)
-        if schema_type is None:
-            raise TypeError(f"No Marshmallow schema found in {model!r}")
-        if schema is not None and not isinstance(schema, schema_type):
+        if not isinstance(schema, Schema):
             raise TypeError(
-                f"Expected an instance of {schema_type.__name__} for schema, "
+                "Expected an instance of marshmallow.Schema for schema, "
                 f"got {type(schema).__name__}"
             )
-        if schema is not None and schema_kwargs:
-            raise TypeError(
-                "Schema options cannot be combined with an existing schema instance"
-            )
 
-        self.schema = schema or schema_type(**schema_kwargs)
+        self.schema = schema
 
     @classmethod
     def is_model_type(cls, model_type: type[Any]) -> bool:
@@ -55,23 +46,21 @@ class _MarshmallowCodec:
 
 
 class MarshmallowSerializer(_MarshmallowCodec, BaseSerializer[Any]):
-    """Serialize request bodies with :meth:`marshmallow.Schema.dump`."""
+    """Serialize request bodies with :meth:`marshmallow.Schema.dump`.
+
+    A schema instance is required; it determines the complete-body conversion
+    independently of the annotated domain-model type.
+    """
 
     body_type = BodyType.JSON
 
     def __init__(
         self,
-        model: Any,
         *,
-        schema: Optional[Schema] = None,
-        **schema_kwargs: Any,
+        schema: Schema,
     ):
-        self._initialize_schema(model, schema, schema_kwargs)
+        self._initialize_schema(schema)
         super().__init__()
-
-    @classmethod
-    def _from_model(cls, model: Any, **kwargs: Any) -> Self:
-        return cls(model, **kwargs)
 
     def single_serialize(self, model: Any) -> Any:
         """Delegate serialization to the configured Marshmallow schema."""
@@ -87,17 +76,20 @@ class MarshmallowSerializer(_MarshmallowCodec, BaseSerializer[Any]):
 
 
 class MarshmallowDeserializer(_MarshmallowCodec, BaseDeserializer[Any]):
-    """Deserialize JSON response bodies with :meth:`marshmallow.Schema.load`."""
-
     def __init__(
         self,
-        model: Any,
+        model: Any = None,
         *,
-        schema: Optional[Schema] = None,
-        **schema_kwargs: Any,
+        schema: Schema,
     ):
-        self._initialize_schema(model, schema, schema_kwargs)
+        self._initialize_schema(schema)
         super().__init__(model=model)
+
+    """Deserialize JSON response bodies with :meth:`marshmallow.Schema.load`.
+
+    A schema instance is required; its ``load`` implementation determines the
+    deserialized value independently of the return annotation.
+    """
 
     def get_data(self, response: Response) -> Any:
         """Parse a response body as the schema's input value."""
