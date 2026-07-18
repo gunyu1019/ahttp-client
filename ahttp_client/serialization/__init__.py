@@ -16,3 +16,11 @@ except ModuleNotFoundError as exc:
         raise
 else:
     __all__ += ["PydanticSerializer", "PydanticDeserializer"]
+
+try:
+    from .marshmallow import MarshmallowSerializer, MarshmallowDeserializer
+except ModuleNotFoundError as exc:
+    if exc.name != "marshmallow":
+        raise
+else:
+    __all__ += ["MarshmallowSerializer", "MarshmallowDeserializer"]
