@@ -37,10 +37,7 @@ _UNTYPED_CONTAINER_TYPES = (
 
 def _is_untyped_container(model_type: Any) -> bool:
     """Return whether *model_type* is a container without item annotations."""
-    return (
-        get_origin_for_generic(model_type) in _UNTYPED_CONTAINER_TYPES
-        and get_args_for_generic(model_type) is None
-    )
+    return get_origin_for_generic(model_type) in _UNTYPED_CONTAINER_TYPES and get_args_for_generic(model_type) is None
 
 
 class DataclassesSerializer(BaseSerializer[Any]):
@@ -79,10 +76,7 @@ class DataclassesSerializer(BaseSerializer[Any]):
     def single_serialize(self, model: Any) -> Any:
         """Serialize one dataclass value into JSON-compatible containers."""
         if is_dataclass(model) and not isinstance(model, type):
-            return {
-                field.name: self.single_serialize(getattr(model, field.name))
-                for field in fields(model)
-            }
+            return {field.name: self.single_serialize(getattr(model, field.name)) for field in fields(model)}
         if isinstance(model, Mapping):
             return {key: self.single_serialize(value) for key, value in model.items()}
         if isinstance(model, (set, frozenset, tuple, list)):
@@ -125,9 +119,7 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
         super().__init__(model=model)
         self.serialize_date = serialize_date or (lambda _, x: date.fromisoformat(x))
         self.serialize_time = serialize_time or (lambda _, x: time.fromisoformat(x))
-        self.serialize_datetime = serialize_datetime or (
-            lambda _, x: datetime.fromisoformat(x)
-        )
+        self.serialize_datetime = serialize_datetime or (lambda _, x: datetime.fromisoformat(x))
         self.serialize_uuid = lambda cls, x: cls(x)
         self.serialize_decimal = lambda _, x: Decimal(str(x))
 
@@ -163,9 +155,7 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
             return data
         key_type, value_type = generic_args
         return {
-            self._deserialize_model(key_type, key): self._deserialize_model(
-                value_type, value
-            )
+            self._deserialize_model(key_type, key): self._deserialize_model(value_type, value)
             for key, value in data.items()
         }
 
@@ -179,10 +169,7 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
             return tuple(data)
         if len(item_types) == 2 and item_types[1] is Ellipsis:
             return tuple(self._deserialize_model(item_types[0], item) for item in data)
-        return tuple(
-            self._deserialize_model(item_type, item)
-            for item_type, item in zip(item_types, data)
-        )
+        return tuple(self._deserialize_model(item_type, item) for item_type, item in zip(item_types, data))
 
     def serialize_frozenset(self, model: type[Any], data: Any) -> Any:
         return self.serialize_set(model, data)
@@ -193,9 +180,7 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
         if generic_args is None:
             return collection_type(data)
         (item_type,) = generic_args
-        return collection_type(
-            self._deserialize_model(item_type, item) for item in data
-        )
+        return collection_type(self._deserialize_model(item_type, item) for item in data)
 
     def serialize_list(self, model: type[Any], data: Any) -> Any:
         generic_args = get_args_for_generic(model)
@@ -256,10 +241,7 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
 
         if isinstance(model, type) and is_dataclass(model):
             if not isinstance(data, Mapping):
-                raise TypeError(
-                    f"Expected a mapping to deserialize {model.__name__}, "
-                    f"got {type(data).__name__}"
-                )
+                raise TypeError(f"Expected a mapping to deserialize {model.__name__}, " f"got {type(data).__name__}")
 
             hints = get_type_hints(model)
             kwargs: dict[str, Any] = {}

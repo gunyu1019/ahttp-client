@@ -46,21 +46,13 @@ SyncRequestCoreT_co = TypeVar("SyncRequestCoreT_co", covariant=True)
 # Concrete core classes validate the appropriate callable kind at runtime.
 RequestFunction = Callable[P, T]
 AsyncRequestFunction = Callable[P, Coroutine[Any, Any, T]]
-AsyncRequestBeforeHookFunction = Callable[
-    [Any, RequestCoreT, str], Awaitable[tuple[RequestCoreT, str]]
-]
-SyncRequestBeforeHookFunction = Callable[
-    [Any, RequestCoreT, str], tuple[RequestCoreT, str]
-]
+AsyncRequestBeforeHookFunction = Callable[[Any, RequestCoreT, str], Awaitable[tuple[RequestCoreT, str]]]
+SyncRequestBeforeHookFunction = Callable[[Any, RequestCoreT, str], tuple[RequestCoreT, str]]
 AsyncRequestAfterHookFunction = Callable[[Any, Any], Awaitable[T]]
 SyncRequestAfterHookFunction = Callable[[Any, Any], T]
 
-RequestBeforeHookFunction = (
-    AsyncRequestBeforeHookFunction[Any] | SyncRequestBeforeHookFunction[Any]
-)
-RequestAfterHookFunction = (
-    AsyncRequestAfterHookFunction[Any] | SyncRequestAfterHookFunction[Any]
-)
+RequestBeforeHookFunction = AsyncRequestBeforeHookFunction[Any] | SyncRequestBeforeHookFunction[Any]
+RequestAfterHookFunction = AsyncRequestAfterHookFunction[Any] | SyncRequestAfterHookFunction[Any]
 
 
 class RequestDecorator(Protocol[AsyncRequestCoreT_co, SyncRequestCoreT_co]):

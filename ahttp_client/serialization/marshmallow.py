@@ -32,10 +32,7 @@ class _MarshmallowCodec:
         schema: Schema,
     ) -> None:
         if not isinstance(schema, Schema):
-            raise TypeError(
-                "Expected an instance of marshmallow.Schema for schema, "
-                f"got {type(schema).__name__}"
-            )
+            raise TypeError("Expected an instance of marshmallow.Schema for schema, " f"got {type(schema).__name__}")
 
         self.schema = schema
 

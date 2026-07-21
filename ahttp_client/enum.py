@@ -56,6 +56,7 @@ class BodyFormEncoding(Flag):
 
 class DirectResponseType(Flag):
     """Response types that can be returned directly from a request."""
+
     NONE = auto()
     RESPONSE = auto()
     DESERIALIZED = auto()

@@ -157,18 +157,18 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
     __request_core__ = True
 
     def __init__(
-            self,
-            func: RequestFunction[..., Any],
-            method: str | Method,
-            path: str,
-            *,
-            name: Optional[str] = None,
-            directly_response: DirectResponseType | bool = False,
-            params: Optional[dict[str, Any]] = None,
-            headers: Optional[dict[str, Any]] = None,
-            body: Optional[Any] = None,
-            response_parameter: Optional[list[str]] = None,
-            **kwargs,
+        self,
+        func: RequestFunction[..., Any],
+        method: str | Method,
+        path: str,
+        *,
+        name: Optional[str] = None,
+        directly_response: DirectResponseType | bool = False,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, Any]] = None,
+        body: Optional[Any] = None,
+        response_parameter: Optional[list[str]] = None,
+        **kwargs,
     ):
         self.func = func
         self.method = method
@@ -226,19 +226,19 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
     @classmethod
     def from_decorator(
-            cls,
-            func: RequestFunction[..., Any],
-            method: str | Method,
-            path: str,
-            *,
-            query_parameter: Optional[list[str]] = None,
-            header_parameter: Optional[list[str]] = None,
-            body_json_parameter: Optional[list[str]] = None,
-            form_parameter: Optional[list[str]] = None,
-            form_encoding: Optional[BodyFormEncoding] = None,
-            path_parameter: Optional[list[str]] = None,
-            body_parameter: Optional[str] = None,
-            **kwargs,
+        cls,
+        func: RequestFunction[..., Any],
+        method: str | Method,
+        path: str,
+        *,
+        query_parameter: Optional[list[str]] = None,
+        header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
+        form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
+        path_parameter: Optional[list[str]] = None,
+        body_parameter: Optional[str] = None,
+        **kwargs,
     ) -> Self:
         new_cls = cls(func, method, path, **kwargs)
 
@@ -267,11 +267,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             An independent request instance with copied static headers and
             query parameters.
         """
-        body = (
-            copy.deepcopy(self.body)
-            if isinstance(self.body, (*_BODY_JSON_TYPE, bytearray))
-            else self.body
-        )
+        body = copy.deepcopy(self.body) if isinstance(self.body, (*_BODY_JSON_TYPE, bytearray)) else self.body
         new_cls = self.__class__(
             self.func,
             self.method,
@@ -294,11 +290,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         new_cls.body_parameter_type = self.body_parameter_type
         new_cls.body_parameter = self.body_parameter
-        new_cls._body_file = (
-            self._body_file.copy()
-            if isinstance(self._body_file, dict)
-            else self._body_file
-        )
+        new_cls._body_file = self._body_file.copy() if isinstance(self._body_file, dict) else self._body_file
 
         new_cls._before_hook = self._before_hook
         new_cls._after_hook = self._after_hook
@@ -352,10 +344,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         :class:`bool`
         """
         return (
-                self.body_parameter is not None
-                or self.is_formal_form
-                or len(self.body_json_parameter) > 0
-                or self.body is not None
+            self.body_parameter is not None
+            or self.is_formal_form
+            or len(self.body_json_parameter) > 0
+            or self.body is not None
         )
 
     @property
@@ -410,15 +402,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             raise TypeError("Duplicated Form Parameter or Body Parameter.")
 
         if (
-                not single_parameter
-                and sum(
-            [
-                self.body_parameter is not None,
-                len(self.body_form_parameter) > 0,
-                len(self.body_json_parameter) > 0,
-            ]
-        )
-                > 1
+            not single_parameter
+            and sum(
+                [
+                    self.body_parameter is not None,
+                    len(self.body_form_parameter) > 0,
+                    len(self.body_json_parameter) > 0,
+                ]
+            )
+            > 1
         ):
             raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
 
@@ -461,10 +453,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         if resolved_serializer is None:
             if serializer is not None:
-                raise TypeError(
-                    f"Unknown serializer type. Please check body type of "
-                    f"{self.func.__name__} method."
-                )
+                raise TypeError(f"Unknown serializer type. Please check body type of " f"{self.func.__name__} method.")
             self._serializer = None
             return False
 
@@ -473,10 +462,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return True
 
     def _bind_deserializer(
-            self,
-            deserializer: Optional[BaseCodec],
-            *,
-            required: bool = True,
+        self,
+        deserializer: Optional[BaseCodec],
+        *,
+        required: bool = True,
     ) -> bool:
         """Resolve and attach a deserializer using the stored return model."""
         resolved_deserializer: Optional[BaseDeserializer]
@@ -496,8 +485,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         if resolved_deserializer is None:
             if required:
                 raise TypeError(
-                    f"Unknown deserializer type. Please check return annotation "
-                    f"of {self.func.__name__} method."
+                    f"Unknown deserializer type. Please check return annotation " f"of {self.func.__name__} method."
                 )
             self._deserializer = None
             return False
@@ -515,8 +503,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
     @staticmethod
     def _get_component_name(
-            name: str,
-            component_type: Optional[Component] = None,
+        name: str,
+        component_type: Optional[Component] = None,
     ) -> str:
         if component_type is not None and component_type.component_name is not None:
             component_name = component_type.component_name(name)
@@ -524,15 +512,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return name
 
     def _add_parameter_to_component(
-            self,
-            *,
-            query_parameter: Optional[list[str]] = None,
-            header_parameter: Optional[list[str]] = None,
-            body_json_parameter: Optional[list[str]] = None,
-            form_parameter: Optional[list[str]] = None,
-            form_encoding: Optional[BodyFormEncoding] = None,
-            body_parameter: Optional[str] = None,
-            path_parameter: Optional[list[str]] = None,
+        self,
+        *,
+        query_parameter: Optional[list[str]] = None,
+        header_parameter: Optional[list[str]] = None,
+        body_json_parameter: Optional[list[str]] = None,
+        form_parameter: Optional[list[str]] = None,
+        form_encoding: Optional[BodyFormEncoding] = None,
+        body_parameter: Optional[str] = None,
+        path_parameter: Optional[list[str]] = None,
     ) -> None:
         """Classify decorated function parameters as request components.
 
@@ -594,19 +582,19 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             instance_origin = [get_origin_for_generic(t) for t in model_candidates]
 
             if issubclass(component_type, Header) or (
-                    header_parameter is not None and parameter.name in header_parameter
+                header_parameter is not None and parameter.name in header_parameter
             ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.header_parameter[name] = parameter
             elif issubclass(component_type, Query) or (
-                    query_parameter is not None and parameter.name in query_parameter
+                query_parameter is not None and parameter.name in query_parameter
             ):
                 name = self._get_component_name(parameter.name, component_instance)
                 self.query_parameter[name] = parameter
             elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, BodyForm) or (
-                    form_parameter is not None and parameter.name in form_parameter
+                form_parameter is not None and parameter.name in form_parameter
             ):
                 name = self._get_component_name(parameter.name, component_instance)
                 is_file_type = is_subclass_safe(instance_origin, _IO_TYPE) or getattr(
@@ -625,7 +613,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (
-                    body_json_parameter is not None and parameter.name in body_json_parameter
+                body_json_parameter is not None and parameter.name in body_json_parameter
             ):
                 self.body_parameter_type = BodyType.JSON
                 name = self._get_component_name(parameter.name, component_instance)
@@ -716,9 +704,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.__annotations__ = self.func.__annotations__
 
     def _fill_parameter(
-            self,
-            session: BaseSession,
-            bounded_argument: dict[str, Any] | inspect.BoundArguments,
+        self,
+        session: BaseSession,
+        bounded_argument: dict[str, Any] | inspect.BoundArguments,
     ) -> None:
         """Fill request components from arguments bound to the request call.
 
@@ -775,7 +763,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             if len(self._body_file.keys()) == 0:
                 self._body_file = None
         elif (
-                self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED
+            self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.URL_ENCODED
         ):  # self.is_body
             self.body = {
                 _name: bounded_argument.get(_form_entry.parameter.name)
@@ -806,11 +794,11 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             self.body = value
             if body_component is not None:
                 if body_component.metadata_content_type is not None and not any(
-                        key.lower() == "content-type" for key in self.headers
+                    key.lower() == "content-type" for key in self.headers
                 ):
                     self.headers["Content-Type"] = body_component.metadata_content_type
                 if body_component.metadata_filename is not None and not any(
-                        key.lower() == "content-disposition" for key in self.headers
+                    key.lower() == "content-disposition" for key in self.headers
                 ):
                     filename = body_component.metadata_filename.replace("\\", "\\\\").replace('"', '\\"')
                     self.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
@@ -837,26 +825,26 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         if not isinstance(other, RequestCore):
             return False
         return (
-                other.name == self.name
-                and other.func == self.func
-                and other.path == self.path
-                and other.params == self.params
-                and other.headers == self.headers
-                and other.body == self.body
-                and other._body_file == self._body_file
-                and other.directly_response == self.directly_response
-                and other.header_parameter == self.header_parameter
-                and other.query_parameter == self.query_parameter
-                and other.path_parameter == self.path_parameter
-                and other.body_form_parameter == self.body_form_parameter
-                and other.body_form_encoding_type == self.body_form_encoding_type
-                and other.body_json_parameter == self.body_json_parameter
-                and other.body_parameter == self.body_parameter
-                and other.body_parameter_type == self.body_parameter_type
-                and other._before_hook == self._before_hook
-                and other._after_hook == self._after_hook
-                and other._serializer == self._serializer
-                and other._deserializer == self._deserializer
+            other.name == self.name
+            and other.func == self.func
+            and other.path == self.path
+            and other.params == self.params
+            and other.headers == self.headers
+            and other.body == self.body
+            and other._body_file == self._body_file
+            and other.directly_response == self.directly_response
+            and other.header_parameter == self.header_parameter
+            and other.query_parameter == self.query_parameter
+            and other.path_parameter == self.path_parameter
+            and other.body_form_parameter == self.body_form_parameter
+            and other.body_form_encoding_type == self.body_form_encoding_type
+            and other.body_json_parameter == self.body_json_parameter
+            and other.body_parameter == self.body_parameter
+            and other.body_parameter_type == self.body_parameter_type
+            and other._before_hook == self._before_hook
+            and other._after_hook == self._after_hook
+            and other._serializer == self._serializer
+            and other._deserializer == self._deserializer
         )
 
     def __ne__(self, other):
@@ -898,7 +886,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             raise ValueError(f"'{parameter_name}' is not a parameter of '{self.name}'")
 
         def decorator(
-                func: ValidationFunction[Any],
+            func: ValidationFunction[Any],
         ) -> ValidationFunction[Any]:
             if inspect.iscoroutinefunction(func):
                 raise TypeError("The validator must not be a coroutine.")
@@ -915,8 +903,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return decorator
 
     def _get_direct_response_type(
-            self,
-            session_directly_response: DirectResponseType | bool,
+        self,
+        session_directly_response: DirectResponseType | bool,
     ) -> DirectResponseType:
         """Resolve the request and session direct-response settings.
 
@@ -942,22 +930,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         pass
 
     @overload
-    def __get__(self, instance: None, instance_type: type) -> Self:
-        ...
+    def __get__(self, instance: None, instance_type: type) -> Self: ...
 
     @overload
-    def __get__(
-            self, instance: BaseSession, instance_type: type
-    ) -> RequestBound:
-        ...
+    def __get__(self, instance: BaseSession, instance_type: type) -> RequestBound: ...
 
     @overload
-    def __get__(self, instance: object, instance_type: type) -> Self:
-        ...
+    def __get__(self, instance: object, instance_type: type) -> Self: ...
 
-    def __get__(
-            self, instance: object | None, instance_type: type
-    ) -> Self | RequestBound:
+    def __get__(self, instance: object | None, instance_type: type) -> Self | RequestBound:
         if isinstance(instance, BaseSession):
             return instance._get_request_bound(self)
         return self
@@ -975,7 +956,7 @@ class AsyncRequestCore(
     session: AsyncSession
 
     def before_hook(
-            self, func: AsyncRequestBeforeHookFunction[RequestCore]
+        self, func: AsyncRequestBeforeHookFunction[RequestCore]
     ) -> AsyncRequestBeforeHookFunction[RequestCore]:
         """Register an asynchronous hook that runs before the HTTP request.
 
@@ -990,7 +971,7 @@ class AsyncRequestCore(
         return super(AsyncRequestCore, self).before_hook(func)
 
     def after_hook(
-            self, func: AsyncRequestAfterHookFunction[HookResultT]
+        self, func: AsyncRequestAfterHookFunction[HookResultT]
     ) -> AsyncRequestAfterHookFunction[HookResultT]:
         """Register an asynchronous hook that runs after the HTTP response.
 
@@ -1026,19 +1007,13 @@ class AsyncRequestCore(
                 response = await self._after_hook(session, response)
 
             # Detect directly response
-            direct_response_type = self._get_direct_response_type(
-                session.directly_response
-            )
+            direct_response_type = self._get_direct_response_type(session.directly_response)
             if direct_response_type == DirectResponseType.DESERIALIZED:
                 if self._deserializer is None:
                     raise TypeError(
                         f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
                     )
-                data = (
-                    self._deserializer.get_data(response)
-                    if isinstance(response, Response)
-                    else response
-                )
+                data = self._deserializer.get_data(response) if isinstance(response, Response) else response
                 return self._deserializer.deserialize(data)
             elif direct_response_type == DirectResponseType.RESPONSE:
                 should_close_raw_response = response is not raw_response
@@ -1064,7 +1039,7 @@ class SyncRequestCore(
     session: Session
 
     def before_hook(
-            self, func: SyncRequestBeforeHookFunction[RequestCore]
+        self, func: SyncRequestBeforeHookFunction[RequestCore]
     ) -> SyncRequestBeforeHookFunction[RequestCore]:
         """Register a synchronous hook that runs before the HTTP request.
 
@@ -1078,9 +1053,7 @@ class SyncRequestCore(
 
         return super(SyncRequestCore, self).before_hook(func)
 
-    def after_hook(
-            self, func: SyncRequestAfterHookFunction[HookResultT]
-    ) -> SyncRequestAfterHookFunction[HookResultT]:
+    def after_hook(self, func: SyncRequestAfterHookFunction[HookResultT]) -> SyncRequestAfterHookFunction[HookResultT]:
         """Register a synchronous hook that runs after the HTTP response.
 
         Parameters
@@ -1115,19 +1088,13 @@ class SyncRequestCore(
                 response = self._after_hook(session, response)
 
             # Detect directly response
-            direct_response_type = self._get_direct_response_type(
-                session.directly_response
-            )
+            direct_response_type = self._get_direct_response_type(session.directly_response)
             if direct_response_type == DirectResponseType.DESERIALIZED:
                 if self._deserializer is None:
                     raise TypeError(
                         f"Unknown deserializer type. Please check return annotation of {self.func.__name__} method."
                     )
-                data = (
-                    self._deserializer.get_data(response)
-                    if isinstance(response, Response)
-                    else response
-                )
+                data = self._deserializer.get_data(response) if isinstance(response, Response) else response
                 return self._deserializer.deserialize(data)
             elif direct_response_type == DirectResponseType.RESPONSE:
                 should_close_raw_response = response is not raw_response
@@ -1150,23 +1117,23 @@ def _make_request_core(func, method, path, **kwargs):
 
 
 def request(
-        method: str | Method,
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    method: str | Method,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Decorate a session method as an HTTP request.
 
@@ -1243,22 +1210,22 @@ def request(
 
 
 def get(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``GET`` HTTP method.
 
@@ -1290,22 +1257,22 @@ def get(
 
 
 def post(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``POST`` HTTP method.
 
@@ -1337,22 +1304,22 @@ def post(
 
 
 def options(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``OPTIONS`` HTTP method.
 
@@ -1384,22 +1351,22 @@ def options(
 
 
 def patch(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``PATCH`` HTTP method.
 
@@ -1431,22 +1398,22 @@ def patch(
 
 
 def put(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``PUT`` HTTP method.
 
@@ -1478,22 +1445,22 @@ def put(
 
 
 def delete(
-        path: str,
-        *,
-        name: Optional[str] = None,
-        directly_response: DirectResponseType | bool = False,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        body: Optional[Any] = None,
-        header_parameter: Optional[list[str]] = None,
-        query_parameter: Optional[list[str]] = None,
-        form_parameter: Optional[list[str]] = None,
-        form_encoding: Optional[BodyFormEncoding] = None,
-        body_json_parameter: Optional[list[str]] = None,
-        path_parameter: Optional[list[str]] = None,
-        body_parameter: Optional[str] = None,
-        response_parameter: Optional[list[str]] = None,
-        **request_kwargs,
+    path: str,
+    *,
+    name: Optional[str] = None,
+    directly_response: DirectResponseType | bool = False,
+    params: Optional[dict[str, Any]] = None,
+    headers: Optional[dict[str, Any]] = None,
+    body: Optional[Any] = None,
+    header_parameter: Optional[list[str]] = None,
+    query_parameter: Optional[list[str]] = None,
+    form_parameter: Optional[list[str]] = None,
+    form_encoding: Optional[BodyFormEncoding] = None,
+    body_json_parameter: Optional[list[str]] = None,
+    path_parameter: Optional[list[str]] = None,
+    body_parameter: Optional[str] = None,
+    response_parameter: Optional[list[str]] = None,
+    **request_kwargs,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``DELETE`` HTTP method.
 
