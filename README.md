@@ -13,6 +13,7 @@ that maps typed function parameters to HTTP requests.
   `@patch`, `@delete`, and `@options` decoration methods.
 - Use `typing.Annotated` to set HTTP parameters such as the path, query, header, or body values.
 - Serialize typed request models and deserialize responses using registered codecs.
+- Retry failed requests with configurable exception filters and exponential backoff.
 - Customize the request lifecycle using `before_hook` and `after_hook` decorators.
 - Reduce boilerplate code when using HTTP client packages such as aiohttp, httpx, and requests.
 
@@ -190,6 +191,54 @@ validated as `User`. Because `directly_response=True` selects deserialized mode
 from the registered return type, the decorated method body is not executed.
 Pass a model explicitly, such as `@serialize(CreateUser)`, when it cannot be
 inferred from an annotation.
+
+### Retries
+
+Use `@retry` to repeat a request when a selected exception is raised. By
+default, `HTTPServerError` retries HTTP 5xx failures up to three times after
+the initial request. Call `Response.raise_for_status()` from `after_request()`
+when HTTP error responses should participate in retry handling.
+
+```python
+from typing import Annotated, Any
+
+from ahttp_client import (
+    AsyncSession,
+    HTTPServerError,
+    Path,
+    Response,
+    get,
+    retry,
+)
+
+
+class GitHubService(AsyncSession):
+    async def after_request(self, response: Response) -> Response:
+        response.raise_for_status()
+        return response
+
+    @retry(
+        max_retries=3,
+        backoff_factor=0.5,
+        retry_on=(HTTPServerError, TimeoutError),
+        max_delay=4.0,
+    )
+    @get("/users/{user}/repos")
+    async def list_repositories(
+        self, response: Response, user: Annotated[str, Path]
+    ) -> list[dict[str, Any]]:
+        return response.json()
+```
+
+The wait before retry attempt `n` is
+`backoff_factor * 2 ** (n - 1)` seconds and is capped by `max_delay` when set.
+Pass one exception class or a tuple through `retry_on` to include transport or
+application failures.
+
+Exceptions raised during request transport or the session-level
+`after_request()` hook are eligible for retry. Request-level `after_hook`
+callbacks run after the retry operation and are not retried. Retry counts and
+delays must be finite, non-negative values.
 
 ### Hooks
 
