@@ -1,3 +1,5 @@
+"""Request retry configuration and decorator support."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +14,33 @@ from .response import Response
 
 
 class RetryConfig:
+    """Configure retry attempts, exception matching, and exponential backoff.
+
+    Parameters
+    ----------
+    max_retries: int
+        Maximum number of attempts after the initial request.
+    backoff_factor: float
+        Multiplier used to calculate the exponential delay before each retry.
+    retry_on: tuple[type[Exception], ...]
+        Exception classes that trigger another attempt.
+    max_delay: Optional[float]
+        Maximum delay in seconds, or ``None`` for no upper bound.
+
+    Raises
+    ------
+    TypeError
+        If a retry count, delay, or exception filter has an invalid type.
+    ValueError
+        If a retry count or delay is negative or non-finite.
+
+    Notes
+    -----
+    ``max_retries`` excludes the initial request. The delay before retry
+    attempt ``n`` is ``backoff_factor * 2 ** (n - 1)`` and is capped by
+    ``max_delay`` when an upper bound is configured.
+    """
+
     def __init__(
             self,
             max_retries: int = 3,
@@ -64,6 +93,7 @@ class RetryConfig:
         )
 
     def _backoff_delay(self, attempt: int) -> float:
+        """Return the delay in seconds for a one-based retry attempt."""
         delay = self.backoff_factor * (2 ** (attempt - 1))
         if self.max_delay is not None:
             delay = min(delay, self.max_delay)
@@ -73,6 +103,25 @@ class RetryConfig:
             self,
             make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
     ) -> tuple[Response, Any]:
+        """Execute an asynchronous request and retry matching failures.
+
+        Parameters
+        ----------
+        make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
+            Zero-argument callable that returns the raw response and the
+            response-pipeline result.
+
+        Returns
+        -------
+        tuple[Response, Any]
+            Raw response and processed result from the successful attempt.
+
+        Raises
+        ------
+        Exception
+            Re-raises a non-matching exception immediately or the last
+            matching exception after the retry budget is exhausted.
+        """
         attempt = 0
         while True:
             if attempt > 0:
@@ -88,6 +137,25 @@ class RetryConfig:
             self,
             make_request_func: Callable[..., tuple[Response, Any]]
     ) -> tuple[Response, Any]:
+        """Execute a synchronous request and retry matching failures.
+
+        Parameters
+        ----------
+        make_request_func: Callable[..., tuple[Response, Any]]
+            Zero-argument callable that returns the raw response and the
+            response-pipeline result.
+
+        Returns
+        -------
+        tuple[Response, Any]
+            Raw response and processed result from the successful attempt.
+
+        Raises
+        ------
+        Exception
+            Re-raises a non-matching exception immediately or the last
+            matching exception after the retry budget is exhausted.
+        """
         attempt = 0
         while True:
             if attempt > 0:
@@ -121,6 +189,24 @@ def retry(
         :class:`HTTPServerError` (5xx responses).
     max_delay: Optional[float]
         Upper bound on the sleep delay in seconds. ``None`` means no cap.
+
+    Returns
+    -------
+    RequestDecorator[Any, Any]
+        Decorator that attaches the retry configuration to a request.
+
+    Raises
+    ------
+    TypeError
+        If a retry count, delay, or exception filter has an invalid type.
+    ValueError
+        If a retry count or delay is negative or non-finite.
+
+    Notes
+    -----
+    Exceptions raised by request transport or a session-level
+    ``after_request`` hook are eligible for retry. Request-level ``after_hook``
+    callbacks run after the retry operation and are outside its scope.
     """
     if isinstance(retry_on, type):
         retry_on = (retry_on,)
