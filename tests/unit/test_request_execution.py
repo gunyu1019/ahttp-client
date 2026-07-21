@@ -48,8 +48,12 @@ class _SyncSession:
         self.response = Response(_RawResponse(), _SyncBackend())
         self.response.payload = "payload"
 
-    def _make_request(self, request_core, path: str) -> Response:
-        return self.response
+    def _make_request(self, request_core, path: str) -> tuple[Response, Any]:
+        raw = self.response
+        resp: Any = raw
+        if self._has_overridden_method(self.after_request):
+            resp = self.after_request(raw)
+        return raw, resp
 
     def _has_overridden_method(self, method) -> bool:
         return type(self).after_request is not _SyncSession.after_request
@@ -64,8 +68,12 @@ class _AsyncSession:
         self.response = Response(_RawResponse(), _AsyncBackend())
         self.response.payload = "payload"
 
-    async def _make_request(self, request_core, path: str) -> Response:
-        return self.response
+    async def _make_request(self, request_core, path: str) -> tuple[Response, Any]:
+        raw = self.response
+        resp: Any = raw
+        if self._has_overridden_method(self.after_request):
+            resp = await self.after_request(raw)
+        return raw, resp
 
     def _has_overridden_method(self, method) -> bool:
         return type(self).after_request is not _AsyncSession.after_request
