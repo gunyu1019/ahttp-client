@@ -215,10 +215,10 @@ class AsyncSession(BaseSession):
         response = raw_response = Response(raw_response_data, self.backend, request._deserializer)
         if self._has_overridden_method(self.after_request):
             try:
-                response = self.after_request(raw_response)
+                response = await self.after_request(raw_response)
             except BaseException:
                 if not raw_response.closed:
-                    raw_response.close()
+                    await raw_response.async_close()
                 raise
         return raw_response, response
 
