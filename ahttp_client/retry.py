@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import time
 from typing import Awaitable, Any, Callable, Optional
 
@@ -18,6 +19,35 @@ class RetryConfig:
             retry_on: tuple[type[Exception], ...] = (HTTPServerError,),
             max_delay: Optional[float] = None,
     ) -> None:
+        if isinstance(max_retries, bool) or not isinstance(max_retries, int):
+            raise TypeError("max_retries must be an integer")
+        if max_retries < 0:
+            raise ValueError("max_retries must be greater than or equal to zero")
+
+        if (
+                isinstance(backoff_factor, bool)
+                or not isinstance(backoff_factor, (int, float))
+        ):
+            raise TypeError("backoff_factor must be a number")
+        if backoff_factor < 0 or not math.isfinite(backoff_factor):
+            raise ValueError("backoff_factor must be a finite non-negative number")
+
+        if max_delay is not None:
+            if (
+                    isinstance(max_delay, bool)
+                    or not isinstance(max_delay, (int, float))
+            ):
+                raise TypeError("max_delay must be a number or None")
+            if max_delay < 0 or not math.isfinite(max_delay):
+                raise ValueError("max_delay must be a finite non-negative number")
+
+        if not isinstance(retry_on, tuple) or not all(
+                isinstance(exception_type, type)
+                and issubclass(exception_type, Exception)
+                for exception_type in retry_on
+        ):
+            raise TypeError("retry_on must contain only Exception subclasses")
+
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.retry_on = retry_on

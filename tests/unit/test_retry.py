@@ -127,6 +127,39 @@ def test_retry_single_exception_type_is_normalized_to_tuple() -> None:
     assert endpoint._retry_config.retry_on == (HTTPClientError,)
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "exception_type", "message"),
+    [
+        ({"max_retries": -1}, ValueError, "max_retries"),
+        ({"max_retries": 1.5}, TypeError, "max_retries"),
+        ({"max_retries": True}, TypeError, "max_retries"),
+        ({"backoff_factor": -0.1}, ValueError, "backoff_factor"),
+        ({"backoff_factor": float("inf")}, ValueError, "backoff_factor"),
+        ({"backoff_factor": float("nan")}, ValueError, "backoff_factor"),
+        ({"backoff_factor": "slow"}, TypeError, "backoff_factor"),
+        ({"max_delay": -0.1}, ValueError, "max_delay"),
+        ({"max_delay": float("inf")}, ValueError, "max_delay"),
+        ({"max_delay": float("nan")}, ValueError, "max_delay"),
+        ({"max_delay": "never"}, TypeError, "max_delay"),
+        ({"retry_on": ValueError}, TypeError, "retry_on"),
+        ({"retry_on": (ValueError(),)}, TypeError, "retry_on"),
+        ({"retry_on": (BaseException,)}, TypeError, "retry_on"),
+    ],
+)
+def test_retry_config_rejects_invalid_values(
+        kwargs: dict[str, Any],
+        exception_type: type[Exception],
+        message: str,
+) -> None:
+    with pytest.raises(exception_type, match=message):
+        RetryConfig(**kwargs)
+
+
+def test_retry_decorator_rejects_invalid_retry_on_immediately() -> None:
+    with pytest.raises(TypeError, match="retry_on"):
+        retry(retry_on=ValueError())
+
+
 # ---------------------------------------------------------------------------
 # Successful request — no retry needed
 # ---------------------------------------------------------------------------
