@@ -133,9 +133,10 @@ def retry(
         if isinstance(func, RequestCore):
             func._bind_retry(config)
             return func
-        if not hasattr(func, "__extension__"):
-            func.__extension__ = dict()
-        func.__extension__["retry"] = config
+        extension_target: Any = func
+        if not hasattr(extension_target, "__extension__"):
+            extension_target.__extension__ = dict()
+        extension_target.__extension__["retry"] = config
         return func
 
     return decorator

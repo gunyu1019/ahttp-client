@@ -27,7 +27,7 @@ import functools
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Awaitable, cast
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .enum import DirectResponseType
@@ -36,7 +36,7 @@ from .response import Response
 
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Any, Awaitable, Optional, Self
+    from typing import Optional, Self
 
     from .request import RequestCore
     from ._types import RequestFunction
@@ -81,7 +81,9 @@ class BaseSession(ABC):
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
     @abstractmethod
-    def _make_request(self, request: RequestCore, path: str) -> Response | Awaitable[Response]:
+    def _make_request(
+            self, request: RequestCore, path: str
+    ) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
         pass
 
     @abstractmethod
