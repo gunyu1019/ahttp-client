@@ -1029,16 +1029,12 @@ class AsyncRequestCore(
 
         make_request_func = lambda: session._make_request(req_obj, formatted_path)
         if self._retry_config is not None:
-            raw_response, response = self._retry_config.execute_async(make_request_func)
+            raw_response, response = await self._retry_config.execute_async(make_request_func)
         else:
             raw_response, response = await make_request_func()
 
-        response: Any = raw_response
         should_close_raw_response = True
         try:
-            if session._has_overridden_method(session.after_request):
-                response = await session.after_request(response)
-
             if self._after_hook is not None:
                 response = await self._after_hook(session, response)
 
@@ -1130,9 +1126,6 @@ class SyncRequestCore(
 
         should_close_raw_response = True
         try:
-            if session._has_overridden_method(session.after_request):
-                response = session.after_request(response)
-
             if self._after_hook is not None:
                 response = self._after_hook(session, response)
 
