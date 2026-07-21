@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ahttp_client import Response, request
+from ahttp_client import AsyncSession, Response, request
 from ahttp_client.enum import DirectResponseType
 from ahttp_client.exception import HTTPServerError, HTTPClientError
 from ahttp_client.retry import RetryConfig, retry
@@ -37,12 +37,46 @@ class _AsyncBackend:
         response.closed = True
 
 
+class _FailingPreReadBackend(_AsyncBackend):
+    native_base_url = False
+    session = object()
+
+    def __init__(self, response: _RawResponse) -> None:
+        self.response = response
+
+    def get_request_kwargs(self, request_core) -> dict[str, Any]:
+        return {}
+
+    async def session_request(
+            self, method: str, url: str, **kwargs: Any
+    ) -> _RawResponse:
+        return self.response
+
+    async def pre_read_response(self, response: _RawResponse) -> None:
+        raise OSError("body pre-read failed")
+
+
 def _make_sync_response() -> Response:
     return Response(_RawResponse(), _SyncBackend())
 
 
 def _make_async_response() -> Response:
     return Response(_RawResponse(), _AsyncBackend())
+
+
+def test_async_make_request_closes_response_when_pre_read_fails() -> None:
+    raw_response = _RawResponse()
+    session = object.__new__(AsyncSession)
+    session.backend = _FailingPreReadBackend(raw_response)
+    session.base_url = "https://example.test"
+
+    @request("GET", "/")
+    async def endpoint(session) -> None: ...
+
+    with pytest.raises(OSError, match="body pre-read failed"):
+        asyncio.run(session._make_request(endpoint, "/"))
+
+    assert raw_response.closed is True
 
 
 class _SyncSession:

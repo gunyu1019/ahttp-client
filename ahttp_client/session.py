@@ -211,8 +211,14 @@ class AsyncSession(BaseSession):
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
         url = self._get_request_url(path)
         raw_response_data = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
-        await self.backend.pre_read_response(raw_response_data)
-        response = raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        try:
+            await self.backend.pre_read_response(raw_response_data)
+        except BaseException:
+            if not raw_response.closed:
+                await raw_response.async_close()
+            raise
+        response = raw_response
         if self._has_overridden_method(self.after_request):
             try:
                 response = await self.after_request(raw_response)
