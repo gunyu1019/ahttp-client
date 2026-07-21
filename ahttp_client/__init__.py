@@ -33,6 +33,7 @@ from .exception import (
 )
 from .request import RequestCore, request, get, post, options, patch, put, delete
 from .response import Response
+from .retry import retry
 from .session import BaseSession, AsyncSession, Session
 
 __title__ = "ahttp_client"
