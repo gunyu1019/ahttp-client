@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+import asyncio
+import time
+from typing import Awaitable, Any, Callable, Optional
 
 from ._types import RequestDecorator
 from .exception import HTTPServerError
 from .request import RequestCore
+from .response import Response
 
 
 class RetryConfig:
@@ -29,6 +32,40 @@ class RetryConfig:
             and self.retry_on == other.retry_on
             and self.max_delay == other.max_delay
         )
+
+    def _backoff_delay(self, attempt: int) -> float:
+        delay = self.backoff_factor * (2 ** (attempt - 1))
+        if self.max_delay is not None:
+            delay = min(delay, self.max_delay)
+        return delay
+
+    async def execute_async(
+            self,
+            make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
+    ) -> tuple[Response, Any]:
+        for attempt in range(self.max_retries + 1):
+            if attempt > 0:
+                await asyncio.sleep(self._backoff_delay(attempt))
+            try:
+                return await make_request_func()
+            except Exception as exc:
+                if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
+                    raise
+        raise RuntimeError("unreachable")
+
+    def execute_sync(
+            self,
+            make_request_func: Callable[..., tuple[Response, Any]]
+    ) -> tuple[Response, Any]:
+        for attempt in range(self.max_retries + 1):
+            if attempt > 0:
+                time.sleep(self._backoff_delay(attempt))
+            try:
+                return make_request_func()
+            except Exception as exc:
+                if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
+                    raise
+        raise RuntimeError("unreachable")
 
 
 def retry(
