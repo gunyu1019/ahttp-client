@@ -96,6 +96,7 @@ class BodyEntry(NamedTuple):
 
 if TYPE_CHECKING:
     from .request_bound import RequestBound
+    from .retry import RetryConfig
     from .session import AsyncSession, Session
 
 HookResultT = TypeVar("HookResultT")
@@ -224,6 +225,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self._body_model_candidates: tuple[Any, ...] = ()
         self._return_model: Any = inspect.Signature.empty
 
+        # Retry
+        self._retry_config: Optional[RetryConfig] = None
+
     @classmethod
     def from_decorator(
             cls,
@@ -307,6 +311,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         new_cls._deserializer = self._deserializer
         new_cls._body_model_candidates = self._body_model_candidates
         new_cls._return_model = self._return_model
+        new_cls._retry_config = self._retry_config
 
         new_cls.validation_parameter = self.validation_parameter
 
@@ -433,6 +438,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             self._serializer = extension["serializer"]
         if "deserializer" in extension.keys():
             self._deserializer = extension["deserializer"]
+        if "retry" in extension.keys():
+            self._retry_config = extension["retry"]
 
     def _bind_serializer(self, serializer: Optional[BaseCodec]) -> bool:
         """Resolve and attach a serializer using the stored body annotation.
@@ -504,6 +511,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         self._deserializer = resolved_deserializer
         return True
+
+    def _bind_retry(self, config: RetryConfig) -> None:
+        """Attach a retry configuration to this request."""
+        self._retry_config = config
 
     def _add_private_key(self) -> None:
         """Add static headers and query values declared by decorators.
@@ -1015,7 +1026,13 @@ class AsyncRequestCore(
 
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
-        raw_response = await session._make_request(req_obj, formatted_path)
+
+        make_request_func = lambda: session._make_request(req_obj, formatted_path)
+        if self._retry_config is not None:
+            raw_response, response = self._retry_config.execute_async(make_request_func)
+        else:
+            raw_response, response = await make_request_func()
+
         response: Any = raw_response
         should_close_raw_response = True
         try:
@@ -1104,8 +1121,13 @@ class SyncRequestCore(
 
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
-        raw_response = session._make_request(req_obj, formatted_path)
-        response: Any = raw_response
+
+        make_request_func = lambda: session._make_request(req_obj, formatted_path)
+        if self._retry_config is not None:
+            raw_response, response = self._retry_config.execute_sync(make_request_func)
+        else:
+            raw_response, response = make_request_func()
+
         should_close_raw_response = True
         try:
             if session._has_overridden_method(session.after_request):
