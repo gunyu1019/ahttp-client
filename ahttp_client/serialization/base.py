@@ -23,9 +23,7 @@ class BaseCodec(ABC):
     @staticmethod
     def is_sequence(value: Any) -> bool:
         """Return whether *value* is a collection of values to convert."""
-        return isinstance(value, Sequence) and not isinstance(
-            value, (str, bytes, bytearray)
-        )
+        return isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray))
 
     @classmethod
     def is_model_type(cls, model_type: type[Any]) -> bool:
@@ -58,6 +56,7 @@ class _LateBoundCodec(BaseCodec):
 
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     """Base codec that converts models into transport-safe values."""
+
     _registry: ClassVar[list[type[BaseSerializer]]] = []
     body_type: ClassVar[BodyType]
 
@@ -67,16 +66,9 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
     def multiple_serialize(self, model: Sequence[ModelT]) -> list[Any]:
         """Serialize a sequence of models."""
-        return [
-            self.single_serialize(item)
-            if isinstance(item, self.base_model_type)
-            else item
-            for item in model
-        ]
+        return [self.single_serialize(item) if isinstance(item, self.base_model_type) else item for item in model]
 
-    def serialize(
-        self, model: ModelT | Sequence[ModelT]
-    ) -> Any | list[Any]:
+    def serialize(self, model: ModelT | Sequence[ModelT]) -> Any | list[Any]:
         """Serialize one model or a sequence of models."""
         if self.is_sequence(model):
             return self.multiple_serialize(model)
@@ -125,6 +117,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
 class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     """Base codec that converts transport-safe values into models."""
+
     _registry: ClassVar[list[type[BaseDeserializer]]] = []
 
     def __init__(self, model: Optional[ModelT], **kwargs):
@@ -132,9 +125,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         super(BaseDeserializer, self).__init__(**kwargs)
 
     @abstractmethod
-    def single_deserialize(
-        self, data: Any
-    ) -> ModelT:
+    def single_deserialize(self, data: Any) -> ModelT:
         """Deserialize one value into a model."""
 
     def get_data(self, response: Response) -> Any:
@@ -145,9 +136,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         """
         return response
 
-    def multiple_deserialize(
-            self, data: Sequence[Any]
-    ) -> list[ModelT]:
+    def multiple_deserialize(self, data: Sequence[Any]) -> list[ModelT]:
         """Deserialize a sequence of values into models."""
         return [self.single_deserialize(item) for item in data]
 

@@ -14,20 +14,22 @@ from ..enum import BodyType
 
 class PydanticSerializer(BaseSerializer[BaseModel]):
     """Serialize Pydantic models with :meth:`BaseModel.model_dump`."""
+
     base_model_type: type[BaseModel] = BaseModel
     body_type = BodyType.JSON
 
-    def __init__(self,
-                 include: Optional[IncEx] = None,
-                 exclude: Optional[IncEx] = None,
-                 by_alias: Optional[bool] = None,
-                 exclude_unset: bool = False,
-                 exclude_defaults: bool = False,
-                 exclude_none: bool = False,
-                 exclude_computed_fields: bool = False,
-                 context: Optional[Any] = None,
-                 fallback: Optional[Callable[[Any], Any]] = None
-                 ):
+    def __init__(
+        self,
+        include: Optional[IncEx] = None,
+        exclude: Optional[IncEx] = None,
+        by_alias: Optional[bool] = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        exclude_computed_fields: bool = False,
+        context: Optional[Any] = None,
+        fallback: Optional[Callable[[Any], Any]] = None,
+    ):
         self.include = include
         self.exclude = exclude
         self.by_alias = by_alias
@@ -52,7 +54,7 @@ class PydanticSerializer(BaseSerializer[BaseModel]):
                 exclude_none=self.exclude_none,
                 exclude_computed_fields=self.exclude_computed_fields,
                 context=self.context,
-                fallback=self.fallback
+                fallback=self.fallback,
             )
         if isinstance(model, Mapping):
             return {key: self.single_serialize(value) for key, value in model.items()}
@@ -73,14 +75,15 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
 
     base_model_type: type[BaseModel] = BaseModel
 
-    def __init__(self,
-                 model: Any,
-                 strict: Optional[bool] = None,
-                 extra: Optional[ExtraValues] = None,
-                 context: Optional[Any] = None,
-                 by_alias: Optional[bool] = None,
-                 by_name: Optional[bool] = None,
-                 ):
+    def __init__(
+        self,
+        model: Any,
+        strict: Optional[bool] = None,
+        extra: Optional[ExtraValues] = None,
+        context: Optional[Any] = None,
+        by_alias: Optional[bool] = None,
+        by_name: Optional[bool] = None,
+    ):
         self.strict = strict
         self.extra = extra
         self.context = context
@@ -89,9 +92,7 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
         self._type_adapter = TypeAdapter(model)
         super().__init__(model=model)
 
-    def single_deserialize(
-            self, data: Any
-    ) -> Any:
+    def single_deserialize(self, data: Any) -> Any:
         """Validate one value against the configured model annotation."""
         return self._type_adapter.validate_python(
             data,
@@ -99,7 +100,7 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
             strict=self.strict,
             context=self.context,
             by_alias=self.by_alias,
-            by_name=self.by_name
+            by_name=self.by_name,
         )
 
     def deserialize(self, data: Any) -> Any:

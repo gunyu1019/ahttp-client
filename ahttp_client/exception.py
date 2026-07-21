@@ -19,9 +19,7 @@ class HTTPException(Exception):
     status_code: ClassVar[int | None] = None
     title: ClassVar[str] = "HTTP error"
 
-    def __init__(
-        self, response: Response | None = None, message: str | None = None
-    ) -> None:
+    def __init__(self, response: Response | None = None, message: str | None = None) -> None:
         self.response = response
         self.status = response.status if response is not None else self.status_code
         self.url = response.url if response is not None else None

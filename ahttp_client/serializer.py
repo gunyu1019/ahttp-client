@@ -15,28 +15,28 @@ from .serialization._types import (
 
 @overload
 def serialize(
-        model: Optional[type[ModelT]] = None,
-        **serializer_kwargs: Unpack[PydanticSerializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **serializer_kwargs: Unpack[PydanticSerializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 @overload
 def serialize(
-        model: Optional[type[ModelT]] = None,
-        **serializer_kwargs: Unpack[DataclassSerializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **serializer_kwargs: Unpack[DataclassSerializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 @overload
 def serialize(
-        model: Optional[type[ModelT]] = None,
-        **serializer_kwargs: Unpack[MarshmallowSerializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **serializer_kwargs: Unpack[MarshmallowSerializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 def serialize(
-        model: Optional[type[ModelT]] = None,
-        **serializer_kwargs: Any,
+    model: Optional[type[ModelT]] = None,
+    **serializer_kwargs: Any,
 ) -> RequestDecorator[Any, Any]:
     """Decorate a request to serialize its complete body.
 
@@ -78,28 +78,28 @@ def serialize(
 
 @overload
 def deserialize(
-        model: Optional[type[ModelT]] = None,
-        **deserializer_kwargs: Unpack[PydanticDeserializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **deserializer_kwargs: Unpack[PydanticDeserializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 @overload
 def deserialize(
-        model: Optional[type[ModelT]] = None,
-        **deserializer_kwargs: Unpack[DataclassDeserializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **deserializer_kwargs: Unpack[DataclassDeserializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 @overload
 def deserialize(
-        model: Optional[type[ModelT]] = None,
-        **deserializer_kwargs: Unpack[MarshmallowDeserializeOptions],
+    model: Optional[type[ModelT]] = None,
+    **deserializer_kwargs: Unpack[MarshmallowDeserializeOptions],
 ) -> RequestDecorator[Any, Any]: ...
 
 
 def deserialize(
-        model: Optional[type[ModelT]] = None,
-        **deserializer_kwargs: Any,
+    model: Optional[type[ModelT]] = None,
+    **deserializer_kwargs: Any,
 ) -> RequestDecorator[Any, Any]:
     """Decorate a request to deserialize its HTTP response.
 
