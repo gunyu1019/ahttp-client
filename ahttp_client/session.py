@@ -201,7 +201,7 @@ class AsyncSession(BaseSession):
         url = self._get_request_url(path)
         return await self.backend.session_put(url, **kwargs)
 
-    async def _make_request(self, request: RequestCore, path: str) -> Response:
+    async def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any]:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -210,9 +210,17 @@ class AsyncSession(BaseSession):
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
         url = self._get_request_url(path)
-        raw_response = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
-        await self.backend.pre_read_response(raw_response)
-        return Response(raw_response, self.backend, request._deserializer)
+        raw_response_data = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        await self.backend.pre_read_response(raw_response_data)
+        response = raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        if self._has_overridden_method(self.after_request):
+            try:
+                response = self.after_request(raw_response)
+            except BaseException:
+                if not raw_response.closed:
+                    raw_response.close()
+                raise
+        return raw_response, response
 
     @BaseSession._special_method
     async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
@@ -395,7 +403,7 @@ class Session(BaseSession):
         url = self._get_request_url(path)
         return self.backend.session_put(url, **kwargs)
 
-    def _make_request(self, request: RequestCore, path: str) -> Response:
+    def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any]:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -404,8 +412,16 @@ class Session(BaseSession):
         request_kwargs = self.backend.get_request_kwargs(_req_obj)
         url = self._get_request_url(path)
         _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
-        raw_response = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
-        return Response(raw_response, self.backend, request._deserializer)
+        raw_response_data = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        response = raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        if self._has_overridden_method(self.after_request):
+            try:
+                response = self.after_request(raw_response)
+            except BaseException:
+                if not raw_response.closed:
+                    raw_response.close()
+                raise
+        return raw_response, response
 
     @BaseSession._special_method
     def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
