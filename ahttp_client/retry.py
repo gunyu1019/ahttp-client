@@ -73,7 +73,8 @@ class RetryConfig:
             self,
             make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
     ) -> tuple[Response, Any]:
-        for attempt in range(self.max_retries + 1):
+        attempt = 0
+        while True:
             if attempt > 0:
                 await asyncio.sleep(self._backoff_delay(attempt))
             try:
@@ -81,13 +82,14 @@ class RetryConfig:
             except Exception as exc:
                 if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
                     raise
-        raise RuntimeError("unreachable")
+                attempt += 1
 
     def execute_sync(
             self,
             make_request_func: Callable[..., tuple[Response, Any]]
     ) -> tuple[Response, Any]:
-        for attempt in range(self.max_retries + 1):
+        attempt = 0
+        while True:
             if attempt > 0:
                 time.sleep(self._backoff_delay(attempt))
             try:
@@ -95,7 +97,7 @@ class RetryConfig:
             except Exception as exc:
                 if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
                     raise
-        raise RuntimeError("unreachable")
+                attempt += 1
 
 
 def retry(
