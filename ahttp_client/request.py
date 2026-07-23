@@ -780,15 +780,29 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
     def _resolve_type_hints(self) -> dict[str, Any]:
         """Resolve annotations independently when one forward reference fails."""
+        localns: dict[str, Any] = {}
+        frame = inspect.currentframe()
         try:
-            return get_type_hints(self.func, include_extras=True)
+            while frame is not None:
+                localns = {**frame.f_locals, **localns}
+                frame = frame.f_back
+        finally:
+            del frame
+
+        globalns = getattr(self.func, "__globals__", {})
+        try:
+            return get_type_hints(
+                self.func,
+                globalns=globalns,
+                localns=localns,
+                include_extras=True,
+            )
         except NotImplementedError:
             # Component factories such as ``Body.to_pascal()`` deliberately
             # reject unsupported declarations. Do not hide that contract.
             raise
         except Exception:
             resolved_hints: dict[str, Any] = {}
-            globalns = getattr(self.func, "__globals__", {})
             for name, annotation in self.func.__annotations__.items():
                 def hint_holder() -> None:
                     pass
@@ -799,6 +813,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                         get_type_hints(
                             hint_holder,
                             globalns=globalns,
+                            localns=localns,
                             include_extras=True,
                         )
                     )

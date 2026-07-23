@@ -88,6 +88,31 @@ def test_registered_serializer_converts_models_in_nested_containers() -> None:
     ]
 
 
+def test_request_resolves_local_postponed_model_for_nested_serializer() -> None:
+    class LocalModel:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+    class LocalModelSerializer(BaseSerializer[LocalModel]):
+        base_model_type = LocalModel
+        body_type = BodyType.JSON
+
+        def single_serialize(self, model: LocalModel) -> dict[str, str]:
+            return {"value": model.value}
+
+    @request("POST", "/", body_parameter="payload")
+    @serialize()
+    def endpoint(session, payload: list[dict[str, LocalModel]]) -> None:
+        pass
+
+    endpoint._fill_parameter(
+        object(),
+        {"payload": [{"item": LocalModel("nested")}]},
+    )
+
+    assert endpoint.body == [{"item": {"value": "nested"}}]
+
+
 def test_pydantic_single_model_rejects_root_array() -> None:
     pydantic = pytest.importorskip("pydantic")
     from ahttp_client.serialization.pydantic import PydanticDeserializer
