@@ -527,6 +527,38 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         """Attach a retry configuration to this request."""
         self._retry_config = config
 
+    def _capture_retry_stream_positions(self) -> list[tuple[Any, int]]:
+        """Capture seek positions for streams that a retry must replay."""
+        candidates = [self.body]
+        if isinstance(self._body_file, dict):
+            candidates.extend(file_entry[1] for file_entry in self._body_file.values())
+
+        positions: list[tuple[Any, int]] = []
+        seen: set[int] = set()
+        for candidate in candidates:
+            if not callable(getattr(candidate, "read", None)) or id(candidate) in seen:
+                continue
+
+            tell = getattr(candidate, "tell", None)
+            seek = getattr(candidate, "seek", None)
+            if not callable(tell) or not callable(seek):
+                raise TypeError("Request body streams must be seekable when retry is enabled.")
+            try:
+                position = tell()
+                seek(position)
+            except (OSError, TypeError, ValueError) as exc:
+                raise TypeError("Request body streams must be seekable when retry is enabled.") from exc
+
+            positions.append((candidate, position))
+            seen.add(id(candidate))
+        return positions
+
+    @staticmethod
+    def _rewind_retry_streams(positions: list[tuple[Any, int]]) -> None:
+        """Rewind replayable streams before a request attempt."""
+        for stream, position in positions:
+            stream.seek(position)
+
     def _add_private_key(self) -> None:
         """Add static headers and query values declared by decorators.
 
@@ -1060,7 +1092,14 @@ class AsyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
 
+        stream_positions = (
+            req_obj._capture_retry_stream_positions()
+            if self._retry_config is not None
+            else []
+        )
+
         def make_request_func() -> Awaitable[tuple[Response, Any]]:
+            req_obj._rewind_retry_streams(stream_positions)
             return session._make_request(req_obj, formatted_path)
 
         if self._retry_config is not None:
@@ -1146,7 +1185,14 @@ class SyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
 
+        stream_positions = (
+            req_obj._capture_retry_stream_positions()
+            if self._retry_config is not None
+            else []
+        )
+
         def make_request_func() -> tuple[Response, Any]:
+            req_obj._rewind_retry_streams(stream_positions)
             return session._make_request(req_obj, formatted_path)
 
         if self._retry_config is not None:

@@ -240,7 +240,10 @@ class AsyncSession(BaseSession):
             await self.backend.pre_read_response(raw_response_data)
         except BaseException:
             if not raw_response.closed:
-                await raw_response.async_close()
+                try:
+                    await raw_response.async_close()
+                except BaseException:
+                    _log.exception("Failed to close response after pre-read error")
             raise
         response = raw_response
         if self._has_overridden_method(self.after_request):
@@ -248,7 +251,10 @@ class AsyncSession(BaseSession):
                 response = await self.after_request(raw_response)
             except BaseException:
                 if not raw_response.closed:
-                    await raw_response.async_close()
+                    try:
+                        await raw_response.async_close()
+                    except BaseException:
+                        _log.exception("Failed to close response after after_request error")
                 raise
         return raw_response, response
 

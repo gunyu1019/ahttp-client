@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+import io
+from typing import Annotated, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ahttp_client import AsyncSession, Response, request
+from ahttp_client import AsyncSession, BaseSession, Body, Response, request
 from ahttp_client.enum import DirectResponseType
 from ahttp_client.exception import HTTPServerError, HTTPClientError
 from ahttp_client.retry import RetryConfig, retry
@@ -56,6 +57,11 @@ class _FailingPreReadBackend(_AsyncBackend):
         raise OSError("body pre-read failed")
 
 
+class _FailingClosePreReadBackend(_FailingPreReadBackend):
+    def response_close(self, response: _RawResponse) -> None:
+        raise RuntimeError("cleanup failed")
+
+
 def _make_sync_response() -> Response:
     return Response(_RawResponse(), _SyncBackend())
 
@@ -77,6 +83,19 @@ def test_async_make_request_closes_response_when_pre_read_fails() -> None:
         asyncio.run(session._make_request(endpoint, "/"))
 
     assert raw_response.closed is True
+
+
+def test_async_make_request_preserves_pre_read_error_when_cleanup_fails() -> None:
+    raw_response = _RawResponse()
+    session = object.__new__(AsyncSession)
+    session.backend = _FailingClosePreReadBackend(raw_response)
+    session.base_url = "https://example.test"
+
+    @request("GET", "/")
+    async def endpoint(session) -> None: ...
+
+    with pytest.raises(OSError, match="body pre-read failed"):
+        asyncio.run(session._make_request(endpoint, "/"))
 
 
 class _SyncSession:
@@ -119,6 +138,53 @@ class _AsyncSession:
 
     async def after_request(self, response: Response) -> Any:
         return response
+
+
+def test_retry_rewinds_seekable_body_stream() -> None:
+    class RetriableError(Exception):
+        pass
+
+    class ReplaySession:
+        directly_response = False
+
+        def __init__(self) -> None:
+            self.reads: list[bytes] = []
+
+        def _make_request(self, request_core, path: str) -> tuple[Response, Any]:
+            self.reads.append(request_core.body.read())
+            if len(self.reads) == 1:
+                raise RetriableError("retry")
+            response = _make_sync_response()
+            return response, response
+
+    @retry(max_retries=1, backoff_factor=0, retry_on=RetriableError)
+    @request("POST", "/")
+    def upload(
+        session: BaseSession,
+        stream: Annotated[io.BytesIO, Body],
+    ) -> str:
+        return "ok"
+
+    session = ReplaySession()
+    assert upload._execute(session, io.BytesIO(b"payload")) == "ok"
+    assert session.reads == [b"payload", b"payload"]
+
+
+def test_retry_rejects_non_seekable_body_stream() -> None:
+    class NonSeekable:
+        def read(self) -> bytes:
+            return b"payload"
+
+    @retry(max_retries=1, backoff_factor=0)
+    @request("POST", "/")
+    def upload(
+        session: BaseSession,
+        stream: Annotated[io.IOBase, Body],
+    ) -> None:
+        pass
+
+    with pytest.raises(TypeError, match="must be seekable"):
+        upload._execute(_SyncSession([]), NonSeekable())
 
 
 # ---------------------------------------------------------------------------

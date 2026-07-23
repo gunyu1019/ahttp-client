@@ -34,6 +34,14 @@ class _AsyncBackend:
         response.closed = True
 
 
+def test_async_close_supports_synchronous_backend_close() -> None:
+    response = Response(_RawResponse(), _SyncBackend())
+
+    asyncio.run(response.async_close())
+
+    assert response.closed is True
+
+
 class _Deserializer:
     def get_data(self, response: Response) -> Any:
         return response.payload

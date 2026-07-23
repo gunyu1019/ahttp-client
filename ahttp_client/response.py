@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from asyncio import iscoroutinefunction
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast, TypeVar
+from inspect import isawaitable
+from typing import TYPE_CHECKING, Any, Callable, cast, TypeVar
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -92,11 +93,15 @@ class Response:
         self._closed = True
 
     async def async_close(self) -> None:
-        """Close the underlying HTTP response."""
-        if not iscoroutinefunction(self._backend.response_close):
-            raise TypeError("async_close() requires an asynchronous response-close backend")
-        close = cast(Callable[[Any], Awaitable[None]], self._backend.response_close)
-        await close(self._raw_response_obj)
+        """Close the response from an async pipeline.
+
+        Some asynchronous clients, including aiohttp, expose a synchronous
+        response ``close`` method. The async wrapper accepts both backend
+        styles so callers do not need backend-specific cleanup branches.
+        """
+        result = self._backend.response_close(self._raw_response_obj)
+        if isawaitable(result):
+            await result
         self._closed = True
 
     def text(self) -> str:
