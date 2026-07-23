@@ -29,7 +29,9 @@ from abc import ABC, abstractmethod
 from urllib.parse import quote
 from typing import (
     Any,
+    Awaitable,
     Generic,
+    NoReturn,
     TypeVar,
     TYPE_CHECKING,
     Callable,
@@ -169,8 +171,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         headers: Optional[dict[str, Any]] = None,
         body: Optional[Any] = None,
         response_parameter: Optional[list[str]] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.func = func
         self.method = method
 
@@ -213,15 +215,15 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.body_parameter: Optional[BodyEntry] = None
         self.body_parameter_type: Optional[BodyType] = None
 
-        self.validation_parameter: dict[str, list[ValidationFunction]] = dict()
+        self.validation_parameter: dict[str, list[ValidationFunction[Any]]] = dict()
         self.response_parameter: list[str] = response_parameter or list()
 
         self._before_hook: Optional[RequestBeforeHookT] = None
         self._after_hook: Optional[RequestAfterHookT] = None
 
         # Serialization
-        self._serializer: Optional[BaseSerializer] = None
-        self._deserializer: Optional[BaseDeserializer] = None
+        self._serializer: Optional[BaseSerializer[Any]] = None
+        self._deserializer: Optional[BaseDeserializer[Any]] = None
         self._body_model_candidates: tuple[Any, ...] = ()
         self._return_model: Any = inspect.Signature.empty
 
@@ -242,7 +244,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         form_encoding: Optional[BodyFormEncoding] = None,
         path_parameter: Optional[list[str]] = None,
         body_parameter: Optional[str] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Self:
         new_cls = cls(func, method, path, **kwargs)
 
@@ -440,10 +442,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         is optional during automatic body inference, while a late-bound
         serializer must resolve successfully.
         """
-        resolved_serializer: Optional[BaseSerializer]
+        resolved_serializer: Optional[BaseSerializer[Any]]
 
         if serializer is not None and not serializer.is_late_bind:
-            resolved_serializer = cast(BaseSerializer, serializer)
+            resolved_serializer = cast(BaseSerializer[Any], serializer)
         else:
             resolved_serializer = None
             for model_candidate in self._body_model_candidates:
@@ -475,10 +477,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         required: bool = True,
     ) -> bool:
         """Resolve and attach a deserializer using the stored return model."""
-        resolved_deserializer: Optional[BaseDeserializer]
+        resolved_deserializer: Optional[BaseDeserializer[Any]]
 
         if deserializer is not None and not deserializer.is_late_bind:
-            resolved_deserializer = cast(BaseDeserializer, deserializer)
+            resolved_deserializer = cast(BaseDeserializer[Any], deserializer)
         elif self._return_model is inspect.Signature.empty:
             resolved_deserializer = None
         elif deserializer is None:
@@ -832,7 +834,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         formatted_path = self.path.format(**formatted_argument)
         return formatted_path
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, RequestCore):
             return False
         return (
@@ -858,7 +860,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             and other._deserializer == self._deserializer
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
     def __copy__(self) -> Self:
@@ -937,38 +939,39 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return session_directly_response
 
     @abstractmethod
-    def _execute(self, session: Any, *args, **kwargs) -> Any:
+    def _execute(self, session: Any, *args: Any, **kwargs: Any) -> Any:
         pass
 
     @overload
-    def __get__(self, instance: None, instance_type: type) -> Self: ...
+    def __get__(self, instance: None, instance_type: type[Any]) -> Self: ...
 
     @overload
-    def __get__(self, instance: BaseSession, instance_type: type) -> RequestBound: ...
+    def __get__(self, instance: BaseSession, instance_type: type[Any]) -> RequestBound: ...
 
     @overload
-    def __get__(self, instance: object, instance_type: type) -> Self: ...
+    def __get__(self, instance: object, instance_type: type[Any]) -> Self: ...
 
-    def __get__(self, instance: object | None, instance_type: type) -> Self | RequestBound:
+    def __get__(self, instance: object | None, instance_type: type[Any]) -> Self | RequestBound:
         if isinstance(instance, BaseSession):
             return instance._get_request_bound(self)
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> NoReturn:
         raise TypeError("RequestCore must be accessed through a Session instance.")
 
 
 class AsyncRequestCore(
     RequestCore[
-        AsyncRequestBeforeHookFunction[RequestCore],
+        AsyncRequestBeforeHookFunction[RequestCore[Any, Any]],
         AsyncRequestAfterHookFunction[Any],
     ]
 ):
     session: AsyncSession
 
     def before_hook(
-        self, func: AsyncRequestBeforeHookFunction[RequestCore]
-    ) -> AsyncRequestBeforeHookFunction[RequestCore]:
+        self,
+        func: AsyncRequestBeforeHookFunction[RequestCore[Any, Any]],
+    ) -> AsyncRequestBeforeHookFunction[RequestCore[Any, Any]]:
         """Register an asynchronous hook that runs before the HTTP request.
 
         Parameters
@@ -996,11 +999,11 @@ class AsyncRequestCore(
 
         return super(AsyncRequestCore, self).after_hook(func)
 
-    async def _execute(self, session: AsyncSession, *args, **kwargs) -> Any:
+    async def _execute(self, session: AsyncSession, *args: Any, **kwargs: Any) -> Any:
         bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
-        req_obj: RequestCore = self.copy()
+        req_obj: RequestCore[Any, Any] = self.copy()
 
         req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
@@ -1008,7 +1011,7 @@ class AsyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
 
-        def make_request_func():
+        def make_request_func() -> Awaitable[tuple[Response, Any]]:
             return session._make_request(req_obj, formatted_path)
 
         if self._retry_config is not None:
@@ -1047,15 +1050,16 @@ class AsyncRequestCore(
 
 class SyncRequestCore(
     RequestCore[
-        SyncRequestBeforeHookFunction[RequestCore],
+        SyncRequestBeforeHookFunction[RequestCore[Any, Any]],
         SyncRequestAfterHookFunction[Any],
     ]
 ):
     session: Session
 
     def before_hook(
-        self, func: SyncRequestBeforeHookFunction[RequestCore]
-    ) -> SyncRequestBeforeHookFunction[RequestCore]:
+        self,
+        func: SyncRequestBeforeHookFunction[RequestCore[Any, Any]],
+    ) -> SyncRequestBeforeHookFunction[RequestCore[Any, Any]]:
         """Register a synchronous hook that runs before the HTTP request.
 
         Parameters
@@ -1081,11 +1085,11 @@ class SyncRequestCore(
 
         return super(SyncRequestCore, self).after_hook(func)
 
-    def _execute(self, session: Session, *args, **kwargs) -> Any:
+    def _execute(self, session: Session, *args: Any, **kwargs: Any) -> Any:
         bound_argument = self._signature.bind(session, *args, **kwargs)
         bound_argument.apply_defaults()
 
-        req_obj: RequestCore = self.copy()
+        req_obj: RequestCore[Any, Any] = self.copy()
 
         req_obj._fill_parameter(session, bound_argument)
         formatted_path = req_obj._get_request_path(bound_argument)
@@ -1093,7 +1097,7 @@ class SyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
 
-        def make_request_func():
+        def make_request_func() -> tuple[Response, Any]:
             return session._make_request(req_obj, formatted_path)
 
         if self._retry_config is not None:
@@ -1130,7 +1134,12 @@ class SyncRequestCore(
         return result
 
 
-def _make_request_core(func, method, path, **kwargs):
+def _make_request_core(
+    func: RequestFunction[..., Any],
+    method: str | Method,
+    path: str,
+    **kwargs: Any,
+) -> AsyncRequestCore | SyncRequestCore:
     core_cls = AsyncRequestCore if inspect.iscoroutinefunction(func) else SyncRequestCore
     return core_cls.from_decorator(func, method, path, **kwargs)
 
@@ -1152,7 +1161,7 @@ def request(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Decorate a session method as an HTTP request.
 
@@ -1204,7 +1213,7 @@ def request(
     ``BodyForm`` parameters.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             method,
@@ -1225,7 +1234,7 @@ def request(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def get(
@@ -1244,14 +1253,14 @@ def get(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``GET`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.GET,
@@ -1272,7 +1281,7 @@ def get(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def post(
@@ -1291,14 +1300,14 @@ def post(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``POST`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.POST,
@@ -1319,7 +1328,7 @@ def post(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def options(
@@ -1338,14 +1347,14 @@ def options(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``OPTIONS`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.OPTIONS,
@@ -1366,7 +1375,7 @@ def options(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def patch(
@@ -1385,14 +1394,14 @@ def patch(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``PATCH`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.PATCH,
@@ -1413,7 +1422,7 @@ def patch(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def put(
@@ -1432,14 +1441,14 @@ def put(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``PUT`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.PUT,
@@ -1460,7 +1469,7 @@ def put(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
 
 
 def delete(
@@ -1479,14 +1488,14 @@ def delete(
     path_parameter: Optional[list[str]] = None,
     body_parameter: Optional[str] = None,
     response_parameter: Optional[list[str]] = None,
-    **request_kwargs,
+    **request_kwargs: Any,
 ) -> RequestDecorator[AsyncRequestCore, SyncRequestCore]:
     """Create a request decorator for the ``DELETE`` HTTP method.
 
     All parameters have the same meaning as :func:`request`.
     """
 
-    def decorator(func):
+    def decorator(func: RequestFunction[..., Any]) -> AsyncRequestCore | SyncRequestCore:
         return _make_request_core(
             func,
             Method.DELETE,
@@ -1507,4 +1516,4 @@ def delete(
             **request_kwargs,
         )
 
-    return decorator
+    return cast(RequestDecorator[AsyncRequestCore, SyncRequestCore], decorator)
