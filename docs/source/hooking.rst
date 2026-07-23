@@ -13,7 +13,7 @@ A hooking is used as follows.
     - Parse the raw response data into a data class.
     - Act based on the HTTP status code.
 
-.. note:: Only the session-level `before_request`/`after_request` hooks and the request-level `before_hook`/`after_hook` decorators are covered here. See :doc:`retry` for how retries interact with `after_request`, and :doc:`exception` for the `HTTPException` hierarchy raised from a hook.
+.. note:: This page only covers the session-level `before_request`/`after_request` hooks and the request-level `before_hook`/`after_hook` decorators. For how retries interact with `after_request`, see :doc:`retry`. For the `HTTPException` hierarchy a hook can raise, see :doc:`exception`.
 
 
 Session Hooking
@@ -47,14 +47,11 @@ A Session unit hooking is created by overridding a method.
         ) -> list[dict[str, Any]]:
             return response.json()
 
-A `GithubService` object is defined by overriding `before_request` and `after_request`.
+`GithubService` overrides `before_request` and `after_request` directly.
 
-The token required for authentication is stored as a private attribute and inserted into the header in `before_request`.
-When a method on a `GithubService` object is called, such as the `list_repositories` method,
-the `before_request` method is called first to insert the necessary HTTP components.
+The token is stored as a private attribute, and `before_request` inserts it into the header. Whenever a method on the object is called, such as `list_repositories`, `before_request` runs first and adds the HTTP components a request needs.
 
-After the HTTP request finishes, the `after_request` method is called to check the HTTP status code.
-If the HTTP status code is not 200 (OK), an `HTTPException` (a predefined exception; see :doc:`exception`) is raised.
+`after_request` runs once the HTTP request finishes and checks the status code. A status other than 200 (OK) raises `HTTPException`, a predefined exception (see :doc:`exception`).
 
 Request Hooking
 ---------------
@@ -90,11 +87,10 @@ A request unit hooking is created using the decorating method.
             raise HTTPException()
         return response
 
-The `repository_topic` method is defined to get the topics of a repository,
-and its hooking is defined using the `before_hook` and `after_hook` decorator methods of that same method.
+`repository_topic` fetches the topics of a repository, and its `before_hook`/`after_hook` decorators define the hooking right on that same method.
 
-The `before_hook` method inserts the necessary components (authorization key, etc.) before the HTTP request of the `repository_topic` method is called.
+`before_hook` inserts what the request needs (an authorization key, for example) before `repository_topic` makes the HTTP call.
 
-The `after_hook` method validates the response before the request function parses the JSON data.
+`after_hook` validates the response before the request function parses the JSON.
 
-.. warning:: A request-level `after_hook` always runs after any :doc:`retry` attempts have finished; it is not itself retried, even if it raises an exception listed in `retry_on`.
+.. warning:: A request-level `after_hook` always runs after any :doc:`retry` attempts have finished. It is not retried itself, even if it raises an exception listed in `retry_on`.

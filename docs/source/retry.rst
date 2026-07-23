@@ -1,8 +1,8 @@
 =====
 Retry
 =====
-A request can be repeated automatically when it fails, using exponential backoff between attempts.
-This is configured with the `@retry` decorator, which can be stacked on a request method the same way as `@AsyncSession.single_session` or a hook decorator.
+The `@retry` decorator repeats a request automatically when it fails, waiting longer between each attempt.
+Stack it on a request method the same way as `@AsyncSession.single_session` or a hook decorator.
 
 .. code-block:: python
     :linenos:
@@ -37,23 +37,23 @@ This is configured with the `@retry` decorator, which can be stacked on a reques
         ) -> list[dict[str, Any]]:
             return response.json()
 
-`Response.raise_for_status()` turns a 4xx or 5xx response into the matching :class:`HTTPException <ahttp_client.exception.HTTPException>` subclass (see :doc:`exception`), which is what makes such a response eligible for `retry_on` in the first place. Without calling it, a failed response is returned normally and no exception is raised for `retry` to catch.
+Retrying depends on `Response.raise_for_status()`: it turns a 4xx or 5xx response into the matching :class:`HTTPException <ahttp_client.exception.HTTPException>` subclass (see :doc:`exception`), and that exception is what `retry_on` catches. Without it, a failed response returns normally, and there is no exception for `retry` to act on.
 
 Backoff and Retry Scope
 ------------------------
-By default, up to three attempts are retried after the initial request, using `HTTPServerError` (any 5xx response) as the triggering exception.
+The defaults retry up to three times after the initial request, triggered by `HTTPServerError` (any 5xx response).
 
 The wait before retry attempt `n` is `backoff_factor * 2 ** (n - 1)` seconds, capped by `max_delay` when it is set. With the defaults above (`backoff_factor=0.5`, `max_delay=4.0`), the delays are `0.5`, `1.0`, `2.0`, and `4.0` (capped) seconds.
 
-Pass one exception class or a tuple of exception classes through `retry_on` to include transport-level failures (such as `TimeoutError`) alongside, or instead of, `HTTPServerError`.
+`retry_on` also accepts a tuple, so transport-level failures such as `TimeoutError` can be added alongside `HTTPServerError`, or used in its place.
 
-.. warning:: Only exceptions raised during request transport or the session-level `after_request()` hook are eligible for retry. A request-level `after_hook` (see :doc:`hooking`) always runs after the retry operation has finished, so an exception raised there is never retried.
+.. warning:: Retries only cover exceptions from request transport or the session-level `after_request()` hook. A request-level `after_hook` (see :doc:`hooking`) runs after the retry operation is already done, so anything it raises never gets retried.
 
-.. note:: `max_retries`, `backoff_factor`, and `max_delay` must all be finite, non-negative values; invalid values raise `TypeError` or `ValueError` when `@retry` is applied.
+.. note:: `max_retries`, `backoff_factor`, and `max_delay` all need to be finite, non-negative values. Bad values raise `TypeError` or `ValueError` as soon as `@retry` is applied.
 
 Decoration Order
 -----------------
-`@retry` can be placed above or below `@request` (or `@get`, `@post`, etc.) on the same method; both orders attach the same retry configuration:
+`@retry` works whether it sits above or below `@request` (or `@get`, `@post`, etc.) on the same method — both orders end up with the same retry configuration:
 
 .. code-block:: python
 

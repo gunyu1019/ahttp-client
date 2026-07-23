@@ -1,8 +1,8 @@
 =============
 Serialization
 =============
-A request body or a response can be converted to and from a model class using `@serialize` and `@deserialize`.
-`ahttp_client` ships with codecs for `dataclasses <https://docs.python.org/3/library/dataclasses.html>`_ (no extra dependency), `pydantic <https://docs.pydantic.dev/latest/>`_, and `marshmallow <https://marshmallow.readthedocs.io/>`_.
+`@serialize` and `@deserialize` convert a request body or a response to and from a model class.
+`ahttp_client` ships codecs for `dataclasses <https://docs.python.org/3/library/dataclasses.html>`_ (no extra dependency), `pydantic <https://docs.pydantic.dev/latest/>`_, and `marshmallow <https://marshmallow.readthedocs.io/>`_ out of the box.
 
 .. code-block:: python
     :linenos:
@@ -35,22 +35,22 @@ A request body or a response can be converted to and from a model class using `@
         ) -> list[Station]:
             raise AssertionError("direct deserialization skips the method body")
 
-`@deserialize` inspects the method's return annotation (`list[Station]`) to select a registered deserializer for `Station`, then reads it from the response through :attr:`Response.model <ahttp_client.response.Response.model>`.
-Combined with `directly_response=True`, the method body itself is never executed; the decorated method directly returns the deserialized model instead.
+`@deserialize` looks at the method's return annotation (`list[Station]`), picks the deserializer registered for `Station`, then reads it off the response through :attr:`Response.model <ahttp_client.response.Response.model>`.
+Pair it with `directly_response=True` and the method body never runs at all — the decorated method just hands back the deserialized model.
 
-`@serialize` works the same way in the opposite direction, selecting a serializer from the parameter annotated as the complete request `Body` (see :doc:`component`) instead of the return annotation.
+`@serialize` mirrors this in the other direction: instead of the return annotation, it picks its serializer from whichever parameter is annotated as the complete request `Body` (see :doc:`component`).
 
 Selecting a Model Type
 -----------------------
-`model` can be passed explicitly, such as `@serialize(CreateUser)` or `@deserialize(Station)`, when the model type cannot be inferred from an annotation.
-Any keyword arguments besides `model` are forwarded to the underlying serializer or deserializer once the model type is resolved (this is the "late-bind" mechanism: :meth:`~ahttp_client.serialization.base.BaseCodec.late_bind` stores the options, and :meth:`~ahttp_client.serialization.base.BaseSerializer.set_model`/:meth:`~ahttp_client.serialization.base.BaseDeserializer.set_model` resolve them once the annotated type is known).
+When the model type cannot be inferred from an annotation, pass it explicitly, such as `@serialize(CreateUser)` or `@deserialize(Station)`.
+Any other keyword arguments get forwarded to the serializer or deserializer once the model type is known — this is the "late-bind" mechanism at work: :meth:`~ahttp_client.serialization.base.BaseCodec.late_bind` holds onto the options until :meth:`~ahttp_client.serialization.base.BaseSerializer.set_model`/:meth:`~ahttp_client.serialization.base.BaseDeserializer.set_model` can resolve them against the actual annotated type.
 
 Built-in Codecs
 ---------------
 
 dataclasses
 ~~~~~~~~~~~
-No extra dependency is required. Any `@dataclasses.dataclass`-decorated class, including nested dataclasses, lists, and common field types (`datetime`, `UUID`, `Decimal`, `Enum`), is supported automatically.
+No extra dependency is required. Any `@dataclasses.dataclass`-decorated class is supported automatically, including nested dataclasses, lists, and common field types such as `datetime`, `UUID`, `Decimal`, and `Enum`.
 
 .. code-block:: python
 
@@ -84,7 +84,7 @@ pydantic
 
         pip install pydantic
 
-Any `pydantic.BaseModel` subclass is supported; serializer/deserializer keyword arguments (`by_alias`, `exclude_none`, `strict`, ...) map directly to `pydantic.BaseModel.model_dump`/`TypeAdapter.validate_python`, see :class:`~ahttp_client.serialization._types.PydanticSerializeOptions` and :class:`~ahttp_client.serialization._types.PydanticDeserializeOptions`.
+Any `pydantic.BaseModel` subclass is supported. The serializer/deserializer keyword arguments (`by_alias`, `exclude_none`, `strict`, ...) map directly onto `pydantic.BaseModel.model_dump`/`TypeAdapter.validate_python`; see :class:`~ahttp_client.serialization._types.PydanticSerializeOptions` and :class:`~ahttp_client.serialization._types.PydanticDeserializeOptions` for the full list.
 
 marshmallow
 ~~~~~~~~~~~
@@ -94,8 +94,8 @@ marshmallow
 
         pip install marshmallow
 
-Unlike the dataclasses and pydantic codecs, a `marshmallow.Schema` **instance** must always be passed explicitly as the `schema` keyword argument, since a schema is not itself the data's Python type.
-Because of this, pass the schema *class* explicitly as `model` too, rather than relying on inference from the `Body`/return annotation (a plain `dict`, unlike a dataclass or pydantic model, is not enough on its own to identify which schema to use):
+A `marshmallow.Schema` **instance** always has to be passed explicitly as the `schema` keyword argument here — unlike the dataclasses and pydantic codecs, a schema isn't itself the data's Python type, so there's nothing for `ahttp_client` to infer it from.
+For the same reason, pass the schema *class* explicitly as `model` too, rather than counting on inference from the `Body`/return annotation: a plain `dict` doesn't tell `ahttp_client` which schema to use, the way a dataclass or pydantic model would.
 
 .. code-block:: python
 

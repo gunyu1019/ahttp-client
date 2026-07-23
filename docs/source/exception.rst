@@ -1,7 +1,7 @@
 =========
 Exception
 =========
-`ahttp_client` provides a ready-made exception class for every standard HTTP 4xx/5xx status code, so error handling does not require manually checking `response.status` and raising a custom exception.
+`ahttp_client` provides a ready-made exception class for every standard HTTP 4xx/5xx status code, so error handling does not require checking `response.status` manually and raising a custom exception.
 
 .. code-block:: python
     :linenos:
@@ -23,19 +23,19 @@ Exception
         except HTTPNotFound as exc:
             print(exc.status, exc.url)
 
-`Response.raise_for_status()` looks up the exception class registered for the response's status code and, if one is found, raises it with the response attached. A successful or redirect response (2xx/3xx) is left untouched.
+`Response.raise_for_status()` looks up the exception class registered for the response's status code and raises it, response attached, if it finds one. A successful or redirect response (2xx/3xx) passes through untouched.
 
 Exception Hierarchy
 --------------------
-Every exception inherits from :class:`HTTPException <ahttp_client.exception.HTTPException>`, which carries the triggering `response`, its `status` code, and its `url`.
+Every exception inherits from :class:`HTTPException <ahttp_client.exception.HTTPException>`, which carries the `response` that triggered it along with its `status` code and `url`.
 
-* **HTTPClientError** - base class for 4xx responses. Used directly for a 4xx status code that has no dedicated class below.
-* **HTTPServerError** - base class for 5xx responses. Used directly for a 5xx status code that has no dedicated class below.
-* One concrete subclass per standard status code, such as `HTTPBadRequest` (400), `HTTPNotFound` (404), `HTTPTooManyRequests` (429), `HTTPInternalServerError` (500), and `HTTPServiceUnavailable` (503).
+* **HTTPClientError** - the base class for 4xx responses, used directly whenever a 4xx status has no dedicated class of its own.
+* **HTTPServerError** - the base class for 5xx responses, used the same way.
+* Beyond those two, there is one concrete subclass per standard status code: `HTTPBadRequest` (400), `HTTPNotFound` (404), `HTTPTooManyRequests` (429), `HTTPInternalServerError` (500), `HTTPServiceUnavailable` (503), and so on.
 
 .. note:: RFC 9110 renamed a few statuses; both the current and legacy names are exported as aliases of the same class: `HTTPPayloadTooLarge`/`HTTPContentTooLarge` (413), `HTTPRequestURITooLong`/`HTTPURITooLong` (414), and `HTTPUnprocessableEntity`/`HTTPUnprocessableContent` (422).
 
-Catching by category, rather than by exact status code, is useful when a request should be retried or logged the same way for any 4xx or any 5xx response:
+Catching by category instead of exact status code comes in handy when every 4xx (or every 5xx) response should be retried or logged the same way:
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ Catching by category, rather than by exact status code, is useful when a request
 
 Combining with Retry
 ----------------------
-Because `raise_for_status()` turns a failing response into a typed exception, that exception can be listed directly in `retry_on` (see :doc:`retry`) to retry only on server errors, without writing a manual status check:
+Because `raise_for_status()` turns a failing response into a typed exception, that exception can be listed directly in `retry_on` (see :doc:`retry`) to retry only on server errors, without a manual status check:
 
 .. code-block:: python
 

@@ -153,8 +153,8 @@ Session
                 pass
 
 .. seealso::
-    This page covers the core request/component/session API. For the backend
-    adapter classes, see :doc:`backend`; for retry configuration, see
-    :doc:`retry`; for serializer/deserializer classes, see
-    :doc:`serialization`; for the HTTP exception hierarchy, see
+    This page covers the core request/component/session API. The backend
+    adapter classes have their own page at :doc:`backend`, retry
+    configuration at :doc:`retry`, the serializer/deserializer classes at
+    :doc:`serialization`, and the HTTP exception hierarchy at
     :doc:`exception`.
