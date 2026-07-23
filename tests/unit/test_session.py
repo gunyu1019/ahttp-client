@@ -1,8 +1,10 @@
 from typing import get_type_hints
 
+import aiohttp
 import pytest
 
 from ahttp_client import AsyncSession, Response, Session, get
+from ahttp_client.backend.base import SyncBackend
 from ahttp_client.enum import DirectResponseType
 from ahttp_client.session import BaseSession
 
@@ -40,3 +42,38 @@ def test_sessions_accept_direct_response_type() -> None:
     assert get_type_hints(BaseSession.__init__)["directly_response"] == expected_type
     assert get_type_hints(AsyncSession.__init__)["directly_response"] == expected_type
     assert get_type_hints(Session.__init__)["directly_response"] == expected_type
+
+
+def test_sync_backend_rejects_async_client_type() -> None:
+    with pytest.raises(TypeError, match="not supported by SyncBackend"):
+        SyncBackend.from_session(
+            aiohttp.ClientSession,
+            base_url="http://example.test",
+        )
+
+
+def test_async_session_rejects_sync_request_handler() -> None:
+    with pytest.raises(TypeError, match="must use a asynchronous handler"):
+
+        class InvalidSession(AsyncSession):
+            @get("/")
+            def endpoint(self) -> None:
+                pass
+
+
+def test_sync_session_rejects_async_request_handler() -> None:
+    with pytest.raises(TypeError, match="must use a synchronous handler"):
+
+        class InvalidSession(Session):
+            @get("/")
+            async def endpoint(self) -> None:
+                pass
+
+
+def test_session_rejects_combined_direct_response_modes() -> None:
+    with pytest.raises(ValueError, match="cannot be combined"):
+        BaseSession.__init__(
+            object.__new__(AsyncSession),
+            "http://example.test",
+            directly_response=DirectResponseType.RESPONSE | DirectResponseType.DESERIALIZED,
+        )

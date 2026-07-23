@@ -75,7 +75,10 @@ class BaseBackend(ABC):
         """
         if session not in cls._registry.keys():
             raise TypeError(f"{session.__name__} is not supported")
-        return cls._registry[session](session, **kwargs)  # type: ignore[return-value]
+        backend_cls = cls._registry[session]
+        if not issubclass(backend_cls, cls):
+            raise TypeError(f"{session.__name__} is not supported by {cls.__name__}")
+        return backend_cls(session, **kwargs)
 
     @abstractmethod
     def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:

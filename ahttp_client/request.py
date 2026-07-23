@@ -188,6 +188,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.name = name or self.func.__name__
         self.path = path
         self.directly_response = directly_response
+        DirectResponseType.validate(self.directly_response)
 
         self._signature = inspect.signature(self.func)
 
@@ -386,15 +387,19 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return BodyType.RAW
 
     def _duplicated_check_body(self) -> None:
-        """Ensure static and parameter-derived bodies are not combined.
+        """Validate combinations of static and parameter-derived bodies.
 
         Raises
         ------
         TypeError
-            A static body and a ``Body`` parameter were both supplied.
+            Mutually incompatible body builders were supplied.
         """
         if self.body is not None and self.body_parameter is not None:
             raise TypeError("Only one Body Parameter or Body is allowed.")
+        if self.body is not None and self.body_form_parameter:
+            raise TypeError("Static Body and BodyForm parameters cannot be combined.")
+        if self.body is not None and self.body_json_parameter and not isinstance(self.body, dict):
+            raise TypeError("BodyJson parameters can only be combined with a static dictionary body.")
 
     def _duplicated_check_body_parameter(self, single_parameter: bool = False) -> None:
         """Ensure mutually exclusive body parameter styles are not combined.
@@ -420,6 +425,22 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             > 1
         ):
             raise TypeError("Duplicated Body Form Parameter, Body Json Parameter or Body Parameter.")
+
+    def _validate_body_json_paths(self) -> None:
+        """Reject duplicate or structurally conflicting JSON component paths."""
+        paths: list[tuple[str, tuple[str, ...]]] = []
+        for name, entry in self.body_json_parameter.items():
+            path = tuple((entry.custom_key or name).split("."))
+            if any(not part for part in path):
+                raise ValueError(f"BodyJson parameter {name!r} has an invalid JSON path.")
+
+            for other_name, other_path in paths:
+                shared_length = min(len(path), len(other_path))
+                if path[:shared_length] == other_path[:shared_length]:
+                    raise ValueError(
+                        f"BodyJson parameters {other_name!r} and {name!r} use conflicting JSON paths."
+                    )
+            paths.append((name, path))
 
     # Setup
     def _parse_extension(self) -> None:
@@ -556,6 +577,22 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         body_parameter: str
             Parameter name used as the complete body.
         """
+        parameter_names = set(self._signature.parameters)
+        component_parameters = {
+            "query": query_parameter or [],
+            "header": header_parameter or [],
+            "body JSON": body_json_parameter or [],
+            "form": form_parameter or [],
+            "path": path_parameter or [],
+        }
+        for component_name, configured_names in component_parameters.items():
+            unknown_names = set(configured_names) - parameter_names
+            if unknown_names:
+                unknown = ", ".join(sorted(unknown_names))
+                raise ValueError(f"Unknown {component_name} parameter(s): {unknown}")
+        if body_parameter is not None and body_parameter not in parameter_names:
+            raise ValueError(f"Unknown body parameter: {body_parameter}")
+
         form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
 
         try:
@@ -635,6 +672,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 self.body_json_parameter[name] = BodyJsonEntry(parameter, key)
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
+                self._validate_body_json_paths()
             elif issubclass(component_type, Body) or parameter.name == body_parameter:
                 self._duplicated_check_body_parameter(True)
                 body_component = component_instance if isinstance(component_instance, Body) else None
@@ -785,13 +823,24 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             if len(self.body.keys()) == 0:
                 self.body = None
         elif len(self.body_json_parameter) > 0 and self.body_parameter is None:
-            self.body = dict()
+            if self.body is None:
+                self.body = dict()
+            elif not isinstance(self.body, dict):
+                raise TypeError("BodyJson parameters require a dictionary body.")
+
             for _name, _json_entry in self.body_json_parameter.items():
                 if _json_entry.custom_key is not None:
                     parts = _json_entry.custom_key.split(".")
                     direction = self.body
                     for part in parts[:-1]:
-                        direction = direction.setdefault(part, dict())
+                        if part not in direction:
+                            direction[part] = {}
+                        elif not isinstance(direction[part], dict):
+                            raise TypeError(
+                                f"Cannot merge BodyJson path {_json_entry.custom_key!r}: "
+                                f"{part!r} is not a JSON object."
+                            )
+                        direction = direction[part]
                     direction[parts[-1]] = bounded_argument.get(_json_entry.parameter.name)
                     continue
                 self.body[_name] = bounded_argument.get(_json_entry.parameter.name)

@@ -155,6 +155,17 @@ def test_private_component(test_method_for_private_parameter):
     assert test_method_for_private_parameter.params.get("private_query") == "__PRIVATE_QUERY__"
 
 
+def test_static_component_decorators_support_outer_order() -> None:
+    @Header.default_header("X-Client", "test")
+    @Query.default_query("locale", "ko")
+    @request("GET", "/")
+    def endpoint(_: BaseSession) -> None:
+        pass
+
+    assert endpoint.headers["X-Client"] == "test"
+    assert endpoint.params["locale"] == "ko"
+
+
 def test_async_validator_is_rejected(test_method):
     with pytest.raises(TypeError, match="validator must not be a coroutine"):
 
@@ -172,3 +183,15 @@ def test_directly_response_accepts_direct_response_type():
         pass
 
     assert direct_request.directly_response is DirectResponseType.RESPONSE
+
+
+def test_directly_response_rejects_combined_modes() -> None:
+    with pytest.raises(ValueError, match="cannot be combined"):
+
+        @request(
+            "GET",
+            "/",
+            directly_response=DirectResponseType.RESPONSE | DirectResponseType.DESERIALIZED,
+        )
+        async def direct_request(session: BaseSession) -> None:
+            pass

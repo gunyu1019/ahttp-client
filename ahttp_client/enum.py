@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from enum import Flag, StrEnum, auto
+from typing import Any
 
 
 class Method(StrEnum):
@@ -63,3 +66,13 @@ class DirectResponseType(Flag):
 
     def __bool__(self) -> bool:
         return self != DirectResponseType.NONE
+
+    @classmethod
+    def validate(cls, value: Any) -> None:
+        """Validate that a direct-response setting selects at most one mode."""
+        if isinstance(value, bool):
+            return
+        if not isinstance(value, cls):
+            raise TypeError("directly_response must be a bool or DirectResponseType.")
+        if value not in (cls.NONE, cls.RESPONSE, cls.DESERIALIZED):
+            raise ValueError("Direct response modes cannot be combined.")

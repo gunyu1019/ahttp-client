@@ -246,6 +246,10 @@ class Header(Component):
         """
 
         def decorator(func: _CallableT) -> _CallableT:
+            if getattr(func, "__request_core__", False):
+                headers: dict[str, Any] = getattr(func, "headers")
+                headers[key] = value
+                return func
             if not hasattr(func, Header.DEFAULT_KEY):
                 setattr(func, Header.DEFAULT_KEY, dict())
             getattr(func, Header.DEFAULT_KEY)[key] = value
@@ -284,6 +288,10 @@ class Query(Component):
         """
 
         def decorator(func: _CallableT) -> _CallableT:
+            if getattr(func, "__request_core__", False):
+                params: dict[str, Any] = getattr(func, "params")
+                params[key] = value
+                return func
             if not hasattr(func, Query.DEFAULT_KEY):
                 setattr(func, Query.DEFAULT_KEY, dict())
             getattr(func, Query.DEFAULT_KEY)[key] = value

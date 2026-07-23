@@ -136,6 +136,79 @@ def test_body_json_builds_nested_and_renamed_payload():
     }
 
 
+def test_body_json_merges_static_defaults_without_mutating_request() -> None:
+    @request(
+        "POST",
+        "/items",
+        body={
+            "apiVersion": 2,
+            "item": {"role": "member", "locale": "en"},
+        },
+    )
+    def create_item(
+        _: BaseSession,
+        role: Annotated[str, BodyJson.custom_key("item.role")],
+        name: Annotated[str, BodyJson.custom_key("item.name")],
+    ) -> None:
+        pass
+
+    filled_request = _filled_component_request(create_item, "admin", "notebook")
+
+    assert filled_request.body == {
+        "apiVersion": 2,
+        "item": {
+            "role": "admin",
+            "locale": "en",
+            "name": "notebook",
+        },
+    }
+    assert create_item.body == {
+        "apiVersion": 2,
+        "item": {"role": "member", "locale": "en"},
+    }
+
+
+@pytest.mark.parametrize("static_body", [["item"], "item", 1])
+def test_body_json_rejects_non_object_static_body(static_body: Any) -> None:
+    with pytest.raises(TypeError, match="static dictionary"):
+
+        @request("POST", "/items", body=static_body)
+        def create_item(_: BaseSession, name: Annotated[str, BodyJson]) -> None:
+            pass
+
+
+def test_body_form_rejects_static_body() -> None:
+    with pytest.raises(TypeError, match="Static Body"):
+
+        @request("POST", "/items", body={"static": True})
+        def create_item(_: BaseSession, name: Annotated[str, BodyForm]) -> None:
+            pass
+
+
+def test_body_json_rejects_conflicting_component_paths() -> None:
+    with pytest.raises(ValueError, match="conflicting JSON paths"):
+
+        @request("POST", "/items")
+        def create_item(
+            _: BaseSession,
+            item: Annotated[str, BodyJson],
+            name: Annotated[str, BodyJson.custom_key("item.name")],
+        ) -> None:
+            pass
+
+
+def test_body_json_rejects_static_path_shape_conflict() -> None:
+    @request("POST", "/items", body={"item": "raw"})
+    def create_item(
+        _: BaseSession,
+        name: Annotated[str, BodyJson.custom_key("item.name")],
+    ) -> None:
+        pass
+
+    with pytest.raises(TypeError, match="is not a JSON object"):
+        _filled_component_request(create_item, "notebook")
+
+
 def test_body_form_defaults_to_url_encoded_without_file_fields():
     @request("POST", "/tokens")
     async def create_token(

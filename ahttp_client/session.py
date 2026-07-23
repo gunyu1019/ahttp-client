@@ -61,6 +61,7 @@ class BaseSession(ABC):
         *,
         directly_response: DirectResponseType | bool = False,
     ) -> None:
+        DirectResponseType.validate(directly_response)
         self.directly_response = directly_response
         self.base_url = base_url
 
@@ -107,6 +108,14 @@ class BaseSession(ABC):
 
             if not getattr(request_obj, "__request_core__", False):
                 continue
+
+            expects_async = issubclass(cls, AsyncSession)
+            if inspect.iscoroutinefunction(request_obj.func) != expects_async:
+                expected_kind = "asynchronous" if expects_async else "synchronous"
+                raise TypeError(
+                    f"Request {request_obj.name} must use a {expected_kind} handler "
+                    f"with {cls.__name__}."
+                )
 
             if request_obj.name in members.keys():
                 raise ValueError(f"Request name {request_obj.name} is duplicated")

@@ -140,6 +140,14 @@ def test_component_parameter_3(test_method_with_annotated):
     assert request_core.body_parameter_type == BodyType.JSON
 
 
+def test_unknown_legacy_component_parameter_is_rejected() -> None:
+    with pytest.raises(ValueError, match="Unknown query parameter"):
+
+        @request("GET", "/", query_parameter=["qurey"])
+        def endpoint(_: BaseSession, query: str) -> None:
+            pass
+
+
 def test_component_custom_name(test_method_component_custom_name):
     assert "custom_header_name" in test_method_component_custom_name.header_parameter
     assert "TestQuery" in test_method_component_custom_name.query_parameter
