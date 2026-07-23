@@ -25,6 +25,7 @@ class AiohttpBackend(AsyncBackend):
     session_cls = aiohttp.ClientSession
     response_cls = aiohttp.ClientResponse
     native_base_url = True
+    session: aiohttp.ClientSession
 
     async def pre_read_response(self, response_obj: aiohttp.ClientResponse) -> None:
         await response_obj.read()
@@ -68,9 +69,9 @@ class AiohttpBackend(AsyncBackend):
 
     @property
     def session_closed(self) -> bool:
-        return self.session.closed
+        return bool(self.session.closed)
 
-    def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
+    def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
@@ -110,26 +111,26 @@ class AiohttpBackend(AsyncBackend):
                 request_kwargs["data"] = request_obj.body
         return request_kwargs
 
-    async def session_close(self):
+    async def session_close(self) -> None:
         await self.session.close()
 
-    async def session_request(self, method: str, path: str, **kwargs):
+    async def session_request(self, method: str, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.request(method, path, **kwargs)
 
-    async def session_get(self, path: str, **kwargs):
+    async def session_get(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.get(path, **kwargs)
 
-    async def session_post(self, path: str, **kwargs):
+    async def session_post(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.post(path, **kwargs)
 
-    async def session_options(self, path: str, **kwargs):
+    async def session_options(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.options(path, **kwargs)
 
-    async def session_delete(self, path: str, **kwargs):
+    async def session_delete(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.delete(path, **kwargs)
 
-    async def session_patch(self, path: str, **kwargs):
+    async def session_patch(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.patch(path, **kwargs)
 
-    async def session_put(self, path: str, **kwargs):
+    async def session_put(self, path: str, **kwargs: Any) -> aiohttp.ClientResponse:
         return await self.session.put(path, **kwargs)

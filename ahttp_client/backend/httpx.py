@@ -26,7 +26,7 @@ class CommonHttpXBackend(BaseBackend, ABC):
     response_cls = httpx.Response
     native_base_url = True
 
-    def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
+    def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
@@ -95,36 +95,37 @@ class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
     """
 
     session_cls = httpx.AsyncClient
+    session: httpx.AsyncClient
 
     @property
     def session_closed(self) -> bool:
-        return self.session.is_closed
+        return bool(self.session.is_closed)
 
     async def response_close(self, response_obj: httpx.Response) -> None:
         await response_obj.aclose()
 
-    async def session_close(self):
+    async def session_close(self) -> None:
         await self.session.aclose()
 
-    async def session_request(self, method: str, path: str, **kwargs):
+    async def session_request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.request(method, path, **kwargs)
 
-    async def session_get(self, path: str, **kwargs):
+    async def session_get(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.get(path, **kwargs)
 
-    async def session_post(self, path: str, **kwargs):
+    async def session_post(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.post(path, **kwargs)
 
-    async def session_options(self, path: str, **kwargs):
+    async def session_options(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.options(path, **kwargs)
 
-    async def session_delete(self, path: str, **kwargs):
+    async def session_delete(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.delete(path, **kwargs)
 
-    async def session_patch(self, path: str, **kwargs):
+    async def session_patch(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.patch(path, **kwargs)
 
-    async def session_put(self, path: str, **kwargs):
+    async def session_put(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self.session.put(path, **kwargs)
 
 
@@ -137,34 +138,35 @@ class HttpXSyncSession(SyncBackend, CommonHttpXBackend):
     """
 
     session_cls = httpx.Client
+    session: httpx.Client
 
     def response_close(self, response_obj: httpx.Response) -> None:
         response_obj.close()
 
     @property
     def session_closed(self) -> bool:
-        return self.session.is_closed
+        return bool(self.session.is_closed)
 
-    def session_close(self):
+    def session_close(self) -> None:
         self.session.close()
 
-    def session_request(self, method: str, path: str, **kwargs):
+    def session_request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.request(method, path, **kwargs)
 
-    def session_get(self, path: str, **kwargs):
+    def session_get(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.get(path, **kwargs)
 
-    def session_post(self, path: str, **kwargs):
+    def session_post(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.post(path, **kwargs)
 
-    def session_options(self, path: str, **kwargs):
+    def session_options(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.options(path, **kwargs)
 
-    def session_delete(self, path: str, **kwargs):
+    def session_delete(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.delete(path, **kwargs)
 
-    def session_patch(self, path: str, **kwargs):
+    def session_patch(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.patch(path, **kwargs)
 
-    def session_put(self, path: str, **kwargs):
+    def session_put(self, path: str, **kwargs: Any) -> httpx.Response:
         return self.session.put(path, **kwargs)

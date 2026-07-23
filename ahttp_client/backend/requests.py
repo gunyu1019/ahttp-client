@@ -26,8 +26,9 @@ class RequestsBackend(SyncBackend):
 
     session_cls = requests.Session
     response_cls = requests.Response
+    session: requests.Session
 
-    def __init__(self, session: type, **kwargs: Any):
+    def __init__(self, session: type[requests.Session], **kwargs: Any) -> None:
         super(RequestsBackend, self).__init__(session, **kwargs)
         self._closed = False
 
@@ -70,7 +71,7 @@ class RequestsBackend(SyncBackend):
     def session_closed(self) -> bool:
         return self._closed
 
-    def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
+    def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
         request_kwargs = copy.deepcopy(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
@@ -93,27 +94,27 @@ class RequestsBackend(SyncBackend):
                 request_kwargs["data"] = request_obj.body
         return request_kwargs
 
-    def session_close(self):
+    def session_close(self) -> None:
         self.session.close()
         self._closed = True
 
-    def session_request(self, method: str, path: str, **kwargs):
+    def session_request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
         return self.session.request(method, path, **kwargs)
 
-    def session_get(self, path: str, **kwargs):
+    def session_get(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.get(path, **kwargs)
 
-    def session_post(self, path: str, **kwargs):
+    def session_post(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.post(path, **kwargs)
 
-    def session_options(self, path: str, **kwargs):
+    def session_options(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.options(path, **kwargs)
 
-    def session_delete(self, path: str, **kwargs):
+    def session_delete(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.delete(path, **kwargs)
 
-    def session_patch(self, path: str, **kwargs):
+    def session_patch(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.patch(path, **kwargs)
 
-    def session_put(self, path: str, **kwargs):
+    def session_put(self, path: str, **kwargs: Any) -> requests.Response:
         return self.session.put(path, **kwargs)
