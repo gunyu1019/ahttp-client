@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 23:04+0900\n"
+"POT-Creation-Date: 2026-07-24 03:58+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -63,10 +63,10 @@ msgstr "HTTP 상태 코드에 따라 적절한 조치합니다."
 
 #: ../../source/hooking.rst:16
 msgid ""
-"Only the session-level `before_request`/`after_request` hooks and the "
-"request-level `before_hook`/`after_hook` decorators are covered here. See"
-" :doc:`retry` for how retries interact with `after_request`, and "
-":doc:`exception` for the `HTTPException` hierarchy raised from a hook."
+"This page only covers the session-level `before_request`/`after_request` "
+"hooks and the request-level `before_hook`/`after_hook` decorators. For "
+"how retries interact with `after_request`, see :doc:`retry`. For the "
+"`HTTPException` hierarchy a hook can raise, see :doc:`exception`."
 msgstr ""
 "여기서는 세션 단위의 `before_request`/`after_request` 후킹과 요청 단위의 "
 "`before_hook`/`after_hook` 데코레이터만 다룹니다. 재시도가 `after_request` 와 어떻게 맞물리는지는"
@@ -86,74 +86,70 @@ msgid "Hooking of Session Unit Example"
 msgstr "세션 단위의 후킹 예제"
 
 #: ../../source/hooking.rst:50
-msgid ""
-"A `GithubService` object is defined by overriding `before_request` and "
-"`after_request`."
+msgid "`GithubService` overrides `before_request` and `after_request` directly."
 msgstr "`GithubService` 객체는 `before_request` 와 `after_request` 를 오버라이딩하여 정의합니다."
 
 #: ../../source/hooking.rst:52
 msgid ""
-"The token required for authentication is stored as a private attribute "
-"and inserted into the header in `before_request`. When a method on a "
-"`GithubService` object is called, such as the `list_repositories` method,"
-" the `before_request` method is called first to insert the necessary HTTP"
-" components."
+"The token is stored as a private attribute, and `before_request` inserts "
+"it into the header. Whenever a method on the object is called, such as "
+"`list_repositories`, `before_request` runs first and adds the HTTP "
+"components a request needs."
 msgstr ""
-"인증에 필요한 토큰을 비공개 속성 값으로 저장해두고, `before_request` 메소드에서 header에 그 값을 "
-"삽입합니다. `list_repositories` 메소드와 같이 `GithubService` 객체에 소속된 메소드가 호출되면, "
-"필요한 HTTP 구성요소를 삽입하기 위해 `before_request` 메소드가 먼저 호출됩니다."
+"인증에 필요한 토큰을 비공개 속성 값으로 저장해두고, `before_request` 메소드에서 header에 그 값을 삽입합니다. "
+"`list_repositories` 메소드와 같이 `GithubService` 객체에 소속된 메소드가 호출되면, 필요한 HTTP "
+"구성요소를 삽입하기 위해 `before_request` 메소드가 먼저 호출됩니다."
 
-#: ../../source/hooking.rst:56
+#: ../../source/hooking.rst:54
 msgid ""
-"After the HTTP request finishes, the `after_request` method is called to "
-"check the HTTP status code. If the HTTP status code is not 200 (OK), an "
-"`HTTPException` (a predefined exception; see :doc:`exception`) is raised."
+"`after_request` runs once the HTTP request finishes and checks the status"
+" code. A status other than 200 (OK) raises `HTTPException`, a predefined "
+"exception (see :doc:`exception`)."
 msgstr ""
 "HTTP 요청이 끝나면, `after_request` 메소드가 호출되어 HTTP 상태 코드를 확인합니다. 상태 코드가 200 "
 "(OK)이 아니라면, 사전에 정의된 예외인 `HTTPException` 이 발생합니다 (:doc:`exception` 참고)."
 
-#: ../../source/hooking.rst:60
+#: ../../source/hooking.rst:57
 msgid "Request Hooking"
 msgstr "요청 후킹(Request Hooking)"
 
-#: ../../source/hooking.rst:61
+#: ../../source/hooking.rst:58
 msgid "A request unit hooking is created using the decorating method."
 msgstr "요청 단위의 후킹은 데코레이터 메소드를 이용하여 생성하게 됩니다."
 
-#: ../../source/hooking.rst:63
+#: ../../source/hooking.rst:60
 msgid "Hooking of Request Unit Example"
 msgstr "요청 단위의 후킹 예제"
 
-#: ../../source/hooking.rst:93
+#: ../../source/hooking.rst:90
 msgid ""
-"The `repository_topic` method is defined to get the topics of a "
-"repository, and its hooking is defined using the `before_hook` and "
-"`after_hook` decorator methods of that same method."
+"`repository_topic` fetches the topics of a repository, and its "
+"`before_hook`/`after_hook` decorators define the hooking right on that "
+"same method."
 msgstr ""
 "깃허브 레포지토리의 주제를 가져오기 위해 `repository_topic` 메소드를 정의하였습니다. 그리고 같은 메소드의 "
 "`before_hook` 과 `after_hook` 데코레이터 메소드를 이용하여 후킹을 정의하였습니다."
 
-#: ../../source/hooking.rst:96
+#: ../../source/hooking.rst:92
 msgid ""
-"The `before_hook` method inserts the necessary components (authorization "
-"key, etc.) before the HTTP request of the `repository_topic` method is "
-"called."
+"`before_hook` inserts what the request needs (an authorization key, for "
+"example) before `repository_topic` makes the HTTP call."
 msgstr "before_hook 메소드에서는 필요한 구성 요소(인증키 등)를 HTTP 요청이 있기 전에 삽입하는 역할을 합니다."
 
-#: ../../source/hooking.rst:98
+#: ../../source/hooking.rst:94
 msgid ""
-"The `after_hook` method validates the response before the request "
-"function parses the JSON data."
+"`after_hook` validates the response before the request function parses "
+"the JSON."
 msgstr "after_hook 메소드는 요청 함수가 JSON 데이터를 파싱하기 전에 응답을 검증합니다."
 
-#: ../../source/hooking.rst:100
+#: ../../source/hooking.rst:96
 msgid ""
 "A request-level `after_hook` always runs after any :doc:`retry` attempts "
-"have finished; it is not itself retried, even if it raises an exception "
+"have finished. It is not retried itself, even if it raises an exception "
 "listed in `retry_on`."
 msgstr ""
-"요청 단위의 `after_hook` 은 :doc:`retry` 시도가 다 끝난 뒤에 실행됩니다. 그래서 `retry_on` 에 "
-"적힌 예외를 여기서 발생시켜도 재시도 대상이 되지는 않습니다."
+"요청 단위의 `after_hook` 은 :doc:`retry` 시도가 다 끝난 뒤에 실행됩니다. 그래서 `retry_on` 에 적힌"
+" 예외를 여기서 발생시켜도 재시도 대상이 되지는 않습니다."
 
 #~ msgid ""
 #~ "To get the topic of a repository,"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 23:56+0900\n"
+"POT-Creation-Date: 2026-07-24 03:58+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -217,8 +217,8 @@ msgid ""
 "function parameters, then executes the decorated function with any "
 ":class:`~ahttp_client.response.Response` parameter filled in."
 msgstr ""
-"request core는 세션의 속성으로 접근되는 순간 :class:`~ahttp_client.session.BaseSession` "
-"인스턴스에 바인딩됩니다. 바인딩된 요청은 고정 값과 애너테이션 매개변수로 백엔드에 맞는 요청을 만들고, "
+"request core는 세션의 속성으로 접근되는 순간 :class:`~ahttp_client.session.BaseSession`"
+" 인스턴스에 바인딩됩니다. 바인딩된 요청은 고정 값과 애너테이션 매개변수로 백엔드에 맞는 요청을 만들고, "
 ":class:`~ahttp_client.response.Response` 매개변수를 채운 다음 데코레이팅된 함수를 실행합니다."
 
 #: ahttp_client.request.RequestCore:11 of
@@ -396,8 +396,8 @@ msgid ""
 "built. Its return value replaces the argument used in request components "
 "and in the decorated function."
 msgstr ""
-"검증기는 요청을 만들기 전에 ``(session, value)`` 형태로 호출되며, 반환값이 요청 구성요소와 데코레이팅된 함수에"
-" 쓰이는 인자를 대체합니다."
+"검증기는 요청을 만들기 전에 ``(session, value)`` 형태로 호출되며, 반환값이 요청 구성요소와 데코레이팅된 함수에 "
+"쓰이는 인자를 대체합니다."
 
 #: ahttp_client.request.RequestCore.validation:8 of
 msgid "Name of a parameter in the decorated function signature."
@@ -566,7 +566,19 @@ msgstr ""
 "이 응답으로부터 :attr:`model` 을 만드는 데 사용되는 deserializer입니다. 요청에 ``@deserialize``"
 " 데코레이터가 적용되지 않은 경우 설정되지 않습니다."
 
-#: ahttp_client.response.Response.async_close:1
+#: ahttp_client.response.Response.async_close:1 of
+msgid "Close the response from an async pipeline."
+msgstr "비동기 파이프라인에서 응답을 닫습니다."
+
+#: ahttp_client.response.Response.async_close:3 of
+msgid ""
+"Some asynchronous clients, including aiohttp, expose a synchronous "
+"response ``close`` method. The async wrapper accepts both backend styles "
+"so callers do not need backend-specific cleanup branches."
+msgstr ""
+"aiohttp를 포함한 일부 비동기 클라이언트는 응답의 ``close`` 메소드를 동기 방식으로 제공합니다. 이 비동기 "
+"래퍼는 두 방식을 모두 받아들이므로, 호출하는 쪽에서 백엔드별로 분기 처리를 할 필요가 없습니다."
+
 #: ahttp_client.response.Response.close:1 of
 msgid "Close the underlying HTTP response."
 msgstr "내부의 HTTP 응답을 닫습니다."
@@ -782,10 +794,10 @@ msgstr "내부의 HTTP 클라이언트 세션이 닫혔는지 여부를 반환�
 
 #: ../../source/api.rst:156
 msgid ""
-"This page covers the core request/component/session API. For the backend "
-"adapter classes, see :doc:`backend`; for retry configuration, see "
-":doc:`retry`; for serializer/deserializer classes, see "
-":doc:`serialization`; for the HTTP exception hierarchy, see "
+"This page covers the core request/component/session API. The backend "
+"adapter classes have their own page at :doc:`backend`, retry "
+"configuration at :doc:`retry`, the serializer/deserializer classes at "
+":doc:`serialization`, and the HTTP exception hierarchy at "
 ":doc:`exception`."
 msgstr ""
 "이 페이지는 request/component/session 핵심 API를 다룹니다. 백엔드 어댑터 클래스는 "

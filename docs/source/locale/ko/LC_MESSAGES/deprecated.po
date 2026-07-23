@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 23:04+0900\n"
+"POT-Creation-Date: 2026-07-24 03:58+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -26,15 +26,13 @@ msgstr "지원 종료 (Deprecated)"
 
 #: ../../source/deprecated.rst:4
 msgid ""
-"This page archives features that were documented for `ahttp_client` v1 "
-"but have since been removed from the package. It exists so that "
-"developers upgrading from v1 can find out what happened to a feature they"
-" used to rely on; none of the code below is importable from the current "
-"package."
+"This page is an archive of features that `ahttp_client` v1 used to "
+"document but has since dropped. If you're upgrading from v1 and something"
+" you relied on went missing, it's probably here. None of the code on this"
+" page is importable from the current package."
 msgstr ""
-"이 페이지는 `ahttp_client` v1에 있었지만 지금은 패키지에서 빠진 기능들을 모아둔 곳입니다. v1에서 넘어오는 "
-"개발자가 예전에 쓰던 기능이 어떻게 됐는지 찾아볼 수 있게 남겨뒀고, 여기 나오는 코드는 지금 패키지에서는 import되지"
-" 않습니다."
+"이 페이지는 `ahttp_client` v1에 있었지만 지금은 빠진 기능들을 모아둔 아카이브입니다. v1에서 넘어오는데 쓰던 기능이"
+" 안 보인다면 아마 여기 있을 겁니다. 이 페이지에 나오는 코드는 지금 패키지에서는 import할 수 없습니다."
 
 #: ../../source/deprecated.rst:8
 msgid "Multiple Hooking"
@@ -46,44 +44,64 @@ msgstr "제거되었습니다. 직접적인 대체 기능은 없습니다."
 
 #: ../../source/deprecated.rst:12
 msgid ""
-"`multiple_hook` used to let more than one function hook the same "
-"before/after stage of a request:"
-msgstr "`multiple_hook` 은 하나의 요청, 같은 before/after 단계를 여러 함수가 나눠서 후킹할 수 있게 해주는 기능이었습니다:"
+"`multiple_hook` used to let several functions hook the same before/after "
+"stage of a request:"
+msgstr ""
+"`multiple_hook` 은 하나의 요청, 같은 before/after 단계를 여러 함수가 나눠서 후킹할 수 있게 해주는 "
+"기능이었습니다:"
 
 #: ../../source/deprecated.rst:39
 msgid ""
 "As of v2.0, `RequestCore.before_hook`/`after_hook` (see :doc:`hooking`) "
 "each accept only a single function. If more than one action is needed at "
-"a stage, combine them inside one hook function instead of stacking "
+"a stage, combine them inside that one hook function instead of stacking "
 "`multiple_hook` calls."
 msgstr ""
-"v2.0부터는 `RequestCore.before_hook`/`after_hook` (:doc:`hooking` 참고)이 각각 함수 "
-"하나씩만 받습니다. 한 단계에서 여러 동작이 필요하면 `multiple_hook` 을 여러 번 쌓는 대신, 훅 함수 하나에 그 "
+"v2.0부터는 `RequestCore.before_hook`/`after_hook` (:doc:`hooking` 참고)이 각각 함수"
+" 하나씩만 받습니다. 한 단계에서 여러 동작이 필요하면 `multiple_hook` 을 여러 번 쌓는 대신, 훅 함수 하나에 그 "
 "동작들을 다 넣으면 됩니다."
 
-#: ../../source/deprecated.rst:43
+#: ../../source/deprecated.rst:42
 msgid "Pydantic Response Model"
 msgstr "Pydantic 응답 모델"
 
-#: ../../source/deprecated.rst:44
+#: ../../source/deprecated.rst:43
 msgid "Removed. Replaced by :doc:`serialization`."
 msgstr "제거되었습니다. :doc:`serialization` 으로 대체되었습니다."
 
-#: ../../source/deprecated.rst:47
+#: ../../source/deprecated.rst:46
 msgid ""
 "`ahttp_client.extension.pydantic_response_model(model)` used to "
-"deserialize a JSON response into a `pydantic.BaseModel` subclass by "
-"passing the model type directly: `@pydantic_response_model(Repository)`."
+"deserialize a JSON response into a `pydantic.BaseModel` subclass, taking "
+"the model type directly: `@pydantic_response_model(Repository)`."
 msgstr ""
 "`ahttp_client.extension.pydantic_response_model(model)` 은 "
 "`@pydantic_response_model(Repository)` 처럼 모델 타입을 직접 넘기면 JSON 응답을 "
 "`pydantic.BaseModel` 서브클래스로 역직렬화해주는 기능이었습니다."
 
-#: ../../source/deprecated.rst:49
+#: ../../source/deprecated.rst:48
 msgid ""
-"Its role is now filled by `@deserialize` from :doc:`serialization`, which"
-" additionally supports `dataclasses` and `marshmallow` models and can "
-"also be paired with `@serialize` for the request body:"
+"`@deserialize` from :doc:`serialization` now fills that role, and does "
+"more: it also supports `dataclasses` and `marshmallow` models, and can be"
+" paired with `@serialize` for the request body:"
 msgstr ""
 "지금은 이 역할을 :doc:`serialization` 의 `@deserialize` 가 대신합니다. `dataclasses` 와 "
 "`marshmallow` 모델까지 추가로 지원하고, 요청 본문 쪽은 `@serialize` 와 짝지어 쓸 수도 있습니다:"
+
+#~ msgid ""
+#~ "This page archives features that were"
+#~ " documented for `ahttp_client` v1 but "
+#~ "have since been removed from the "
+#~ "package. It exists so that developers"
+#~ " upgrading from v1 can find out "
+#~ "what happened to a feature they "
+#~ "used to rely on; none of the "
+#~ "code below is importable from the "
+#~ "current package."
+#~ msgstr ""
+#~ "이 페이지는 `ahttp_client` v1에 있었지만 지금은 "
+#~ "패키지에서 빠진 기능들을 모아둔 곳입니다. v1에서 넘어오는"
+#~ " 개발자가 예전에 쓰던 기능이 어떻게 됐는지 찾아볼"
+#~ " 수 있게 남겨뒀고, 여기 나오는 코드는 지금 "
+#~ "패키지에서는 import되지 않습니다."
+
