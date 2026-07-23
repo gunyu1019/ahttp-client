@@ -15,7 +15,7 @@ that maps typed function parameters to HTTP requests.
 - Serialize typed request models and deserialize responses using registered codecs.
 - Retry failed requests with configurable exception filters and exponential backoff.
 - Customize the request lifecycle using `before_hook` and `after_hook` decorators.
-- Reduce boilerplate code when using HTTP client packages such as aiohttp, httpx, and requests.
+- Swap between aiohttp, httpx, and requests without changing how a service is declared.
 
 ## Installation
 
