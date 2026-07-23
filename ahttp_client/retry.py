@@ -42,38 +42,30 @@ class RetryConfig:
     """
 
     def __init__(
-            self,
-            max_retries: int = 3,
-            backoff_factor: float = 1.0,
-            retry_on: tuple[type[Exception], ...] = (HTTPServerError,),
-            max_delay: Optional[float] = None,
+        self,
+        max_retries: int = 3,
+        backoff_factor: float = 1.0,
+        retry_on: tuple[type[Exception], ...] = (HTTPServerError,),
+        max_delay: Optional[float] = None,
     ) -> None:
         if isinstance(max_retries, bool) or not isinstance(max_retries, int):
             raise TypeError("max_retries must be an integer")
         if max_retries < 0:
             raise ValueError("max_retries must be greater than or equal to zero")
 
-        if (
-                isinstance(backoff_factor, bool)
-                or not isinstance(backoff_factor, (int, float))
-        ):
+        if isinstance(backoff_factor, bool) or not isinstance(backoff_factor, (int, float)):
             raise TypeError("backoff_factor must be a number")
         if backoff_factor < 0 or not math.isfinite(backoff_factor):
             raise ValueError("backoff_factor must be a finite non-negative number")
 
         if max_delay is not None:
-            if (
-                    isinstance(max_delay, bool)
-                    or not isinstance(max_delay, (int, float))
-            ):
+            if isinstance(max_delay, bool) or not isinstance(max_delay, (int, float)):
                 raise TypeError("max_delay must be a number or None")
             if max_delay < 0 or not math.isfinite(max_delay):
                 raise ValueError("max_delay must be a finite non-negative number")
 
         if not isinstance(retry_on, tuple) or not all(
-                isinstance(exception_type, type)
-                and issubclass(exception_type, Exception)
-                for exception_type in retry_on
+            isinstance(exception_type, type) and issubclass(exception_type, Exception) for exception_type in retry_on
         ):
             raise TypeError("retry_on must contain only Exception subclasses")
 
@@ -100,8 +92,7 @@ class RetryConfig:
         return delay
 
     async def execute_async(
-            self,
-            make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
+        self, make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
     ) -> tuple[Response, Any]:
         """Execute an asynchronous request and retry matching failures.
 
@@ -133,10 +124,7 @@ class RetryConfig:
                     raise
                 attempt += 1
 
-    def execute_sync(
-            self,
-            make_request_func: Callable[..., tuple[Response, Any]]
-    ) -> tuple[Response, Any]:
+    def execute_sync(self, make_request_func: Callable[..., tuple[Response, Any]]) -> tuple[Response, Any]:
         """Execute a synchronous request and retry matching failures.
 
         Parameters
@@ -169,11 +157,11 @@ class RetryConfig:
 
 
 def retry(
-        max_retries: int = 3,
-        *,
-        backoff_factor: float = 1.0,
-        retry_on: tuple[type[Exception], ...] | type[Exception] = (HTTPServerError,),
-        max_delay: Optional[float] = None,
+    max_retries: int = 3,
+    *,
+    backoff_factor: float = 1.0,
+    retry_on: tuple[type[Exception], ...] | type[Exception] = (HTTPServerError,),
+    max_delay: Optional[float] = None,
 ) -> RequestDecorator[Any, Any]:
     """Decorate a request to retry on failure with exponential backoff.
 

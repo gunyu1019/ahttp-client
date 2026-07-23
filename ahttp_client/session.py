@@ -81,9 +81,7 @@ class BaseSession(ABC):
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
     @abstractmethod
-    def _make_request(
-            self, request: RequestCore, path: str
-    ) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
+    def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
         pass
 
     @abstractmethod

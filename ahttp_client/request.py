@@ -1008,7 +1008,9 @@ class AsyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
 
-        make_request_func = lambda: session._make_request(req_obj, formatted_path)
+        def make_request_func():
+            return session._make_request(req_obj, formatted_path)
+
         if self._retry_config is not None:
             raw_response, response = await self._retry_config.execute_async(make_request_func)
         else:
@@ -1091,7 +1093,9 @@ class SyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
 
-        make_request_func = lambda: session._make_request(req_obj, formatted_path)
+        def make_request_func():
+            return session._make_request(req_obj, formatted_path)
+
         if self._retry_config is not None:
             raw_response, response = self._retry_config.execute_sync(make_request_func)
         else:
