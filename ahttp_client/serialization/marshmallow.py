@@ -19,7 +19,7 @@ class _MarshmallowCodec:
     base_model_type: type[Schema] = Schema
 
     @staticmethod
-    def _schema_type(model_type: Any) -> type[Optional[Schema]]:
+    def _schema_type(model_type: Any) -> Optional[type[Schema]]:
         """Return a schema class from a direct or ``Annotated`` annotation."""
         if is_subclass_safe(model_type, Schema):
             return model_type

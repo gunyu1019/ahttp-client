@@ -41,7 +41,7 @@ class Response:
         return self._raw_response_obj
 
     @property
-    def model(self) -> Optional[ModelT]:
+    def model(self) -> Optional[ModelT | list[ModelT]]:
         """Return the response body deserialized into a model instance.
 
         Returns ``None`` when no deserializer was attached to the request

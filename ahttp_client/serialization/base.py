@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar, ClassVar, Self, Optional
+from typing import Any, cast, Generic, TypeVar, ClassVar, Optional
 
 from ..enum import BodyType
 from ..response import Response
@@ -71,8 +71,8 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     def serialize(self, model: ModelT | Sequence[ModelT]) -> Any | list[Any]:
         """Serialize one model or a sequence of models."""
         if self.is_sequence(model):
-            return self.multiple_serialize(model)
-        return self.single_serialize(model)
+            return self.multiple_serialize(cast(Sequence[ModelT], model))
+        return self.single_serialize(cast(ModelT, model))
 
     def __init_subclass__(cls, **kwargs: Any):
         """Register a serializer for its configured model type."""
@@ -84,7 +84,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         BaseSerializer._registry.append(cls)
 
     @classmethod
-    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
+    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[BaseSerializer[ModelT]]:
         """Return the serializer registered for a model annotation, if any."""
         # User-defined codecs are registered after built-in fallback codecs
         # such as the dataclasses codec, and therefore take precedence.
@@ -94,7 +94,12 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         return None
 
     @classmethod
-    def set_model(cls, model: type[ModelT], origin_cls: BaseCodec, **kwargs) -> Optional[Self]:
+    def set_model(
+        cls,
+        model: type[ModelT],
+        origin_cls: BaseCodec,
+        **kwargs,
+    ) -> Optional[BaseSerializer[ModelT]]:
         """Resolve a late-bound serializer for a model annotation.
 
         Keyword arguments override options stored by ``origin_cls``.
@@ -159,7 +164,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         BaseDeserializer._registry.append(cls)
 
     @classmethod
-    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[Self]:
+    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[BaseDeserializer[ModelT]]:
         """Return the deserializer registered for a model annotation, if any."""
         # User-defined codecs are registered after built-in fallback codecs
         # such as the dataclasses codec, and therefore take precedence.
@@ -169,7 +174,12 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         return None
 
     @classmethod
-    def set_model(cls, model: type[ModelT], origin_cls: BaseCodec, **kwargs) -> Optional[Self]:
+    def set_model(
+        cls,
+        model: type[ModelT],
+        origin_cls: BaseCodec,
+        **kwargs,
+    ) -> Optional[BaseDeserializer[ModelT]]:
         """Resolve a late-bound deserializer for a model annotation.
 
         Keyword arguments override options stored by ``origin_cls``.

@@ -925,7 +925,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         otherwise return the response wrapper.
         """
         if self.directly_response != DirectResponseType.NONE:
-            return self.directly_response
+            return cast(DirectResponseType, self.directly_response)
 
         if isinstance(session_directly_response, bool):
             if not session_directly_response:

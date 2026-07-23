@@ -1,8 +1,8 @@
-from typing import Any, Optional, Unpack, overload
+from typing import Any, Optional, Protocol, Unpack, cast, overload
 
 from ._types import RequestDecorator
 from .request import RequestCore, AsyncRequestCore, SyncRequestCore
-from .serialization.base import BaseSerializer, BaseDeserializer, ModelT
+from .serialization.base import BaseCodec, BaseSerializer, BaseDeserializer, ModelT
 from .serialization._types import (
     DataclassDeserializeOptions,
     DataclassSerializeOptions,
@@ -11,6 +11,12 @@ from .serialization._types import (
     PydanticDeserializeOptions,
     PydanticSerializeOptions,
 )
+
+
+class _ExtensionOwner(Protocol):
+    """Callable request decorator carrying deferred request extensions."""
+
+    __extension__: dict[str, Any]
 
 
 @overload
@@ -56,6 +62,7 @@ def serialize(
     TypeError
         If no serializer is registered for the model type.
     """
+    model_cls: Optional[BaseCodec]
     if model is None:
         model_cls = BaseSerializer.late_bind(**serializer_kwargs)
     else:
@@ -64,16 +71,17 @@ def serialize(
     if model_cls is None:
         raise TypeError(f"No serializer found for {model}")
 
-    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
+    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore) -> Any:
         if isinstance(func, RequestCore):
             func._bind_serializer(model_cls)
             return func
-        if not hasattr(func, "__extension__"):
-            func.__extension__ = dict()
-        func.__extension__["serializer"] = model_cls
+        extension_owner = cast(_ExtensionOwner, func)
+        if not hasattr(extension_owner, "__extension__"):
+            extension_owner.__extension__ = {}
+        extension_owner.__extension__["serializer"] = model_cls
         return func
 
-    return decorator
+    return cast(RequestDecorator[Any, Any], decorator)
 
 
 @overload
@@ -119,6 +127,7 @@ def deserialize(
     TypeError
         If no deserializer is registered for the model type.
     """
+    model_cls: Optional[BaseCodec]
     if model is None:
         model_cls = BaseDeserializer.late_bind(**deserializer_kwargs)
     else:
@@ -127,13 +136,14 @@ def deserialize(
     if model_cls is None:
         raise TypeError(f"No deserializer found for {model}")
 
-    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore):
+    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore) -> Any:
         if isinstance(func, RequestCore):
             func._bind_deserializer(model_cls)
             return func
-        if not hasattr(func, "__extension__"):
-            func.__extension__ = dict()
-        func.__extension__["deserializer"] = model_cls
+        extension_owner = cast(_ExtensionOwner, func)
+        if not hasattr(extension_owner, "__extension__"):
+            extension_owner.__extension__ = {}
+        extension_owner.__extension__["deserializer"] = model_cls
         return func
 
-    return decorator
+    return cast(RequestDecorator[Any, Any], decorator)
