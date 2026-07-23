@@ -43,14 +43,20 @@ html_static_path = ["_static"]
 html_css_files = ["custom_theme.css"]
 
 # The theme's own default is "bw" (a monochrome Pygments style with no
-# syntax colors at all); pick a real color scheme for both light and dark.
-# "default" is the classic high-contrast Sphinx/Pygments palette (strong
-# blue keywords, red strings) that reads well on this theme's white
-# background. The dark equivalent is applied via custom_theme.css, scoped
-# to ".dark .highlight", because this theme's light/dark toggle sets a
-# ".dark" class rather than relying only on prefers-color-scheme.
+# syntax colors at all); "default" is the classic high-contrast Sphinx/
+# Pygments palette (strong blue keywords, red strings) that reads well on
+# this theme's white background.
+#
+# Deliberately not setting `pygments_style_dark` here: Sphinx emits that
+# style behind a raw `@media (prefers-color-scheme: dark)` query, which is
+# driven by the OS-level color scheme and is completely independent of the
+# ".dark" class this theme's manual toggle actually sets. Whenever a
+# visitor's OS prefers dark but the toggle (or its persisted preference)
+# resolves to light, that media query still fires and code blocks end up
+# dark while the rest of the page stays light. The dark palette instead
+# lives entirely in custom_theme.css, scoped to ".dark .highlight", so code
+# blocks track the same toggle state as everything else on the page.
 pygments_style = "default"
-pygments_style_dark = "github-dark"
 
 ## Template Option
 html_title = "ahttp_client"
