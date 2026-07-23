@@ -86,6 +86,15 @@ class RetryConfig:
 
     def _backoff_delay(self, attempt: int) -> float:
         """Return the delay in seconds for a one-based retry attempt."""
+        if self.backoff_factor == 0:
+            return 0.0
+        if self.max_delay is not None:
+            if self.backoff_factor >= self.max_delay:
+                return float(self.max_delay)
+            maximum_exponent = math.log2(self.max_delay / self.backoff_factor)
+            if attempt - 1 >= maximum_exponent:
+                return float(self.max_delay)
+
         delay = self.backoff_factor * (2 ** (attempt - 1))
         if self.max_delay is not None:
             delay = min(delay, self.max_delay)

@@ -52,6 +52,18 @@ def test_copy_and_equal(test_method):
     assert other_method != test_method
 
 
+def test_request_equality_includes_http_method_and_native_kwargs() -> None:
+    def handler(session: BaseSession) -> None:
+        pass
+
+    get_request = request("GET", "/", timeout=1)(handler)
+    post_request = request("POST", "/", timeout=1)(handler)
+    other_timeout = request("GET", "/", timeout=2)(handler)
+
+    assert get_request != post_request
+    assert get_request != other_timeout
+
+
 def test_request_exposes_public_signature_without_mutating_handler() -> None:
     def handler(
         session: BaseSession,

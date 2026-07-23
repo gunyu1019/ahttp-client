@@ -450,6 +450,16 @@ def test_max_delay_caps_sleep_duration(is_async: bool) -> None:
     assert all(d <= 5.0 for d in calls)
 
 
+def test_max_delay_caps_backoff_before_float_overflow() -> None:
+    config = RetryConfig(
+        max_retries=2000,
+        backoff_factor=1.0,
+        max_delay=10.0,
+    )
+
+    assert config._backoff_delay(1025) == 10.0
+
+
 # ---------------------------------------------------------------------------
 # Failed response is closed before retry
 # ---------------------------------------------------------------------------

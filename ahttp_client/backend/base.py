@@ -73,9 +73,21 @@ class BaseBackend(ABC):
         TypeError
             If ``session`` is not registered with a backend.
         """
-        if session not in cls._registry.keys():
+        if not isinstance(session, type):
+            raise TypeError("session must be a client session class")
+
+        backend_cls = cls._registry.get(session)
+        if backend_cls is None:
+            candidates = [
+                (session.__mro__.index(registered_session), candidate)
+                for registered_session, candidate in cls._registry.items()
+                if issubclass(session, registered_session)
+            ]
+            if candidates:
+                _, backend_cls = min(candidates, key=lambda item: item[0])
+
+        if backend_cls is None:
             raise TypeError(f"{session.__name__} is not supported")
-        backend_cls = cls._registry[session]
         if not issubclass(backend_cls, cls):
             raise TypeError(f"{session.__name__} is not supported by {cls.__name__}")
         return backend_cls(session, **kwargs)

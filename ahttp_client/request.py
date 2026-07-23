@@ -972,11 +972,13 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         return (
             other.name == self.name
             and other.func == self.func
+            and other.method == self.method
             and other.path == self.path
             and other.params == self.params
             and other.headers == self.headers
             and other.body == self.body
             and other._body_file == self._body_file
+            and other.request_kwargs == self.request_kwargs
             and other.directly_response == self.directly_response
             and other.header_parameter == self.header_parameter
             and other.query_parameter == self.query_parameter
@@ -990,6 +992,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             and other._after_hook == self._after_hook
             and other._serializer == self._serializer
             and other._deserializer == self._deserializer
+            and other._retry_config == self._retry_config
+            and other.validation_parameter == self.validation_parameter
+            and other.response_parameter == self.response_parameter
         )
 
     def __ne__(self, other: object) -> bool:

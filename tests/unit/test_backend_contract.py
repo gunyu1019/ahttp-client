@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import ssl
 from types import SimpleNamespace
 from typing import Any
+import warnings
 
 import pytest
 
 from ahttp_client import BaseSession, request
 from ahttp_client.backend.aiohttp import AiohttpBackend
+from ahttp_client.backend.base import AsyncBackend
 
 
 def test_request_kwargs_preserve_non_copyable_native_objects() -> None:
@@ -51,3 +54,25 @@ def test_custom_json_parsers_receive_bytes_on_every_backend() -> None:
     assert object.__new__(AiohttpBackend).response_json(aiohttp_response, input_type) is bytes
     assert object.__new__(HttpXSyncSession).response_json(httpx_response, input_type) is bytes
     assert object.__new__(RequestsBackend).response_json(requests_response, input_type) is bytes
+
+
+def test_registered_client_subclass_uses_nearest_backend() -> None:
+    aiohttp = pytest.importorskip("aiohttp")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+
+        class CustomClientSession(aiohttp.ClientSession):
+            pass
+
+    async def scenario() -> None:
+        backend = AsyncBackend.from_session(
+            CustomClientSession,
+            base_url="http://example.test/",
+        )
+        try:
+            assert isinstance(backend, AiohttpBackend)
+            assert isinstance(backend.session, CustomClientSession)
+        finally:
+            await backend.session_close()
+
+    asyncio.run(scenario())
