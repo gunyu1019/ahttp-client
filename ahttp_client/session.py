@@ -27,10 +27,11 @@ import functools
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Awaitable, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar, cast
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .enum import DirectResponseType
+from ._types import RequestFunction
 from .request_bound import RequestBound, AsyncRequestBound, SyncRequestBound
 from .response import Response
 
@@ -39,9 +40,9 @@ if TYPE_CHECKING:
     from typing import Optional, Self
 
     from .request import RequestCore
-    from ._types import RequestFunction
 
 _log = logging.getLogger(__name__)
+_SpecialMethodT = TypeVar("_SpecialMethodT", bound=Callable[..., Any])
 
 
 class BaseSession(ABC):
@@ -54,20 +55,26 @@ class BaseSession(ABC):
 
     backend: BaseBackend
 
-    def __init__(self, base_url: str, *, directly_response: DirectResponseType | bool = False):
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        directly_response: DirectResponseType | bool = False,
+    ) -> None:
         self.directly_response = directly_response
         self.base_url = base_url
 
         self._request_bound_func: dict[str, RequestBound] = dict()
 
     @staticmethod
-    def _has_overridden_method(method):
+    def _has_overridden_method(method: Callable[..., Any]) -> bool:
         """Return whether a session hook was overridden by a subclass."""
         return not hasattr(method, "__special_method__")
 
     @staticmethod
-    def _special_method(func):
-        func.__special_method__ = None
+    def _special_method(func: _SpecialMethodT) -> _SpecialMethodT:
+        special_method: Any = func
+        special_method.__special_method__ = None
         return func
 
     @property
@@ -81,15 +88,19 @@ class BaseSession(ABC):
         return self.base_url.rstrip("/") + "/" + path.lstrip("/")
 
     @abstractmethod
-    def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
+    def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
         pass
 
     @abstractmethod
-    def _get_request_bound(self, request: RequestCore) -> RequestBound:
+    def _get_request_bound(self, request: RequestCore[Any, Any]) -> RequestBound:
         pass
 
     @classmethod
-    def _validate_request_core_duplicated(cls):
+    def _validate_request_core_duplicated(cls) -> None:
         members: dict[str, Any] = dict()
         for _, func in inspect.getmembers(cls):
             request_obj = getattr(func, "__core__", func)
@@ -125,18 +136,18 @@ class AsyncSession(BaseSession):
     def __init__(
         self,
         base_url: str,
-        session: type,
+        session: type[Any],
         *,
         directly_response: DirectResponseType | bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
         )
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         cls._validate_request_core_duplicated()
 
@@ -154,15 +165,15 @@ class AsyncSession(BaseSession):
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """Close the session when leaving the asynchronous context."""
         await self.close()
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the underlying asynchronous HTTP client session."""
         await self.backend.session_close()
 
-    async def request(self, method: str, path: str, **kwargs):
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous HTTP request.
 
         ``path`` is joined with the base URL when required. Keyword arguments
@@ -171,37 +182,41 @@ class AsyncSession(BaseSession):
         url = self._get_request_url(path)
         return await self.backend.session_request(method, url, **kwargs)
 
-    async def get(self, path: str, **kwargs):
+    async def get(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``GET`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_get(url, **kwargs)
 
-    async def post(self, path: str, **kwargs):
+    async def post(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``POST`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_post(url, **kwargs)
 
-    async def options(self, path: str, **kwargs):
+    async def options(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``OPTIONS`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_options(url, **kwargs)
 
-    async def delete(self, path: str, **kwargs):
+    async def delete(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``DELETE`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_delete(url, **kwargs)
 
-    async def patch(self, path: str, **kwargs):
+    async def patch(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``PATCH`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_patch(url, **kwargs)
 
-    async def put(self, path: str, **kwargs):
+    async def put(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``PUT`` request."""
         url = self._get_request_url(path)
         return await self.backend.session_put(url, **kwargs)
 
-    async def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any]:
+    async def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any]:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -229,7 +244,11 @@ class AsyncSession(BaseSession):
         return raw_response, response
 
     @BaseSession._special_method
-    async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+    async def before_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[RequestCore[Any, Any], str]:
         """Run after a request-level pre-hook and before dispatching the request.
 
         Override this method to alter the request object or final path for all
@@ -269,7 +288,12 @@ class AsyncSession(BaseSession):
         return response
 
     @classmethod
-    def single_session(cls, base_url: str, session: type, **session_kwargs):
+    def single_session(
+        cls,
+        base_url: str,
+        session: type[Any],
+        **session_kwargs: Any,
+    ) -> Callable[[RequestCore[Any, Any]], RequestFunction[..., Any]]:
         """Decorate a request to create and close a session per invocation.
 
         The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
@@ -284,9 +308,9 @@ class AsyncSession(BaseSession):
 
         """
 
-        def decorator(func: RequestCore) -> RequestFunction[..., Any]:
+        def decorator(func: RequestCore[Any, Any]) -> RequestFunction[..., Any]:
             @functools.wraps(func)
-            async def wrapper(*args, **kwargs):
+            async def wrapper(*args: Any, **kwargs: Any) -> Any:
                 client = cls(base_url, session, **session_kwargs)
                 try:
                     response = await func._execute(client, *args, **kwargs)
@@ -298,11 +322,11 @@ class AsyncSession(BaseSession):
             wrapper.__core__ = func  # type: ignore[attr-defined]
             wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
             wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
-            return wrapper
+            return cast(RequestFunction[..., Any], wrapper)
 
         return decorator
 
-    def _get_request_bound(self, request_obj: RequestCore) -> AsyncRequestBound:
+    def _get_request_bound(self, request_obj: RequestCore[Any, Any]) -> AsyncRequestBound:
         bound = self._request_bound_func.get(request_obj.name)
         if bound is None:
             bound = AsyncRequestBound(request_obj, self)
@@ -333,18 +357,18 @@ class Session(BaseSession):
     def __init__(
         self,
         base_url: str,
-        session: type,
+        session: type[Any],
         *,
         directly_response: DirectResponseType | bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(Session, self).__init__(
             base_url,
             directly_response=directly_response,
         )
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         cls._validate_request_core_duplicated()
 
@@ -362,15 +386,15 @@ class Session(BaseSession):
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
         """Close the session when leaving the context."""
         self.close()
 
-    def close(self):
+    def close(self) -> None:
         """Close the underlying HTTP client session."""
         self.backend.session_close()
 
-    def request(self, method: str, path: str, **kwargs):
+    def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous HTTP request.
 
         ``path`` is joined with the base URL when required. Keyword arguments
@@ -379,37 +403,41 @@ class Session(BaseSession):
         url = self._get_request_url(path)
         return self.backend.session_request(method, url, **kwargs)
 
-    def get(self, path: str, **kwargs):
+    def get(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``GET`` request."""
         url = self._get_request_url(path)
         return self.backend.session_get(url, **kwargs)
 
-    def post(self, path: str, **kwargs):
+    def post(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``POST`` request."""
         url = self._get_request_url(path)
         return self.backend.session_post(url, **kwargs)
 
-    def options(self, path: str, **kwargs):
+    def options(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``OPTIONS`` request."""
         url = self._get_request_url(path)
         return self.backend.session_options(url, **kwargs)
 
-    def delete(self, path: str, **kwargs):
+    def delete(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``DELETE`` request."""
         url = self._get_request_url(path)
         return self.backend.session_delete(url, **kwargs)
 
-    def patch(self, path: str, **kwargs):
+    def patch(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``PATCH`` request."""
         url = self._get_request_url(path)
         return self.backend.session_patch(url, **kwargs)
 
-    def put(self, path: str, **kwargs):
+    def put(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``PUT`` request."""
         url = self._get_request_url(path)
         return self.backend.session_put(url, **kwargs)
 
-    def _make_request(self, request: RequestCore, path: str) -> tuple[Response, Any]:
+    def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any]:
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -430,7 +458,11 @@ class Session(BaseSession):
         return raw_response, response
 
     @BaseSession._special_method
-    def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
+    def before_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[RequestCore[Any, Any], str]:
         """Run after a request-level pre-hook and before dispatching the request.
 
         Override this method to alter the request object or final path for all
@@ -470,7 +502,12 @@ class Session(BaseSession):
         return response
 
     @classmethod
-    def single_session(cls, base_url: str, session: type, **session_kwargs):
+    def single_session(
+        cls,
+        base_url: str,
+        session: type[Any],
+        **session_kwargs: Any,
+    ) -> Callable[[RequestCore[Any, Any]], RequestFunction[..., Any]]:
         """Decorate a request to create and close a session per invocation.
 
         The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
@@ -485,9 +522,9 @@ class Session(BaseSession):
 
         """
 
-        def decorator(func: RequestCore) -> RequestFunction[..., Any]:
+        def decorator(func: RequestCore[Any, Any]) -> RequestFunction[..., Any]:
             @functools.wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 client = cls(base_url, session, **session_kwargs)
                 try:
                     response = func._execute(client, *args, **kwargs)
@@ -499,11 +536,11 @@ class Session(BaseSession):
             wrapper.__core__ = func  # type: ignore[attr-defined]
             wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
             wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
-            return wrapper
+            return cast(RequestFunction[..., Any], wrapper)
 
         return decorator
 
-    def _get_request_bound(self, request_obj: RequestCore) -> SyncRequestBound:
+    def _get_request_bound(self, request_obj: RequestCore[Any, Any]) -> SyncRequestBound:
         bound = self._request_bound_func.get(request_obj.name)
         if bound is None:
             bound = SyncRequestBound(request_obj, self)
