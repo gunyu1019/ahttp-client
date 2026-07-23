@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-04 14:13+0000\n"
+"POT-Creation-Date: 2026-07-22 23:04+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -18,11 +18,11 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.16.0\n"
+"Generated-By: Babel 2.18.0\n"
 
 #: ../../source/component.rst:3
 msgid "HTTP Component"
-msgstr "HTTP 구성요소(Compoenent)"
+msgstr "HTTP 구성요소(Component)"
 
 #: ../../source/component.rst:4
 msgid ""
@@ -31,9 +31,10 @@ msgid ""
 "`typing.Annotated "
 "<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
 msgstr ""
-"`ahttp_client` 의 구성요소는 Query, Header, Path, 그리고 Body가 있으며,"
-"HTTP 요청을 처리하는 과정에서 사용합니다. 구성요소는 "
-"`typing.Annotated <https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ 를 이용하여 정의합니다."
+"`ahttp_client` 의 구성요소는 Query, Header, Path, 그리고 Body가 있으며,HTTP 요청을 처리하는 "
+"과정에서 사용합니다. 구성요소는 `typing.Annotated "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ "
+"를 이용하여 정의합니다."
 
 #: ../../source/component.rst:7
 msgid ""
@@ -41,7 +42,7 @@ msgid ""
 "called as shown below."
 msgstr "`list_repository_activites` 메소드 같은 경우, 요청은 아래와 같이 이루어집니다."
 
-#: ../../source/component.rst:34
+#: ../../source/component.rst:35
 msgid ""
 "An HTTP Component can be defined as `typing.Union "
 "<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ "
@@ -49,109 +50,151 @@ msgid ""
 "<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_."
 msgstr ""
 "HTTP 구성요소(Component)는 `typing.Annotated "
-"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ 대신에 `typing.Union "
-"<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ "
-"으로 정의할 수 있습니다."
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Annotated>`_ "
+"대신에 `typing.Union "
+"<https://docs.python.org/ko/3.10/library/typing.html#typing.Union>`_ 으로 "
+"정의할 수 있습니다."
 
-#: ../../source/component.rst:49
+#: ../../source/component.rst:51
 msgid ""
 "However, using typing.Annotated is recommended to follow correct Python "
 "syntax."
 msgstr "하지만, `typing.Anntoated` 를 이용하는 것을 권장합니다."
 
-#: ../../source/component.rst:52
-msgid "Usage by Component"
-msgstr "구성 요소(Compoenent)의 용도"
-
 #: ../../source/component.rst:54
+msgid "Usage by Component"
+msgstr "구성 요소(Component)의 용도"
+
+#: ../../source/component.rst:56
 msgid "**Header** - Configure the header for the HTTP component."
 msgstr "**Header** - HTTP 요청에서 header를 정의합니다."
 
-#: ../../source/component.rst:55
-msgid "**Body** - Configure the body for the HTTP component."
-msgstr "**Body** - HTTP 요청에서 body를 정의합니다."
-
-#: ../../source/component.rst:56
-msgid ""
-"**Form** - Configure the body with `aiohttp.FormData "
-"<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
-msgstr ""
-"**Form** - `aiohttp.FormData <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_ 를 이용하여 "
-"HTTP 요청에서 body 부분으로 정의합니다."
-
 #: ../../source/component.rst:57
-msgid ""
-"**BodyJson** - Configure the body with `Dictionaries "
-"<https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_"
-msgstr ""
-"**BodyJson** - `Dictionaries <https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_ 를 이용하여 "
-"HTTP 요청에서 body 부분으로 정의합니다."
-
-#: ../../source/component.rst:58
 msgid "**Query** - Insert a value inside the URL parameter."
 msgstr "**Query** - URL 매게변수의 값을 삽입하는 용도로 정의됩니다."
 
-#: ../../source/component.rst:59
+#: ../../source/component.rst:58
+#, python-brace-format
 msgid ""
 "**Path** - Insert the specified value(s) inside the path placeholder. The"
 " path placeholder is using curly brackets: `{}`"
+msgstr "**Path** - URL에 지정된 값을 삽입하는 용도로 사용됩니다."
+
+#: ../../source/component.rst:59
+msgid ""
+"**Body** - Send the whole request body as one value. `dict`, `list`, and "
+"`tuple` values are encoded as JSON; any other value (including a file-"
+"like object) is sent as raw body data."
 msgstr ""
-"**Path** - URL에 지정된 값을 삽입하는 용도로 사용됩니다."
+"**Body** - 요청 본문 전체를 하나의 값으로 보냅니다. `dict`, `list`, `tuple` 은 JSON으로 "
+"인코딩되고, 그 외 값(파일류 객체 포함)은 원본(raw) 그대로 전송됩니다."
+
+#: ../../source/component.rst:60
+msgid ""
+"**BodyJson** - Send one field of a JSON request body. Multiple `BodyJson`"
+" parameters on the same method are merged into a single JSON object; use "
+"`custom_key` for a nested (dot-separated) key."
+msgstr ""
+"**BodyJson** - JSON 요청 본문의 한 필드를 보냅니다. 같은 메소드에 있는 여러 `BodyJson` 매개변수는 "
+"하나의 JSON 객체로 합쳐지고, 중첩된 키가 필요하면 점(.)으로 구분해서 `custom_key` 에 넘기면 됩니다."
 
 #: ../../source/component.rst:61
 msgid ""
-"Defining the Body parameter at HTTP request decoration can only be of one"
-" of the following types: Body, BodyJson, or Form. If more than one "
-"Component is used, a `TypeError "
-"<https://docs.python.org/3/library/exceptions.html#TypeError>`_ can be "
-"thrown."
+"**BodyForm** - Send one field of a form request body. The request "
+"switches to `multipart/form-data "
+"<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+" automatically once a field carries file metadata (see `metadata`) or a "
+"file-like value; otherwise all `BodyForm` fields are URL-encoded "
+"together."
 msgstr ""
-"HTTP request deccoration에서 Body 매개변수를 정의하는 것은 Body, BodyJson, Form 중에서 하나만 사용할 수 있습니다. "
-"하나 이상의 Body 매게변수를 정의한다면, `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ 예외를 발생시킬 수 있습니다."
+"**BodyForm** - Form 요청 본문의 한 필드를 보냅니다. 필드에 파일 메타데이터(`metadata` 참고)나 파일류 "
+"값이 들어가면 자동으로 `multipart/form-data "
+"<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+" 로 바뀌고, 아니면 `BodyForm` 필드들이 그냥 다같이 URL 인코딩됩니다."
 
-#: ../../source/component.rst:65
+#: ../../source/component.rst:63
+msgid ""
+"Defining the body parameter(s) of an HTTP request can use only one of "
+"`Body`, `BodyJson`, or `BodyForm`. Mixing `Body` with either `BodyJson` "
+"or `BodyForm` on the same method can raise a `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_."
+msgstr ""
+"요청 본문(body) 매개변수는 `Body`, `BodyJson`, `BodyForm` 중 하나만 골라 써야 합니다. 같은 "
+"메소드에서 `Body` 를 `BodyJson` 이나 `BodyForm` 과 섞어 쓰면 `TypeError "
+"<https://docs.python.org/3/library/exceptions.html#TypeError>`_ 예외가 날 수 "
+"있습니다."
+
+#: ../../source/component.rst:67
 msgid "Custom Component Name"
 msgstr "Custom Component Name"
 
-#: ../../source/component.rst:66
+#: ../../source/component.rst:68
 msgid ""
 "According to PEP 8 rules, the parameter names of method must be "
 "lowercase, with words separated by underscores. `(reference) "
 "<https://peps.python.org/pep-0008/#function-and-variable-names>`_"
 msgstr ""
-"PEP 8 규칙에 따르면, 매개변수는 반드시 밑줄을 사용한 lowercase를 따르도록 하고 있습니다. "
-"`(참조 문서) <https://peps.python.org/pep-0008/#function-and-variable-names>`_"
-
-#: ../../source/component.rst:68
-msgid ""
-"The queries or headers in an API can be named in Camel Case, or Pascal "
-"Case."
-msgstr ""
-"하지만 API에서 parameter 또는 header의 이름은 Camel Case 또는 Pascal Case 일 수 있습니다."
+"PEP 8 규칙에 따르면, 매개변수는 반드시 밑줄을 사용한 lowercase를 따르도록 하고 있습니다. `(참조 문서) "
+"<https://peps.python.org/pep-0008/#function-and-variable-names>`_"
 
 #: ../../source/component.rst:70
 msgid ""
+"The queries or headers in an API can be named in Camel Case, or Pascal "
+"Case."
+msgstr "하지만 API에서 parameter 또는 header의 이름은 Camel Case 또는 Pascal Case 일 수 있습니다."
+
+#: ../../source/component.rst:72
+msgid ""
 "To follow the PEP 8 rules as described, an `ahttp_client` package "
 "provides a custom component name."
-msgstr ""
-"PEP 8 규칙을 따르기 위해, `ahttp_client` 패키지는 custom component name 기능을 지원합니다."
+msgstr "PEP 8 규칙을 따르기 위해, `ahttp_client` 패키지는 custom component name 기능을 지원합니다."
 
-#: ../../source/component.rst:97
+#: ../../source/component.rst:100
 msgid ""
 "As in the example above, insert the `GITHUB API TOKEN` in token argument "
 "of `list_repository_activites` method. During the calling process, the "
 "key of Header has been overridden to \"Authorization\"."
 msgstr ""
-"위에 작성된 예제와 같이, `GITHUB API TOKEN` 값은 `list_repository_activites` 의 token 인수로 삽입하였습니다. "
-"HTTP 호출 처리 과정에서 token 인수의 값은 매개변수의 이름을 따른 것이 아닌, \"Authorization\" 를 가지고 header에 삽입되었습니다."
+"위에 작성된 예제와 같이, `GITHUB API TOKEN` 값은 `list_repository_activites` 의 token "
+"인수로 삽입하였습니다. HTTP 호출 처리 과정에서 token 인수의 값은 매개변수의 이름을 따른 것이 아닌, "
+"\"Authorization\" 를 가지고 header에 삽입되었습니다."
 
-#: ../../source/component.rst:100
+#: ../../source/component.rst:103
 msgid ""
 "The custom component name feature only supports Header, Query, BodyJson, "
-"and Form. Using it in other components may cause a `TypeError "
-"<https://docs.python.org/3/library/exceptions.html#TypeError>`_."
+"and BodyForm. `Path` and `Body` do not support a custom name, since "
+"`Path` values must match a placeholder in the request path and `Body` has"
+" no field key of its own; calling `custom_name` on either raises a "
+"`NotImplementedError "
+"<https://docs.python.org/3/library/exceptions.html#NotImplementedError>`_."
 msgstr ""
-"Custom Compoenent Name 기능은 Header, Query, BodyForm, 그리고 Form에만 사용할 수 있습니다. "
-"다른 구성요소에서는 `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ 예외를"
-"유발할 수 있습니다."
+"Custom Component Name 기능은 Header, Query, BodyJson, BodyForm 에서만 쓸 수 "
+"있습니다. `Path` 값은 요청 경로의 플레이스홀더와 이름이 같아야 하고 `Body` 는 애초에 필드 키라는 개념이 없어서, "
+"이 둘은 custom name을 지원하지 않습니다. `Path` 또는 `Body` 에 `custom_name` 을 호출하면 "
+"`NotImplementedError "
+"<https://docs.python.org/3/library/exceptions.html#NotImplementedError>`_"
+" 예외가 발생합니다."
+
+#~ msgid "**Body** - Configure the body for the HTTP component."
+#~ msgstr "**Body** - HTTP 요청에서 body를 정의합니다."
+
+#~ msgid ""
+#~ "**Form** - Configure the body with "
+#~ "`aiohttp.FormData "
+#~ "<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+#~ msgstr ""
+#~ "**Form** - `aiohttp.FormData "
+#~ "<https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_"
+#~ " 를 이용하여 HTTP 요청에서 body 부분으로 "
+#~ "정의합니다."
+
+#~ msgid ""
+#~ "**BodyJson** - Configure the body with"
+#~ " `Dictionaries "
+#~ "<https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_"
+#~ msgstr ""
+#~ "**BodyJson** - `Dictionaries "
+#~ "<https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_"
+#~ " 를 이용하여 HTTP 요청에서 body 부분으로 "
+#~ "정의합니다."
 

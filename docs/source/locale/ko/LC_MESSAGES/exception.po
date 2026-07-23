@@ -1,0 +1,162 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-22 23:56+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../source/exception.rst:3
+msgid "Exception"
+msgstr "예외 (Exception)"
+
+#: ../../source/exception.rst:4
+msgid ""
+"`ahttp_client` provides a ready-made exception class for every standard "
+"HTTP 4xx/5xx status code, so error handling does not require manually "
+"checking `response.status` and raising a custom exception."
+msgstr ""
+"`ahttp_client` 는 표준 HTTP 4xx/5xx 상태 코드마다 예외 클래스를 미리 만들어둬서, `response.status`"
+" 를 직접 확인하고 커스텀 예외를 던지는 코드를 따로 짤 필요가 없습니다."
+
+#: ../../source/exception.rst:6
+msgid "Raising an HTTPException from a Response"
+msgstr "응답에서 HTTPException 발생시키기"
+
+#: ../../source/exception.rst:26
+msgid ""
+"`Response.raise_for_status()` looks up the exception class registered for"
+" the response's status code and, if one is found, raises it with the "
+"response attached. A successful or redirect response (2xx/3xx) is left "
+"untouched."
+msgstr ""
+"`Response.raise_for_status()` 는 응답 상태 코드에 등록된 예외 클래스를 찾아서, 있으면 응답을 붙여 그 "
+"예외를 던집니다. 성공했거나 리다이렉트된 응답(2xx/3xx)은 그냥 놔둡니다."
+
+#: ../../source/exception.rst:29
+msgid "Exception Hierarchy"
+msgstr "예외 계층 구조"
+
+#: ../../source/exception.rst:30
+msgid ""
+"Every exception inherits from :class:`HTTPException "
+"<ahttp_client.exception.HTTPException>`, which carries the triggering "
+"`response`, its `status` code, and its `url`."
+msgstr ""
+"모든 예외는 :class:`HTTPException <ahttp_client.exception.HTTPException>` 을 "
+"상속받고, 예외를 유발한 `response` 와 그 `status` 코드, `url` 을 들고 있습니다."
+
+#: ../../source/exception.rst:32
+msgid ""
+"**HTTPClientError** - base class for 4xx responses. Used directly for a "
+"4xx status code that has no dedicated class below."
+msgstr ""
+"**HTTPClientError** - 4xx 응답을 위한 기본 클래스입니다. 전용 클래스가 없는 4xx 상태 코드에 직접 "
+"사용됩니다."
+
+#: ../../source/exception.rst:33
+msgid ""
+"**HTTPServerError** - base class for 5xx responses. Used directly for a "
+"5xx status code that has no dedicated class below."
+msgstr ""
+"**HTTPServerError** - 5xx 응답을 위한 기본 클래스입니다. 전용 클래스가 없는 5xx 상태 코드에 직접 "
+"사용됩니다."
+
+#: ../../source/exception.rst:34
+msgid ""
+"One concrete subclass per standard status code, such as `HTTPBadRequest` "
+"(400), `HTTPNotFound` (404), `HTTPTooManyRequests` (429), "
+"`HTTPInternalServerError` (500), and `HTTPServiceUnavailable` (503)."
+msgstr ""
+"표준 상태 코드마다 구체적인 서브클래스가 하나씩 있습니다. `HTTPBadRequest` (400), `HTTPNotFound` "
+"(404), `HTTPTooManyRequests` (429), `HTTPInternalServerError` (500), "
+"`HTTPServiceUnavailable` (503) 같은 식입니다."
+
+#: ../../source/exception.rst:36
+msgid ""
+"RFC 9110 renamed a few statuses; both the current and legacy names are "
+"exported as aliases of the same class: "
+"`HTTPPayloadTooLarge`/`HTTPContentTooLarge` (413), "
+"`HTTPRequestURITooLong`/`HTTPURITooLong` (414), and "
+"`HTTPUnprocessableEntity`/`HTTPUnprocessableContent` (422)."
+msgstr ""
+"RFC 9110에서 이름이 바뀐 상태 코드가 몇 개 있는데, 예전 이름과 지금 이름 둘 다 같은 클래스의 별칭으로 내보내고 "
+"있습니다: `HTTPPayloadTooLarge`/`HTTPContentTooLarge` (413), "
+"`HTTPRequestURITooLong`/`HTTPURITooLong` (414), "
+"`HTTPUnprocessableEntity`/`HTTPUnprocessableContent` (422)."
+
+#: ../../source/exception.rst:38
+msgid ""
+"Catching by category, rather than by exact status code, is useful when a "
+"request should be retried or logged the same way for any 4xx or any 5xx "
+"response:"
+msgstr "정확한 상태 코드 대신 카테고리 단위로 잡으면, 모든 4xx나 5xx 응답을 똑같이 재시도하거나 로그로 남기고 싶을 때 편합니다:"
+
+#: ../../source/exception.rst:52
+msgid "Combining with Retry"
+msgstr "재시도(Retry)와 함께 사용하기"
+
+#: ../../source/exception.rst:53
+msgid ""
+"Because `raise_for_status()` turns a failing response into a typed "
+"exception, that exception can be listed directly in `retry_on` (see "
+":doc:`retry`) to retry only on server errors, without writing a manual "
+"status check:"
+msgstr ""
+"`raise_for_status()` 가 실패한 응답을 타입 있는 예외로 바꿔주니까, 상태 코드를 직접 검사하는 코드 없이도 "
+"그 예외를 `retry_on` 에 그냥 적어 넣으면 서버 오류에서만 재시도하게 만들 수 있습니다 (:doc:`retry` 참고):"
+
+#: ../../source/exception.rst:70
+msgid "Reference"
+msgstr "Reference"
+
+#: ahttp_client.exception.HTTPException:1 of
+msgid "Base exception for an unsuccessful HTTP response."
+msgstr "성공하지 못한 HTTP 응답을 위한 기본 예외입니다."
+
+#: ahttp_client.exception.HTTPException:3 of
+msgid ""
+"Each concrete status exception declares its HTTP ``status_code`` and "
+"human-readable ``title`` as class variables.  The original response is "
+"retained when the exception is raised through "
+":meth:`~ahttp_client.response.Response.raise_for_status`."
+msgstr ""
+"각 구체적인 상태 예외는 HTTP ``status_code`` 와 사람이 읽기 좋은 ``title`` 을 클래스 변수로 갖고 "
+"있습니다. :meth:`~ahttp_client.response.Response.raise_for_status` 로 예외가 발생할 "
+"때는 원본 응답도 함께 보존됩니다."
+
+#: ahttp_client.exception.HTTPClientError:1 of
+msgid "Base exception for an unrecognised 4xx client error response."
+msgstr "등록되지 않은 4xx 클라이언트 오류 응답을 위한 기본 예외입니다."
+
+#: ahttp_client.exception.HTTPServerError:1 of
+msgid "Base exception for an unrecognised 5xx server error response."
+msgstr "등록되지 않은 5xx 서버 오류 응답을 위한 기본 예외입니다."
+
+#: ahttp_client.exception.exception_for_status:1 of
+msgid "Return the exception class associated with an unsuccessful status code."
+msgstr "성공하지 못한 상태 코드에 연관된 예외 클래스를 반환합니다."
+
+#: ahttp_client.exception.exception_for_status:3 of
+msgid ""
+"Registered HTTP status codes use their concrete exception class.  Other "
+"values in the 4xx and 5xx ranges use their respective category base "
+"class. Successful and redirect responses return ``None``."
+msgstr ""
+"등록된 HTTP 상태 코드는 그에 맞는 구체적인 예외 클래스로, 4xx·5xx 범위의 나머지는 각 카테고리의 기본 클래스로 "
+"연결됩니다. 성공하거나 리다이렉트된 응답이면 ``None`` 을 반환합니다."
+
