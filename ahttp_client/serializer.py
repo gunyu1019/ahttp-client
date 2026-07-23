@@ -71,7 +71,9 @@ def serialize(
     if model_cls is None:
         raise TypeError(f"No serializer found for {model}")
 
-    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore) -> Any:
+    def decorator(
+        func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore[Any, Any],
+    ) -> Any:
         if isinstance(func, RequestCore):
             func._bind_serializer(model_cls)
             return func
@@ -136,7 +138,9 @@ def deserialize(
     if model_cls is None:
         raise TypeError(f"No deserializer found for {model}")
 
-    def decorator(func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore) -> Any:
+    def decorator(
+        func: RequestDecorator[AsyncRequestCore, SyncRequestCore] | RequestCore[Any, Any],
+    ) -> Any:
         if isinstance(func, RequestCore):
             func._bind_deserializer(model_cls)
             return func

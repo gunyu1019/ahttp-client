@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import AbstractSet, Any, Literal, Optional, get_args
+from typing import AbstractSet, Any, Literal, Optional, cast, get_args
 
 from marshmallow import Schema
 
@@ -22,7 +22,7 @@ class _MarshmallowCodec:
     def _schema_type(model_type: Any) -> Optional[type[Schema]]:
         """Return a schema class from a direct or ``Annotated`` annotation."""
         if is_subclass_safe(model_type, Schema):
-            return model_type
+            return cast(type[Schema], model_type)
         if is_annotated_parameter(model_type):
             return _MarshmallowCodec._schema_type(get_args(model_type)[0])
         return None

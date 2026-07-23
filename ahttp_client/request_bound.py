@@ -40,17 +40,17 @@ class RequestBound(ABC):
     and the session used to execute it.
     """
 
-    def __init__(self, core: RequestCore, session: BaseSession):
+    def __init__(self, core: RequestCore[Any, Any], session: BaseSession) -> None:
         self._core = core
         self._session = session
 
     @property
-    def __core__(self) -> RequestCore:
+    def __core__(self) -> RequestCore[Any, Any]:
         """Return the unbound request descriptor."""
         return self._core
 
     @abstractmethod
-    def __call__(self, *args, **kwargs) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the request with arguments for the decorated function."""
         pass
 
@@ -61,7 +61,7 @@ class AsyncRequestBound(RequestBound):
     _session: AsyncSession
     _core: AsyncRequestCore
 
-    async def __call__(self, *args, **kwargs) -> Any:
+    async def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the asynchronous request."""
         return await self._core._execute(self._session, *args, **kwargs)
 
@@ -72,6 +72,6 @@ class SyncRequestBound(RequestBound):
     _session: Session
     _core: SyncRequestCore
 
-    def __call__(self, *args, **kwargs) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the synchronous request."""
         return self._core._execute(self._session, *args, **kwargs)

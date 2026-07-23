@@ -61,5 +61,5 @@ class DirectResponseType(Flag):
     RESPONSE = auto()
     DESERIALIZED = auto()
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self != DirectResponseType.NONE

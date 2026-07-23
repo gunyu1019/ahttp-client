@@ -28,7 +28,12 @@ class Response:
         unset when the request has no ``@deserialize`` decorator applied.
     """
 
-    def __init__(self, response_obj: Any, backend: BaseBackend, serializer: Optional[BaseDeserializer] = None):
+    def __init__(
+        self,
+        response_obj: Any,
+        backend: BaseBackend,
+        serializer: Optional[BaseDeserializer[Any]] = None,
+    ) -> None:
         self._raw_response_obj = response_obj
         self._backend = backend
         self._deserializer = serializer

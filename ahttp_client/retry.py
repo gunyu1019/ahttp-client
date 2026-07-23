@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import math
 import time
-from typing import Awaitable, Any, Callable, Optional
+from typing import Awaitable, Any, Callable, Optional, cast
 
 from ._types import RequestDecorator
 from .exception import HTTPServerError
@@ -89,7 +89,7 @@ class RetryConfig:
         delay = self.backoff_factor * (2 ** (attempt - 1))
         if self.max_delay is not None:
             delay = min(delay, self.max_delay)
-        return delay
+        return float(delay)
 
     async def execute_async(
         self, make_request_func: Callable[..., Awaitable[tuple[Response, Any]]]
@@ -205,7 +205,7 @@ def retry(
         max_delay=max_delay,
     )
 
-    def decorator(func: RequestDecorator[Any, Any] | RequestCore):
+    def decorator(func: RequestDecorator[Any, Any] | RequestCore[Any, Any]) -> Any:
         if isinstance(func, RequestCore):
             func._bind_retry(config)
             return func
@@ -215,4 +215,4 @@ def retry(
         extension_target.__extension__["retry"] = config
         return func
 
-    return decorator
+    return cast(RequestDecorator[Any, Any], decorator)

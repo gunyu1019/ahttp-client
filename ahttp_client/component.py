@@ -24,16 +24,17 @@ SOFTWARE.
 from __future__ import annotations
 
 import re
-from typing import Any, TYPE_CHECKING
+from typing import Any, Callable, NoReturn, Optional, Self, TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     import aiohttp
-    from typing import Annotated, Optional, Callable, NoReturn
-    from typing_extensions import Self
+    from typing import Annotated
 
     from .response import Response
     from .session import AsyncSession
     from .request import request
+
+_CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
 
 class _EmptyComponent:
@@ -54,7 +55,7 @@ class Component:
         Optional transformation used for the component key sent on the wire.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.component_name: Optional[Callable[[str], str]] = None
 
     @classmethod
@@ -128,7 +129,7 @@ class _UnsupportedCustomNameComponent(Component):
 
 
 class _BodyFileComponent(Component):
-    def __init__(self):
+    def __init__(self) -> None:
         super(_BodyFileComponent, self).__init__()
         self.metadata_filename: Optional[str] = None
         self.metadata_content_type: Optional[str] = None
@@ -179,7 +180,7 @@ class BodyJson(Component):
     key.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(BodyJson, self).__init__()
         self.json_key: Optional[str] = None
 
@@ -233,7 +234,7 @@ class Header(Component):
     DEFAULT_KEY = "__DEFAULT_HEADER__"
 
     @staticmethod
-    def default_header(key: str, value: Any):
+    def default_header(key: str, value: Any) -> Callable[[_CallableT], _CallableT]:
         """Add a static header to a decorated request.
 
         Parameters
@@ -244,7 +245,7 @@ class Header(Component):
             Header value.
         """
 
-        def decorator(func):
+        def decorator(func: _CallableT) -> _CallableT:
             if not hasattr(func, Header.DEFAULT_KEY):
                 setattr(func, Header.DEFAULT_KEY, dict())
             getattr(func, Header.DEFAULT_KEY)[key] = value
@@ -271,7 +272,7 @@ class Query(Component):
     DEFAULT_KEY = "__DEFAULT_QUERY__"
 
     @staticmethod
-    def default_query(key: str, value: Any):
+    def default_query(key: str, value: Any) -> Callable[[_CallableT], _CallableT]:
         """Add a static query parameter to a decorated request.
 
         Parameters
@@ -282,7 +283,7 @@ class Query(Component):
             Query parameter value.
         """
 
-        def decorator(func):
+        def decorator(func: _CallableT) -> _CallableT:
             if not hasattr(func, Query.DEFAULT_KEY):
                 setattr(func, Query.DEFAULT_KEY, dict())
             getattr(func, Query.DEFAULT_KEY)[key] = value

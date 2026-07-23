@@ -16,7 +16,7 @@ class BaseCodec(ABC):
 
     base_model_type: type[Any]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self._kwargs = kwargs
         self._late_bind = False
 
@@ -36,7 +36,7 @@ class BaseCodec(ABC):
         return any(cls.is_model_type(arg) for arg in generic_args)
 
     @classmethod
-    def late_bind(cls, **kwargs) -> BaseCodec:
+    def late_bind(cls, **kwargs: Any) -> BaseCodec:
         """Return a placeholder that stores options until a model type is known."""
         return _LateBoundCodec(**kwargs)
 
@@ -57,7 +57,7 @@ class _LateBoundCodec(BaseCodec):
 class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
     """Base codec that converts models into transport-safe values."""
 
-    _registry: ClassVar[list[type[BaseSerializer]]] = []
+    _registry: ClassVar[list[type[BaseSerializer[Any]]]] = []
     body_type: ClassVar[BodyType]
 
     @abstractmethod
@@ -74,7 +74,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
             return self.multiple_serialize(cast(Sequence[ModelT], model))
         return self.single_serialize(cast(ModelT, model))
 
-    def __init_subclass__(cls, **kwargs: Any):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Register a serializer for its configured model type."""
         super(BaseSerializer, cls).__init_subclass__(**kwargs)
 
@@ -84,7 +84,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         BaseSerializer._registry.append(cls)
 
     @classmethod
-    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[BaseSerializer[ModelT]]:
+    def from_model(cls, model: type[ModelT], **kwargs: Any) -> Optional[BaseSerializer[ModelT]]:
         """Return the serializer registered for a model annotation, if any."""
         # User-defined codecs are registered after built-in fallback codecs
         # such as the dataclasses codec, and therefore take precedence.
@@ -98,7 +98,7 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
         cls,
         model: type[ModelT],
         origin_cls: BaseCodec,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[BaseSerializer[ModelT]]:
         """Resolve a late-bound serializer for a model annotation.
 
@@ -123,9 +123,9 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
     """Base codec that converts transport-safe values into models."""
 
-    _registry: ClassVar[list[type[BaseDeserializer]]] = []
+    _registry: ClassVar[list[type[BaseDeserializer[Any]]]] = []
 
-    def __init__(self, model: Optional[ModelT], **kwargs):
+    def __init__(self, model: Optional[ModelT], **kwargs: Any) -> None:
         self._model = model
         super(BaseDeserializer, self).__init__(**kwargs)
 
@@ -154,7 +154,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
             return self.multiple_deserialize(data)
         return self.single_deserialize(data)
 
-    def __init_subclass__(cls, **kwargs: Any):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Register a deserializer for its configured model type."""
         super(BaseDeserializer, cls).__init_subclass__(**kwargs)
 
@@ -164,7 +164,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         BaseDeserializer._registry.append(cls)
 
     @classmethod
-    def from_model(cls, model: type[ModelT], **kwargs) -> Optional[BaseDeserializer[ModelT]]:
+    def from_model(cls, model: type[ModelT], **kwargs: Any) -> Optional[BaseDeserializer[ModelT]]:
         """Return the deserializer registered for a model annotation, if any."""
         # User-defined codecs are registered after built-in fallback codecs
         # such as the dataclasses codec, and therefore take precedence.
@@ -178,7 +178,7 @@ class BaseDeserializer(BaseCodec, ABC, Generic[ModelT]):
         cls,
         model: type[ModelT],
         origin_cls: BaseCodec,
-        **kwargs,
+        **kwargs: Any,
     ) -> Optional[BaseDeserializer[ModelT]]:
         """Resolve a late-bound deserializer for a model annotation.
 

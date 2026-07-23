@@ -222,7 +222,9 @@ class DataclassesDeserializer(BaseDeserializer[Any]):
             return None
 
         if is_annotated_parameter(model):
-            model = get_args_for_generic(model)[0]
+            annotated_args = get_args_for_generic(model)
+            assert annotated_args is not None
+            model = annotated_args[0]
 
         separated_model = separate_union_type(model)
         if isinstance(separated_model, tuple):

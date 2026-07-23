@@ -19,13 +19,19 @@ class BaseBackend(ABC):
     are registered automatically.
     """
 
-    session_cls: ClassVar[type]
-    response_cls: ClassVar[type]
+    session_cls: ClassVar[type[Any]]
+    response_cls: ClassVar[type[Any]]
     native_base_url: ClassVar[bool] = False
 
-    _registry: ClassVar[dict[type, type[BaseBackend]]] = {}
+    _registry: ClassVar[dict[type[Any], type[BaseBackend]]] = {}
 
-    def __init__(self, session: type, *, base_url: Optional[str] = None, **kwargs: Any):
+    def __init__(
+        self,
+        session: type[Any],
+        *,
+        base_url: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """Create a backend and its underlying HTTP client session.
 
         Parameters
@@ -42,7 +48,7 @@ class BaseBackend(ABC):
         self.session = session(**kwargs)
         self.session_kwargs = kwargs
 
-    def __init_subclass__(cls, **kwargs: Any):
+    def __init_subclass__(cls, **kwargs: Any) -> None:
         """Register a concrete backend for its configured session class."""
         super(BaseBackend, cls).__init_subclass__(**kwargs)
 
@@ -52,7 +58,7 @@ class BaseBackend(ABC):
         BaseBackend._registry[cls.session_cls] = cls
 
     @classmethod
-    def from_session(cls: type[_BackendT], session: type, **kwargs: Any) -> _BackendT:
+    def from_session(cls: type[_BackendT], session: type[Any], **kwargs: Any) -> _BackendT:
         """Create the backend registered for an HTTP client session class.
 
         Parameters
@@ -72,7 +78,7 @@ class BaseBackend(ABC):
         return cls._registry[session](session, **kwargs)  # type: ignore[return-value]
 
     @abstractmethod
-    def get_request_kwargs(self, request_obj: RequestCore) -> dict[str, Any]:
+    def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
         """Convert a request descriptor into client-specific request arguments."""
         pass
 
@@ -139,42 +145,42 @@ class AsyncBackend(BaseBackend, ABC):
         pass
 
     @abstractmethod
-    async def session_close(self):
+    async def session_close(self) -> None:
         """Close the underlying asynchronous HTTP client session."""
         pass
 
     @abstractmethod
-    async def session_request(self, method: str, path: str, **kwargs):
+    async def session_request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous HTTP request with the given method and path."""
         pass
 
     @abstractmethod
-    async def session_get(self, path: str, **kwargs):
+    async def session_get(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``GET`` request."""
         pass
 
     @abstractmethod
-    async def session_post(self, path: str, **kwargs):
+    async def session_post(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``POST`` request."""
         pass
 
     @abstractmethod
-    async def session_options(self, path: str, **kwargs):
+    async def session_options(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``OPTIONS`` request."""
         pass
 
     @abstractmethod
-    async def session_delete(self, path: str, **kwargs):
+    async def session_delete(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``DELETE`` request."""
         pass
 
     @abstractmethod
-    async def session_patch(self, path: str, **kwargs):
+    async def session_patch(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``PATCH`` request."""
         pass
 
     @abstractmethod
-    async def session_put(self, path: str, **kwargs):
+    async def session_put(self, path: str, **kwargs: Any) -> Any:
         """Make an asynchronous ``PUT`` request."""
         pass
 
@@ -183,41 +189,41 @@ class SyncBackend(BaseBackend, ABC):
     """Base adapter contract for synchronous HTTP client libraries."""
 
     @abstractmethod
-    def session_close(self):
+    def session_close(self) -> None:
         """Close the underlying synchronous HTTP client session."""
         pass
 
     @abstractmethod
-    def session_request(self, method: str, path: str, **kwargs):
+    def session_request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make a synchronous HTTP request with the given method and path."""
         pass
 
     @abstractmethod
-    def session_get(self, path: str, **kwargs):
+    def session_get(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``GET`` request."""
         pass
 
     @abstractmethod
-    def session_post(self, path: str, **kwargs):
+    def session_post(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``POST`` request."""
         pass
 
     @abstractmethod
-    def session_options(self, path: str, **kwargs):
+    def session_options(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``OPTIONS`` request."""
         pass
 
     @abstractmethod
-    def session_delete(self, path: str, **kwargs):
+    def session_delete(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``DELETE`` request."""
         pass
 
     @abstractmethod
-    def session_patch(self, path: str, **kwargs):
+    def session_patch(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``PATCH`` request."""
         pass
 
     @abstractmethod
-    def session_put(self, path: str, **kwargs):
+    def session_put(self, path: str, **kwargs: Any) -> Any:
         """Make a synchronous ``PUT`` request."""
         pass
