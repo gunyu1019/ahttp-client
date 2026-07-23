@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import requests
 from typing import TYPE_CHECKING
 
@@ -49,7 +48,7 @@ class RequestsBackend(SyncBackend):
 
         json_kwargs = json_kwargs or dict()
         if json_parser is not None:
-            return json_parser(response_obj.text, **json_kwargs)
+            return json_parser(response_obj.content, **json_kwargs)
         return response_obj.json(**json_kwargs)
 
     def response_status(self, response_obj: requests.Response) -> int:
@@ -72,7 +71,7 @@ class RequestsBackend(SyncBackend):
         return self._closed
 
     def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
-        request_kwargs = copy.deepcopy(request_obj.request_kwargs)
+        request_kwargs = dict(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
         if len(request_obj.params) > 0:

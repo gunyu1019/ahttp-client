@@ -28,6 +28,7 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar, cast
+from urllib.parse import urlsplit, urlunsplit
 
 from .backend.base import BaseBackend, SyncBackend, AsyncBackend
 from .enum import DirectResponseType
@@ -63,7 +64,7 @@ class BaseSession(ABC):
     ) -> None:
         DirectResponseType.validate(directly_response)
         self.directly_response = directly_response
-        self.base_url = base_url
+        self.base_url = self._normalize_base_url(base_url)
 
         self._request_bound_func: dict[str, RequestBound] = dict()
 
@@ -84,9 +85,30 @@ class BaseSession(ABC):
         pass
 
     def _get_request_url(self, path: str) -> str:
+        parsed_path = urlsplit(path)
+        if parsed_path.scheme or parsed_path.netloc:
+            raise ValueError("Request path must be relative to the session base URL.")
+        if parsed_path.fragment:
+            raise ValueError("Request path must not contain a URL fragment.")
+        if ".." in parsed_path.path.split("/"):
+            raise ValueError("Request path must not escape the session base URL.")
+
+        relative_path = path.lstrip("/")
         if self.backend.native_base_url:
-            return path
-        return self.base_url.rstrip("/") + "/" + path.lstrip("/")
+            return relative_path
+        return self.base_url + relative_path
+
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        """Normalize a base URL so native clients preserve its path prefix."""
+        parsed = urlsplit(base_url)
+        if parsed.query or parsed.fragment:
+            raise ValueError("base_url must not contain a query string or fragment.")
+
+        path = parsed.path or "/"
+        if not path.endswith("/"):
+            path += "/"
+        return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
 
     @abstractmethod
     def _make_request(
@@ -150,6 +172,7 @@ class AsyncSession(BaseSession):
         directly_response: DirectResponseType | bool = False,
         **kwargs: Any,
     ) -> None:
+        base_url = self._normalize_base_url(base_url)
         self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(AsyncSession, self).__init__(
             base_url,
@@ -377,6 +400,7 @@ class Session(BaseSession):
         directly_response: DirectResponseType | bool = False,
         **kwargs: Any,
     ) -> None:
+        base_url = self._normalize_base_url(base_url)
         self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
         super(Session, self).__init__(
             base_url,

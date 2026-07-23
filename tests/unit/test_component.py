@@ -108,6 +108,17 @@ def test_json_data(test_method_json_data):
     assert test_method_json_data.body_parameter_type == BodyType.JSON
 
 
+def test_body_any_uses_runtime_json_encoding() -> None:
+    @request("POST", "/")
+    def endpoint(_: BaseSession, payload: Annotated[Any, Body]) -> None:
+        pass
+
+    filled_request = _filled_component_request(endpoint, {"value": 1})
+
+    assert filled_request.body_type == BodyType.JSON
+    assert filled_request.body == {"value": 1}
+
+
 def _filled_component_request(request_core, *values):
     bound_arguments = request_core._signature.bind(None, *values)
     bound_arguments.apply_defaults()
@@ -252,6 +263,19 @@ def test_file_like_body_form_field_uses_multipart_automatically():
     filled_request = _filled_component_request(upload, document)
 
     assert upload.body_type == BodyType.FORM_DATA
+    assert filled_request.body is None
+    assert filled_request._body_file == {"document": ("document", document, None)}
+
+
+def test_body_form_any_detects_runtime_file_value() -> None:
+    @request("POST", "/uploads")
+    def upload(_: BaseSession, document: Annotated[Any, BodyForm]) -> None:
+        pass
+
+    document = io.BytesIO(b"file content")
+    filled_request = _filled_component_request(upload, document)
+
+    assert filled_request.body_type == BodyType.FORM_DATA
     assert filled_request.body is None
     assert filled_request._body_file == {"document": ("document", document, None)}
 

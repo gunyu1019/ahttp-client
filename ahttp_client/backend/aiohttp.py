@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import aiohttp
-import copy
 import io
 import json as jsonlib
 
@@ -72,7 +71,7 @@ class AiohttpBackend(AsyncBackend):
         return bool(self.session.closed)
 
     def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
-        request_kwargs = copy.deepcopy(request_obj.request_kwargs)
+        request_kwargs = dict(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
         if len(request_obj.params) > 0:

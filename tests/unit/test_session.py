@@ -1,3 +1,4 @@
+import asyncio
 from typing import get_type_hints
 
 import aiohttp
@@ -77,3 +78,40 @@ def test_session_rejects_combined_direct_response_modes() -> None:
             "http://example.test",
             directly_response=DirectResponseType.RESPONSE | DirectResponseType.DESERIALIZED,
         )
+
+
+def test_aiohttp_session_preserves_base_url_path_prefix() -> None:
+    async def scenario() -> None:
+        session = AsyncSession(
+            "http://example.test/api",
+            aiohttp.ClientSession,
+        )
+        try:
+            request_path = session._get_request_url("/users")
+            built_url = session.backend.session._build_url(request_path)
+
+            assert session.base_url == "http://example.test/api/"
+            assert request_path == "users"
+            assert str(built_url) == "http://example.test/api/users"
+        finally:
+            await session.close()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "https://other.test/users",
+        "//other.test/users",
+        "../users",
+        "users#fragment",
+    ],
+)
+def test_session_rejects_paths_outside_base_url(path: str) -> None:
+    session = object.__new__(AsyncSession)
+    BaseSession.__init__(session, "http://example.test/api")
+    session.backend = type("Backend", (), {"native_base_url": True})()
+
+    with pytest.raises(ValueError):
+        session._get_request_url(path)

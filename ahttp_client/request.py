@@ -825,21 +825,35 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         # Body
         self._duplicated_check_body()
+        if self.is_formal_form and self.body_form_encoding_type == BodyFormEncoding.AUTO:
+            has_file_value = any(
+                entry.is_file_type
+                or (entry.component is not None and entry.component.is_file_type)
+                or callable(getattr(bounded_argument.get(entry.parameter.name), "read", None))
+                for entry in self.body_form_parameter.values()
+            )
+            self.body_parameter_type = BodyType.FORM_DATA if has_file_value else BodyType.URL_ENCODED
+
         if self.is_formal_form and self.body_parameter is None and self.body_type == BodyType.FORM_DATA:  # self.is_body
             self.body = dict()
             self._body_file = dict()
 
             for _name, _entry in self.body_form_parameter.items():
-                if (_entry.component is not None and _entry.component.is_file_type) or _entry.is_file_type:
+                value = bounded_argument.get(_entry.parameter.name)
+                if (
+                    (_entry.component is not None and _entry.component.is_file_type)
+                    or _entry.is_file_type
+                    or callable(getattr(value, "read", None))
+                ):
                     file_name = getattr(_entry.component, "metadata_filename", None)
                     content_type = getattr(_entry.component, "metadata_content_type", None)
                     self._body_file[_name] = (
                         file_name or _name,
-                        bounded_argument.get(_entry.parameter.name),
+                        value,
                         content_type,
                     )
                 else:
-                    self.body[_name] = bounded_argument.get(_entry.parameter.name)
+                    self.body[_name] = value
 
             if len(self.body.keys()) == 0:
                 self.body = None
@@ -884,6 +898,10 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
             if self._serializer is not None:
                 value = self._serializer.serialize(value)
+            else:
+                self.body_parameter_type = (
+                    BodyType.JSON if isinstance(value, _BODY_JSON_TYPE) else BodyType.RAW
+                )
 
             self.body = value
             if body_component is not None:

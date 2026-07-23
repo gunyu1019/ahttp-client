@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import io
 import httpx
 
@@ -27,7 +26,7 @@ class CommonHttpXBackend(BaseBackend, ABC):
     native_base_url = True
 
     def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
-        request_kwargs = copy.deepcopy(request_obj.request_kwargs)
+        request_kwargs = dict(request_obj.request_kwargs)
         if len(request_obj.headers) > 0:
             request_kwargs["headers"] = request_obj.headers
         if len(request_obj.params) > 0:
@@ -78,11 +77,11 @@ class CommonHttpXBackend(BaseBackend, ABC):
         json_kwargs: Optional[dict[str, Any]] = None,
     ) -> Optional[Any]:
         json_kwargs = json_kwargs or dict()
-        if json_parser is None:
-            return response_obj.json(**json_kwargs)
         raw_response = response_obj.content
         if not raw_response:
             return None
+        if json_parser is None:
+            return response_obj.json(**json_kwargs)
         return json_parser(raw_response, **json_kwargs)
 
 
