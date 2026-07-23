@@ -13,13 +13,25 @@ class HTTPException(Exception):
 
     Each concrete status exception declares its HTTP ``status_code`` and
     human-readable ``title`` as class variables.  The original response is
-    retained when the exception is raised through :meth:`Response.raise_for_status`.
+    retained when the exception is raised through
+    :meth:`~ahttp_client.response.Response.raise_for_status`.
     """
 
     status_code: ClassVar[int | None] = None
     title: ClassVar[str] = "HTTP error"
 
     def __init__(self, response: Response | None = None, message: str | None = None) -> None:
+        """Create the exception, optionally attaching the triggering response.
+
+        Parameters
+        ----------
+        response: Response | None
+            Response that triggered the exception. When given, ``status`` and
+            ``url`` are read from it instead of the class-level defaults.
+        message: str | None
+            Exception message. A message built from ``status``/``title``/``url``
+            is used when empty.
+        """
         self.response = response
         self.status = response.status if response is not None else self.status_code
         self.url = response.url if response is not None else None

@@ -13,6 +13,17 @@ if TYPE_CHECKING:
 
 
 class RequestsBackend(SyncBackend):
+    """Backend adapter for :class:`requests.Session`.
+
+    Requires the ``requests`` package (``pip install requests``). Registered
+    for ``requests.Session`` and used when a session is created with
+    ``Session(base_url, requests.Session)``.
+
+    ``requests.Response`` has no built-in closed state, so this backend
+    tracks it manually via an internal ``_closed`` flag that is only ever
+    set by :meth:`session_close`.
+    """
+
     session_cls = requests.Session
     response_cls = requests.Response
 

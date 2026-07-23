@@ -15,6 +15,14 @@ if TYPE_CHECKING:
 
 
 class CommonHttpXBackend(BaseBackend, ABC):
+    """Shared request/response conversion logic for the ``httpx`` backends.
+
+    :class:`HttpXAsyncSession` and :class:`HttpXSyncSession` both derive
+    from this class, so the request-building and response-reading behavior
+    only needs to be implemented once and is shared between the
+    asynchronous and synchronous ``httpx`` clients.
+    """
+
     response_cls = httpx.Response
     native_base_url = True
 
@@ -79,6 +87,13 @@ class CommonHttpXBackend(BaseBackend, ABC):
 
 
 class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
+    """Backend adapter for :class:`httpx.AsyncClient`.
+
+    Requires the ``httpx`` package (``pip install httpx``). Registered for
+    ``httpx.AsyncClient`` and used when a session is created with
+    ``AsyncSession(base_url, httpx.AsyncClient)``.
+    """
+
     session_cls = httpx.AsyncClient
 
     @property
@@ -114,6 +129,13 @@ class HttpXAsyncSession(AsyncBackend, CommonHttpXBackend):
 
 
 class HttpXSyncSession(SyncBackend, CommonHttpXBackend):
+    """Backend adapter for :class:`httpx.Client`.
+
+    Requires the ``httpx`` package (``pip install httpx``). Registered for
+    ``httpx.Client`` and used when a session is created with
+    ``Session(base_url, httpx.Client)``.
+    """
+
     session_cls = httpx.Client
 
     def response_close(self, response_obj: httpx.Response) -> None:

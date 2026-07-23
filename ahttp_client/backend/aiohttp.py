@@ -15,6 +15,13 @@ if TYPE_CHECKING:
 
 
 class AiohttpBackend(AsyncBackend):
+    """Backend adapter for :class:`aiohttp.ClientSession`.
+
+    Requires the ``aiohttp`` package (``pip install aiohttp``). Registered
+    for ``aiohttp.ClientSession`` and wraps ``aiohttp.ClientResponse`` as
+    its response type.
+    """
+
     session_cls = aiohttp.ClientSession
     response_cls = aiohttp.ClientResponse
     native_base_url = True

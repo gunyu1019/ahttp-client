@@ -23,6 +23,9 @@ class Response:
         Original response object returned by the HTTP client library.
     backend: BaseBackend
         Backend that provides response operations for ``response_obj``.
+    serializer: Optional[BaseDeserializer]
+        Deserializer used to build :attr:`model` from this response. Left
+        unset when the request has no ``@deserialize`` decorator applied.
     """
 
     def __init__(self, response_obj: Any, backend: BaseBackend, serializer: Optional[BaseDeserializer] = None):
@@ -39,6 +42,12 @@ class Response:
 
     @property
     def model(self) -> Optional[ModelT]:
+        """Return the response body deserialized into a model instance.
+
+        Returns ``None`` when no deserializer was attached to the request
+        (that is, no ``@deserialize`` decorator was applied). See
+        :doc:`serialization` for how a deserializer gets attached.
+        """
         if self._deserializer is None:
             return None
         data = self._deserializer.get_data(self)

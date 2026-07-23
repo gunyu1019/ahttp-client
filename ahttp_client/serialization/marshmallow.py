@@ -75,6 +75,12 @@ class MarshmallowSerializer(_MarshmallowCodec, BaseSerializer[Any]):
 
 
 class MarshmallowDeserializer(_MarshmallowCodec, BaseDeserializer[Any]):
+    """Deserialize JSON response bodies with :meth:`marshmallow.Schema.load`.
+
+    A schema instance is required; its ``load`` implementation determines the
+    deserialized value independently of the return annotation.
+    """
+
     def __init__(
         self,
         model: Any = None,
@@ -89,12 +95,6 @@ class MarshmallowDeserializer(_MarshmallowCodec, BaseDeserializer[Any]):
         self.partial = partial
         self.unknown = unknown
         super().__init__(model=model)
-
-    """Deserialize JSON response bodies with :meth:`marshmallow.Schema.load`.
-
-    A schema instance is required; its ``load`` implementation determines the
-    deserialized value independently of the return annotation.
-    """
 
     def get_data(self, response: Response) -> Any:
         """Parse a response body as the schema's input value."""
