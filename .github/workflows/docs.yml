@@ -1,36 +1,42 @@
+---
+name: Documentation (Build & Deployment)
+
 on:
   pull_request:
     types:
       - closed
+    branches:
+      - "main"
+      - "v2.0"
     paths:
-      - 'docs'
+      - "docs/**"
   push:
-    branches: 
-      - 'docs'
-
-name: Documentation (Build & Deployment)
+    branches:
+      - "docs"
+  workflow_dispatch:
 
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
-      python-verison: '3.11'
-    strategy: 
+      PYTHON_VERSION: "3.11"
+    strategy:
       matrix:
-        language: [ 'en', 'ko' ]
+        language: ["en", "ko"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
-          python-version: '${{ env.python-verison }}'
+          python-version: "${{ env.PYTHON_VERSION }}"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[docs]
+          python -m pip install ".[docs]"
       - name: Build
-        run: sphinx-build './docs/source' './docs/build/${{ matrix.language }}' -D language='${{ matrix.language }}' 
+        run: python -m sphinx -W --keep-going -b html -D language="${{ matrix.language }}" docs/source "docs/build/${{ matrix.language }}"
       - name: Store artifact (language = ${{ matrix.language }})
         uses: actions/upload-artifact@v4
         with:
