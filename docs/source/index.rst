@@ -49,16 +49,27 @@ Client Session in GithubServices are terminated when leave the asynchronous cont
 
 .. toctree::
    :maxdepth: 2
-   :glob:
    :hidden:
-   :caption: Table of Contents
+   :caption: Guide
 
    Introduction <self>
    HTTP Component <component>
    Pre-Hooking / Post-Hooking <hooking>
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Features
+
    Retry <retry>
    Backend <backend>
    Serialization <serialization>
    Exception <exception>
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Reference
+
    API Reference <api>
    Deprecated <deprecated>
