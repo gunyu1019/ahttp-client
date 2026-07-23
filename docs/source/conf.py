@@ -9,7 +9,7 @@
 project = "ahttp-client"
 copyright = "2024-2025, gunyu1019"
 author = "gunyu1019"
-release = "v1.0.1"
+release = "v2.0.0b2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -41,6 +41,16 @@ gettext_compact = False
 html_theme = "sphinxawesome_theme"
 html_static_path = ["_static"]
 html_css_files = ["custom_theme.css"]
+
+# The theme's own default is "bw" (a monochrome Pygments style with no
+# syntax colors at all); pick a real color scheme for both light and dark.
+# "default" is the classic high-contrast Sphinx/Pygments palette (strong
+# blue keywords, red strings) that reads well on this theme's white
+# background. The dark equivalent is applied via custom_theme.css, scoped
+# to ".dark .highlight", because this theme's light/dark toggle sets a
+# ".dark" class rather than relying only on prefers-color-scheme.
+pygments_style = "default"
+pygments_style_dark = "github-dark"
 
 ## Template Option
 html_title = "ahttp_client"

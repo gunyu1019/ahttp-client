@@ -54,14 +54,14 @@ Usage by Component
 ------------------
 
 * **Header** - Configure the header for the HTTP component.
-* **Body** - Configure the body for the HTTP component.
-* **Form** - Configure the body with `aiohttp.FormData <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_
-* **BodyJson** - Configure the body with `Dictionaries <https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_
 * **Query** - Insert a value inside the URL parameter.
 * **Path** - Insert the specified value(s) inside the path placeholder. The path placeholder is using curly brackets: `{}`
+* **Body** - Send the whole request body as one value. `dict`, `list`, and `tuple` values are encoded as JSON; any other value (including a file-like object) is sent as raw body data.
+* **BodyJson** - Send one field of a JSON request body. Multiple `BodyJson` parameters on the same method are merged into a single JSON object; use `custom_key` for a nested (dot-separated) key.
+* **BodyForm** - Send one field of a form request body. The request switches to `multipart/form-data <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_ automatically once a field carries file metadata (see `metadata`) or a file-like value; otherwise all `BodyForm` fields are URL-encoded together.
 
-.. warning:: Defining the Body parameter at HTTP request decoration can only be of one of the following types: Body, BodyJson, or Form.
-    If more than one Component is used, a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ can be thrown.
+.. warning:: Defining the body parameter(s) of an HTTP request can use only one of `Body`, `BodyJson`, or `BodyForm`.
+    Mixing `Body` with either `BodyJson` or `BodyForm` on the same method can raise a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_.
 
 Custom Component Name
 ---------------------
@@ -100,5 +100,5 @@ To follow the PEP 8 rules as described, an `ahttp_client` package provides a cus
 As in the example above, insert the `GITHUB API TOKEN` in token argument of `list_repository_activites` method.
 During the calling process, the key of Header has been overridden to "Authorization".
 
-.. warning:: The custom component name feature only supports Header, Query, BodyJson, and Form. 
-    Using it in other components may cause a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_.
+.. warning:: The custom component name feature only supports Header, Query, BodyJson, and BodyForm.
+    `Path` and `Body` do not support a custom name, since `Path` values must match a placeholder in the request path and `Body` has no field key of its own; calling `custom_name` on either raises a `NotImplementedError <https://docs.python.org/3/library/exceptions.html#NotImplementedError>`_.

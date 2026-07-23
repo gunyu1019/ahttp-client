@@ -6,13 +6,16 @@ Introduction
 .. image:: https://img.shields.io/pypi/dm/ahttp-client?style=flat
 .. image:: https://img.shields.io/pypi/l/ahttp-client?style=flat
 
-An ahttp-client is Python package that provides concise and aintuitive asynchronous HTTP request using `annotated type <https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated>`_ and `@decorator`. 
+`ahttp-client` is a Python package that provides concise and intuitive asynchronous (and synchronous) HTTP requests using `annotated types <https://docs.python.org/ko/3.9/library/typing.html#typing.Annotated>`_ and `@decorator`\ s.
 
-**Key Feautre**
+**Key Features**
 
 * Defining a simple request method with decoration.
-* Managing HTTP Compoents using Annotated Types.
-* Providing Hooks before and after HTTP calls.
+* Managing HTTP components using annotated types.
+* Providing hooks before and after HTTP calls, with optional retry and exponential backoff (see :doc:`retry`).
+* Supporting `aiohttp`, `httpx`, and `requests` as pluggable backends (see :doc:`backend`).
+* Serializing and deserializing request/response bodies with `dataclasses`, `pydantic`, or `marshmallow` (see :doc:`serialization`).
+* Raising a typed `HTTPException` for 4xx/5xx responses (see :doc:`exception`).
 
 Getting Started
 ---------------
@@ -53,5 +56,9 @@ Client Session in GithubServices are terminated when leave the asynchronous cont
    Introduction <self>
    HTTP Component <component>
    Pre-Hooking / Post-Hooking <hooking>
+   Retry <retry>
+   Backend <backend>
+   Serialization <serialization>
+   Exception <exception>
    API Reference <api>
-   Extension <extension>
+   Deprecated <deprecated>

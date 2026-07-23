@@ -11,27 +11,27 @@ A component for HTTP sending. (Header, Query, Path, Body)
     :members:
     :member-order: groupwise
 
-.. autoclass:: ahttp_client.body_json.BodyJson()
+.. autoclass:: ahttp_client.component.Body()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.body.Body()
+.. autoclass:: ahttp_client.component.BodyJson()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.form.Form()
+.. autoclass:: ahttp_client.component.BodyForm()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.header.Header()
+.. autoclass:: ahttp_client.component.Header()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.path.Path()
+.. autoclass:: ahttp_client.component.Path()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.query.Query()
+.. autoclass:: ahttp_client.component.Query()
     :members:
     :show-inheritance:
 
@@ -105,11 +105,21 @@ Request Core
 
 .. autodecorator:: ahttp_client.request.options(path: str)
 
+.. autodecorator:: ahttp_client.request.patch(path: str)
+
 .. autodecorator:: ahttp_client.request.put(path: str)
 
 .. autodecorator:: ahttp_client.request.delete(path: str)
 
     Same feature as `ahttp_client.request`.
+
+
+Response
+--------
+
+.. autoclass:: ahttp_client.response.Response()
+    :members:
+    :member-order: groupwise
 
 
 Session
@@ -141,3 +151,10 @@ Session
                 session: AsyncSession, name: Query | str
             ) -> Response:
                 pass
+
+.. seealso::
+    This page covers the core request/component/session API. For the backend
+    adapter classes, see :doc:`backend`; for retry configuration, see
+    :doc:`retry`; for serializer/deserializer classes, see
+    :doc:`serialization`; for the HTTP exception hierarchy, see
+    :doc:`exception`.
