@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-24 04:19+0900\n"
+"POT-Creation-Date: 2026-07-24 04:24+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -20,51 +20,51 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: ../../source/index.rst:3 ../../source/index.rst:50
+#: ../../source/index.rst:3 ../../source/index.rst:104
 msgid "Introduction"
 msgstr "Introduction"
 
-#: ../../source/index.rst:50
+#: ../../source/index.rst:104
 msgid "HTTP Component"
 msgstr "HTTP 구성요소 (Component)"
 
-#: ../../source/index.rst:50
+#: ../../source/index.rst:104
 msgid "Pre-Hooking / Post-Hooking"
 msgstr "Hooking 기능"
 
-#: ../../source/index.rst:50
+#: ../../source/index.rst:104
 msgid "Guide"
 msgstr "가이드"
 
-#: ../../source/index.rst:59
+#: ../../source/index.rst:113
 msgid "Retry"
 msgstr "재시도 (Retry)"
 
-#: ../../source/index.rst:59
+#: ../../source/index.rst:113
 msgid "Backend"
 msgstr "백엔드 (Backend)"
 
-#: ../../source/index.rst:59
+#: ../../source/index.rst:113
 msgid "Serialization"
 msgstr "직렬화 (Serialization)"
 
-#: ../../source/index.rst:59
+#: ../../source/index.rst:113
 msgid "Exception"
 msgstr "예외 (Exception)"
 
-#: ../../source/index.rst:59
+#: ../../source/index.rst:113
 msgid "Features"
 msgstr "기능"
 
-#: ../../source/index.rst:69
+#: ../../source/index.rst:123
 msgid "API Reference"
 msgstr "API Refernece"
 
-#: ../../source/index.rst:69
+#: ../../source/index.rst:123
 msgid "Deprecated"
 msgstr "지원 종료 (Deprecated)"
 
-#: ../../source/index.rst:69
+#: ../../source/index.rst:123
 msgid "Reference"
 msgstr "레퍼런스"
 
@@ -85,46 +85,114 @@ msgid "**Key Features**"
 msgstr "**주요 특징**"
 
 #: ../../source/index.rst:13
-msgid "Defining a simple request method with decoration."
-msgstr "HTTP 요청을 데코레이터(decorator)로 정의할 수 있습니다."
+msgid ""
+"Declare HTTP endpoints using `request` or the `get`, `post`, `put`, "
+"`patch`, `delete`, and `options` decoration methods."
+msgstr "`request` 또는 `get`, `post`, `put`, `patch`, `delete`, `options` 데코레이터로 HTTP 엔드포인트를 선언합니다."
 
 #: ../../source/index.rst:14
-msgid "Managing HTTP components using annotated types."
-msgstr "Annotated Type으로 HTTP Component를 관리할 수 있습니다."
+msgid ""
+"Manage HTTP components, such as the path, query, header, or body values, "
+"using annotated types (see :doc:`component`)."
+msgstr "Annotated Type으로 경로, 쿼리, 헤더, 본문 등 HTTP 구성요소를 관리합니다 (:doc:`component` 참고)."
 
 #: ../../source/index.rst:15
 msgid ""
-"Providing hooks before and after HTTP calls, with optional retry and "
-"exponential backoff (see :doc:`retry`)."
+"Customize the request lifecycle before and after an HTTP call, with "
+"optional retry and exponential backoff (see :doc:`hooking` and "
+":doc:`retry`)."
 msgstr ""
-"HTTP 요청 전후로 후킹 기능을 제공하고, 지수 백오프 방식의 재시도 기능도 선택적으로 쓸 수 있습니다 (:doc:`retry` "
-"참고)."
+"HTTP 요청 전후로 요청 처리 과정을 커스터마이징할 수 있고, 지수 백오프 방식의 재시도 기능도 선택적으로 쓸 수 있습니다 "
+"(:doc:`hooking`, :doc:`retry` 참고)."
 
 #: ../../source/index.rst:16
 msgid ""
-"Supporting `aiohttp`, `httpx`, and `requests` as pluggable backends (see "
-":doc:`backend`)."
-msgstr "`aiohttp`, `httpx`, `requests` 를 교체 가능한 백엔드로 지원합니다 (:doc:`backend` 참고)."
+"Swap between `aiohttp`, `httpx`, and `requests` as pluggable backends "
+"without changing how a service is declared (see :doc:`backend`)."
+msgstr ""
+"서비스를 선언하는 방식을 바꾸지 않고도 `aiohttp`, `httpx`, `requests` 를 교체 가능한 백엔드로 바꿔 쓸 수 "
+"있습니다 (:doc:`backend` 참고)."
 
 #: ../../source/index.rst:17
 msgid ""
-"Serializing and deserializing request/response bodies with `dataclasses`,"
-" `pydantic`, or `marshmallow` (see :doc:`serialization`)."
+"Serialize typed request models and deserialize responses using registered"
+" codecs for `dataclasses`, `pydantic`, or `marshmallow` (see "
+":doc:`serialization`)."
 msgstr ""
-"`dataclasses`, `pydantic`, `marshmallow` 로 요청/응답 본문을 직렬화·역직렬화합니다 "
-"(:doc:`serialization` 참고)."
+"`dataclasses`, `pydantic`, `marshmallow` 용으로 등록된 코덱을 이용해 타입이 지정된 요청 모델을 "
+"직렬화하고 응답을 역직렬화합니다 (:doc:`serialization` 참고)."
 
 #: ../../source/index.rst:18
 msgid ""
-"Raising a typed `HTTPException` for 4xx/5xx responses (see "
+"Raise a typed `HTTPException` for 4xx/5xx responses (see "
 ":doc:`exception`)."
 msgstr "4xx/5xx 응답에 대해 타입이 지정된 `HTTPException` 을 발생시킵니다 (:doc:`exception` 참고)."
 
 #: ../../source/index.rst:21
+msgid "Installation"
+msgstr "설치"
+
+#: ../../source/index.rst:22
+msgid ""
+"`ahttp-client` requires Python 3.11 or later. Install the extra for the "
+"HTTP client library a service will use."
+msgstr "`ahttp-client` 는 Python 3.11 이상이 필요합니다. 서비스에서 사용할 HTTP 클라이언트 라이브러리에 맞는 추가 의존성(extra)을 설치하세요."
+
+#: ../../source/index.rst:30
+msgid ""
+"Add the `pydantic` extra to serialize and deserialize "
+"`pydantic.BaseModel` instances (see :doc:`serialization`)."
+msgstr "`pydantic.BaseModel` 인스턴스를 직렬화·역직렬화하려면 `pydantic` extra를 추가하세요 (:doc:`serialization` 참고)."
+
+#: ../../source/index.rst:37
 msgid "Getting Started"
 msgstr "시작하기"
 
-#: ../../source/index.rst:23
+#: ../../source/index.rst:38
+msgid "Two session base classes cover both styles of client:"
+msgstr "두 세션 기반 클래스가 두 스타일의 클라이언트를 각각 담당합니다:"
+
+#: ../../source/index.rst:43
+msgid "Style"
+msgstr "스타일"
+
+#: ../../source/index.rst:44
+msgid "Supported client classes"
+msgstr "지원하는 클라이언트 클래스"
+
+#: ../../source/index.rst:45
+msgid "Session class"
+msgstr "세션 클래스"
+
+#: ../../source/index.rst:46
+msgid "Async"
+msgstr "비동기"
+
+#: ../../source/index.rst:47
+msgid "`aiohttp.ClientSession`, `httpx.AsyncClient`"
+msgstr "`aiohttp.ClientSession`, `httpx.AsyncClient`"
+
+#: ../../source/index.rst:48
+msgid "`AsyncSession`"
+msgstr "`AsyncSession`"
+
+#: ../../source/index.rst:49
+msgid "Sync"
+msgstr "동기"
+
+#: ../../source/index.rst:50
+msgid "`requests.Session`, `httpx.Client`"
+msgstr "`requests.Session`, `httpx.Client`"
+
+#: ../../source/index.rst:51
+msgid "`Session`"
+msgstr "`Session`"
+
+#: ../../source/index.rst:54
+msgid "Asynchronous Client"
+msgstr "비동기 클라이언트"
+
+#: ../../source/index.rst:55
 msgid ""
 "Implement a `GithubService` class extended with "
 "`ahttp_client.AsyncSession`. Then, create a `list_repositories` method "
@@ -133,21 +201,39 @@ msgstr ""
 "`ahttp_client.AsyncSession` 을 상속한 `GithubService` 클래스를 만들고, `request` "
 "데코레이터로 `list_repositories` 메소드를 정의합니다."
 
-#: ../../source/index.rst:26
-msgid "An `user` argument define HTTP-component (Path) through annotation types."
-msgstr "`user` 인수는 Annotated Type을 통해 HTTP 구성요소(Path)로 정의했습니다."
-
-#: ../../source/index.rst:40
+#: ../../source/index.rst:58
 msgid ""
-"Using the asynchronous context manager(`async with`), create a "
-"GithubService instance."
+"A `user` argument defines an HTTP component (`Path`) through an annotated"
+" type."
+msgstr "`user` 인수는 Annotated Type을 통해 HTTP 구성요소(`Path`)를 정의합니다."
+
+#: ../../source/index.rst:72
+msgid ""
+"Using the asynchronous context manager (`async with`), create a "
+"`GithubService` instance."
 msgstr "비동기 컨텍스트 매니저(`async with`)로 `GithubService` 객체를 생성합니다."
 
-#: ../../source/index.rst:48
+#: ../../source/index.rst:80
 msgid ""
-"Client Session in GithubServices are terminated when leave the "
-"asynchronous context manager."
-msgstr "GithubService 객체가 가진 Client Session은 이 컨텍스트 매니저를 벗어나는 순간 자동으로 종료됩니다."
+"The client session inside `GithubService` closes automatically once the "
+"asynchronous context manager exits."
+msgstr "`GithubService` 내부의 클라이언트 세션은 비동기 컨텍스트 매니저를 벗어나는 순간 자동으로 종료됩니다."
+
+#: ../../source/index.rst:83
+msgid "Synchronous Client"
+msgstr "동기 클라이언트"
+
+#: ../../source/index.rst:84
+msgid ""
+"For a synchronous service, extend `Session` instead and use a regular "
+"function with `requests.Session` or `httpx.Client`."
+msgstr "동기 방식 서비스는 대신 `Session` 을 상속하고, `requests.Session` 이나 `httpx.Client` 와 함께 일반 함수를 사용합니다."
+
+#: ../../source/index.rst:102
+msgid ""
+"The client session inside `GithubService` closes automatically once the "
+"`with` block exits."
+msgstr "`GithubService` 내부의 클라이언트 세션은 `with` 블록을 벗어나는 순간 자동으로 종료됩니다."
 
 #~ msgid "Providing Hooks before and after HTTP calls."
 #~ msgstr "HTTP 요청이 있기 전과 후에 후킹 기능을 제공합니다."
@@ -155,3 +241,8 @@ msgstr "GithubService 객체가 가진 Client Session은 이 컨텍스트 매니
 #~ msgid "Table of Contents"
 #~ msgstr "목차"
 
+#~ msgid "Defining a simple request method with decoration."
+#~ msgstr "HTTP 요청을 데코레이터(decorator)로 정의할 수 있습니다."
+
+#~ msgid "Managing HTTP components using annotated types."
+#~ msgstr "Annotated Type으로 HTTP Component를 관리할 수 있습니다."
