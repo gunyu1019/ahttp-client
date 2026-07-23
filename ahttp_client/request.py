@@ -438,9 +438,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             for other_name, other_path in paths:
                 shared_length = min(len(path), len(other_path))
                 if path[:shared_length] == other_path[:shared_length]:
-                    raise ValueError(
-                        f"BodyJson parameters {other_name!r} and {name!r} use conflicting JSON paths."
-                    )
+                    raise ValueError(f"BodyJson parameters {other_name!r} and {name!r} use conflicting JSON paths.")
             paths.append((name, path))
 
     # Setup
@@ -804,6 +802,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         except Exception:
             resolved_hints: dict[str, Any] = {}
             for name, annotation in self.func.__annotations__.items():
+
                 def hint_holder() -> None:
                     pass
 
@@ -947,9 +946,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             if self._serializer is not None:
                 value = self._serializer.serialize(value)
             else:
-                self.body_parameter_type = (
-                    BodyType.JSON if isinstance(value, _BODY_JSON_TYPE) else BodyType.RAW
-                )
+                self.body_parameter_type = BodyType.JSON if isinstance(value, _BODY_JSON_TYPE) else BodyType.RAW
 
             self.body = value
             if body_component is not None:
@@ -1163,11 +1160,7 @@ class AsyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = await self._before_hook(session, req_obj, formatted_path)
 
-        stream_positions = (
-            req_obj._capture_retry_stream_positions()
-            if self._retry_config is not None
-            else []
-        )
+        stream_positions = req_obj._capture_retry_stream_positions() if self._retry_config is not None else []
 
         def make_request_func() -> Awaitable[tuple[Response, Any]]:
             req_obj._rewind_retry_streams(stream_positions)
@@ -1253,11 +1246,7 @@ class SyncRequestCore(
         if self._before_hook is not None:
             req_obj, formatted_path = self._before_hook(session, req_obj, formatted_path)
 
-        stream_positions = (
-            req_obj._capture_retry_stream_positions()
-            if self._retry_config is not None
-            else []
-        )
+        stream_positions = req_obj._capture_retry_stream_positions() if self._retry_config is not None else []
 
         def make_request_func() -> tuple[Response, Any]:
             req_obj._rewind_retry_streams(stream_positions)

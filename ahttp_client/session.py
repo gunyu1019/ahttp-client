@@ -135,8 +135,7 @@ class BaseSession(ABC):
             if inspect.iscoroutinefunction(request_obj.func) != expects_async:
                 expected_kind = "asynchronous" if expects_async else "synchronous"
                 raise TypeError(
-                    f"Request {request_obj.name} must use a {expected_kind} handler "
-                    f"with {cls.__name__}."
+                    f"Request {request_obj.name} must use a {expected_kind} handler " f"with {cls.__name__}."
                 )
 
             if request_obj.name in members.keys():
