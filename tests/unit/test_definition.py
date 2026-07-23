@@ -120,6 +120,17 @@ def test_future_annotations_are_resolved_into_components():
     assert future_annotations_request.body_parameter_type == BodyType.JSON
 
 
+def test_unresolved_annotation_does_not_hide_other_components() -> None:
+    @request("GET", "/")
+    def endpoint(
+        session: "MissingSession",
+        query: Annotated[str, Query],
+    ) -> None:
+        pass
+
+    assert set(endpoint.query_parameter) == {"query"}
+
+
 def test_component_parameter_2(test_method_with_decorator_parameter):
     request_core = test_method_with_decorator_parameter
     assert "test_header" in request_core.header_parameter

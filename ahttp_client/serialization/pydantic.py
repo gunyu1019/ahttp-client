@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Callable, get_origin
+from typing import Any, Optional, Callable
 
 from pydantic.main import BaseModel, IncEx
 from pydantic.config import ExtraValues
@@ -105,6 +105,4 @@ class PydanticDeserializer(BaseDeserializer[BaseModel]):
 
     def deserialize(self, data: Any) -> Any:
         """Validate data while preserving collection model annotations."""
-        if self.is_sequence(data) and get_origin(self._model) is None:
-            return self.multiple_deserialize(data)
         return self.single_deserialize(data)

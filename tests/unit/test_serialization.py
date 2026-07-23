@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import pytest
+
 from ahttp_client import BodyType, Response, request
 from ahttp_client.enum import DirectResponseType
 from ahttp_client.serialization import BaseDeserializer, BaseSerializer
@@ -75,6 +77,28 @@ def test_registry_and_late_binding_resolve_nested_model_annotations() -> None:
 
     assert serializer.serialize(Model("value")) == {"value": "late-value"}
     assert deserializer.deserialize({"value": "value"}) == Model("late-value")
+
+
+def test_registered_serializer_converts_models_in_nested_containers() -> None:
+    serializer = BaseSerializer.from_model(list[dict[str, Model]])
+
+    assert serializer is not None
+    assert serializer.serialize([{"item": Model("nested")}]) == [
+        {"item": {"value": "nested"}},
+    ]
+
+
+def test_pydantic_single_model_rejects_root_array() -> None:
+    pydantic = pytest.importorskip("pydantic")
+    from ahttp_client.serialization.pydantic import PydanticDeserializer
+
+    class Item(pydantic.BaseModel):
+        value: int
+
+    deserializer = PydanticDeserializer(Item)
+
+    with pytest.raises(pydantic.ValidationError):
+        deserializer.deserialize([{"value": 1}])
 
 
 def test_request_decorators_bind_serialization_from_annotations() -> None:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any, cast, Generic, TypeVar, ClassVar, Optional
+from collections.abc import Mapping, Sequence
+from typing import Any, Generic, TypeVar, ClassVar, Optional
 
 from ..enum import BodyType
 from ..response import Response
@@ -66,13 +66,21 @@ class BaseSerializer(BaseCodec, ABC, Generic[ModelT]):
 
     def multiple_serialize(self, model: Sequence[ModelT]) -> list[Any]:
         """Serialize a sequence of models."""
-        return [self.single_serialize(item) if isinstance(item, self.base_model_type) else item for item in model]
+        return [self._serialize_value(item) for item in model]
+
+    def _serialize_value(self, value: Any) -> Any:
+        """Recursively convert registered models inside JSON containers."""
+        if isinstance(value, self.base_model_type):
+            return self.single_serialize(value)
+        if isinstance(value, Mapping):
+            return {key: self._serialize_value(item) for key, item in value.items()}
+        if self.is_sequence(value):
+            return [self._serialize_value(item) for item in value]
+        return value
 
     def serialize(self, model: ModelT | Sequence[ModelT]) -> Any | list[Any]:
         """Serialize one model or a sequence of models."""
-        if self.is_sequence(model):
-            return self.multiple_serialize(cast(Sequence[ModelT], model))
-        return self.single_serialize(cast(ModelT, model))
+        return self._serialize_value(model)
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Register a serializer for its configured model type."""

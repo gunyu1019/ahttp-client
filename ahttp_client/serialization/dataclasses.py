@@ -98,6 +98,10 @@ class DataclassesSerializer(BaseSerializer[Any]):
     def multiple_serialize(self, model: Sequence[Any]) -> list[Any]:
         return [self.single_serialize(item) for item in model]
 
+    def serialize(self, model: Any) -> Any:
+        """Serialize the complete value using dataclass-aware recursion."""
+        return self.single_serialize(model)
+
 
 class DataclassesDeserializer(BaseDeserializer[Any]):
     """Reconstruct dataclass instances from JSON-compatible values."""

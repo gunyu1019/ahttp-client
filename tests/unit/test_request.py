@@ -1,4 +1,5 @@
 import io
+import inspect
 from typing import Annotated, get_type_hints
 
 import pytest
@@ -8,6 +9,7 @@ from ahttp_client import (
     Header,
     Path,
     Query,
+    Response,
     request,
 )
 from ahttp_client.enum import DirectResponseType
@@ -48,6 +50,22 @@ def test_copy_and_equal(test_method):
 
     other_method._fill_parameter(None, bound_argument)
     assert other_method != test_method
+
+
+def test_request_exposes_public_signature_without_mutating_handler() -> None:
+    def handler(
+        session: BaseSession,
+        value: int,
+        response: Response,
+    ) -> int:
+        return value
+
+    original_annotations = dict(handler.__annotations__)
+    endpoint = request("GET", "/")(handler)
+
+    assert inspect.signature(endpoint) == endpoint._signature
+    assert "response" not in inspect.signature(endpoint).parameters
+    assert handler.__annotations__ == original_annotations
 
 
 def test_copy_isolates_mutable_static_body() -> None:

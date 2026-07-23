@@ -127,6 +127,30 @@ def test_session_response_mode_returns_response_even_with_deserializer(
     assert result.closed is False
 
 
+def test_handler_preserves_positional_only_arguments() -> None:
+    @request("GET", "/")
+    def endpoint(session, value: int, /) -> int:
+        return value
+
+    assert endpoint._execute(_SyncSession(False), 7) == 7
+
+
+def test_handler_preserves_variadic_positional_arguments() -> None:
+    @request("GET", "/")
+    def endpoint(session, *values: int) -> tuple[int, ...]:
+        return values
+
+    assert endpoint._execute(_SyncSession(False), 1, 2) == (1, 2)
+
+
+def test_handler_preserves_variadic_keyword_arguments() -> None:
+    @request("GET", "/")
+    def endpoint(session, **values: int) -> dict[str, int]:
+        return values
+
+    assert endpoint._execute(_SyncSession(False), one=1) == {"one": 1}
+
+
 @pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
 def test_session_deserialized_mode_returns_model_and_closes_response(
     is_async: bool,

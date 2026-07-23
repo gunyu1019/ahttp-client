@@ -181,7 +181,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.__module__ = func.__module__
         self.__name__ = func.__name__
         self.__doc__ = func.__doc__
-        self.__annotations__ = func.__annotations__
+        self.__annotations__ = dict(func.__annotations__)
 
         self.request_kwargs = kwargs
 
@@ -190,7 +190,8 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.directly_response = directly_response
         DirectResponseType.validate(self.directly_response)
 
-        self._signature = inspect.signature(self.func)
+        self._handler_signature = inspect.signature(self.func)
+        self._signature = self._handler_signature
 
         # method is related to Session class.
         if len(self._signature.parameters) < 1:
@@ -627,15 +628,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
         form_encoding = self.body_form_encoding_type = form_encoding or BodyFormEncoding.AUTO
 
-        try:
-            resolved_hints = get_type_hints(self.func, include_extras=True)
-        except NotImplementedError:
-            # Component factories such as ``Body.to_pascal()`` deliberately
-            # reject unsupported declarations.  Do not hide that contract
-            # when postponed annotations are evaluated here.
-            raise
-        except Exception:
-            resolved_hints = {}
+        resolved_hints = self._resolve_type_hints()
 
         for parameter in self._signature.parameters.values():
             annotation = resolved_hints.get(parameter.name, parameter.annotation)
@@ -779,12 +772,52 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             parameter_without_return_annotation.append(parameter)
 
         self._signature = self._signature.replace(parameters=parameter_without_return_annotation)
+        public_annotations = dict(self.func.__annotations__)
         for parameter_name in self.response_parameter:
-            if parameter_name not in self.func.__annotations__.keys():
-                continue
+            public_annotations.pop(parameter_name, None)
+        self.__annotations__ = public_annotations
+        self.__signature__ = self._signature
 
-            del self.func.__annotations__[parameter_name]
-        self.__annotations__ = self.func.__annotations__
+    def _resolve_type_hints(self) -> dict[str, Any]:
+        """Resolve annotations independently when one forward reference fails."""
+        try:
+            return get_type_hints(self.func, include_extras=True)
+        except NotImplementedError:
+            # Component factories such as ``Body.to_pascal()`` deliberately
+            # reject unsupported declarations. Do not hide that contract.
+            raise
+        except Exception:
+            resolved_hints: dict[str, Any] = {}
+            globalns = getattr(self.func, "__globals__", {})
+            for name, annotation in self.func.__annotations__.items():
+                def hint_holder() -> None:
+                    pass
+
+                hint_holder.__annotations__ = {name: annotation}
+                try:
+                    resolved_hints.update(
+                        get_type_hints(
+                            hint_holder,
+                            globalns=globalns,
+                            include_extras=True,
+                        )
+                    )
+                except NotImplementedError:
+                    raise
+                except Exception:
+                    continue
+            return resolved_hints
+
+    def _handler_bound_arguments(
+        self,
+        bound_argument: inspect.BoundArguments,
+        response: Any,
+    ) -> inspect.BoundArguments:
+        """Rebuild the original callable arguments, including responses."""
+        arguments = dict(bound_argument.arguments)
+        for parameter_name in self.response_parameter:
+            arguments[parameter_name] = response
+        return inspect.BoundArguments(self._handler_signature, arguments)
 
     def _fill_parameter(
         self,
@@ -1143,11 +1176,8 @@ class AsyncRequestCore(
                 should_close_raw_response = response is not raw_response
                 return response
 
-            for _parameter in self.response_parameter:
-                kwargs[_parameter] = response
-            kwargs.update(bound_argument.arguments)
-
-            result = await self.func(**kwargs)
+            handler_arguments = self._handler_bound_arguments(bound_argument, response)
+            result = await self.func(*handler_arguments.args, **handler_arguments.kwargs)
         finally:
             if should_close_raw_response and not raw_response.closed:
                 await raw_response.async_close()
@@ -1236,11 +1266,8 @@ class SyncRequestCore(
                 should_close_raw_response = response is not raw_response
                 return response
 
-            for _parameter in self.response_parameter:
-                kwargs[_parameter] = response
-            kwargs.update(bound_argument.arguments)
-
-            result = self.func(**kwargs)
+            handler_arguments = self._handler_bound_arguments(bound_argument, response)
+            result = self.func(*handler_arguments.args, **handler_arguments.kwargs)
         finally:
             if should_close_raw_response and not raw_response.closed:
                 raw_response.close()
