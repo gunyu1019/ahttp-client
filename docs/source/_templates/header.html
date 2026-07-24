@@ -104,7 +104,7 @@
         </a>
 
         {%- block theme_switcher %}
-        <button @click="darkMode = darkMode === 'light' ? 'dark' : 'light'"
+        <button @click="darkMode = !darkMode"
           class="relative inline-flex items-center justify-center px-0 text-sm font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground h-9 w-9"
           type="button"
           aria-label="Color theme switcher">

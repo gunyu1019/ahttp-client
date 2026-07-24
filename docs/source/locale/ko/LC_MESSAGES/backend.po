@@ -1,0 +1,493 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-24 03:58+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../source/backend.rst:3
+msgid "Backend"
+msgstr "백엔드 (Backend)"
+
+#: ../../source/backend.rst:4
+msgid ""
+"A backend is the adapter layer that lets `ahttp_client` drive different "
+"third-party HTTP client libraries through one common interface. A backend"
+" is never instantiated directly; the HTTP client class is passed to a "
+"session instead, and the matching backend is selected automatically."
+msgstr ""
+"백엔드는 `ahttp_client` 가 여러 서드파티 HTTP 클라이언트 라이브러리를 하나의 인터페이스로 다룰 수 있게 하는 어댑터"
+" 계층입니다. 백엔드를 직접 만들 일은 없고, 세션에 사용할 HTTP 클라이언트 클래스를 넘기면 알아서 맞는 백엔드가 선택됩니다."
+
+#: ../../source/backend.rst:19
+msgid "Supported Backends"
+msgstr "지원되는 백엔드"
+
+#: ../../source/backend.rst:24
+msgid "Library"
+msgstr "라이브러리"
+
+#: ../../source/backend.rst:25
+msgid "Session class"
+msgstr "세션 클래스"
+
+#: ../../source/backend.rst:26
+msgid "Backend class"
+msgstr "백엔드 클래스"
+
+#: ../../source/backend.rst:27
+msgid "Extra dependency"
+msgstr "추가 의존성"
+
+#: ../../source/backend.rst:28
+msgid "aiohttp"
+msgstr "aiohttp"
+
+#: ../../source/backend.rst:29
+msgid "`aiohttp.ClientSession`"
+msgstr "`aiohttp.ClientSession`"
+
+#: ../../source/backend.rst:30
+msgid ":class:`ahttp_client.backend.AiohttpBackend`"
+msgstr ":class:`ahttp_client.backend.AiohttpBackend`"
+
+#: ../../source/backend.rst:31
+msgid "`pip install aiohttp`"
+msgstr "`pip install aiohttp`"
+
+#: ../../source/backend.rst:32
+msgid "httpx (async)"
+msgstr "httpx (비동기)"
+
+#: ../../source/backend.rst:33
+msgid "`httpx.AsyncClient`"
+msgstr "`httpx.AsyncClient`"
+
+#: ../../source/backend.rst:34
+msgid ":class:`ahttp_client.backend.HttpXAsyncSession`"
+msgstr ":class:`ahttp_client.backend.HttpXAsyncSession`"
+
+#: ../../source/backend.rst:35 ../../source/backend.rst:39
+msgid "`pip install httpx`"
+msgstr "`pip install httpx`"
+
+#: ../../source/backend.rst:36
+msgid "httpx (sync)"
+msgstr "httpx (동기)"
+
+#: ../../source/backend.rst:37
+msgid "`httpx.Client`"
+msgstr "`httpx.Client`"
+
+#: ../../source/backend.rst:38
+msgid ":class:`ahttp_client.backend.HttpXSyncSession`"
+msgstr ":class:`ahttp_client.backend.HttpXSyncSession`"
+
+#: ../../source/backend.rst:40
+msgid "requests (sync)"
+msgstr "requests (동기)"
+
+#: ../../source/backend.rst:41
+msgid "`requests.Session`"
+msgstr "`requests.Session`"
+
+#: ../../source/backend.rst:42
+msgid ":class:`ahttp_client.backend.RequestsBackend`"
+msgstr ":class:`ahttp_client.backend.RequestsBackend`"
+
+#: ../../source/backend.rst:43
+msgid "`pip install requests`"
+msgstr "`pip install requests`"
+
+#: ../../source/backend.rst:45
+msgid ""
+"`AsyncSession` takes `aiohttp.ClientSession`, `httpx.AsyncClient`, or any"
+" other registered asynchronous session class. `Session` takes "
+"`httpx.Client`, `requests.Session`, or any other registered synchronous "
+"session class."
+msgstr ""
+"`AsyncSession` 은 `aiohttp.ClientSession`, `httpx.AsyncClient` 등 등록된 비동기 "
+"세션 클래스라면 뭐든 받습니다. `Session` 은 `httpx.Client`, `requests.Session` 등 등록된 동기"
+" 세션 클래스를 받습니다."
+
+#: ../../source/backend.rst:48
+msgid ""
+"An optional dependency (`aiohttp`, `httpx`, or `requests`) that is not "
+"installed is simply skipped: `ahttp_client.backend` only exports the "
+"backends whose third-party package is importable."
+msgstr ""
+"`aiohttp`, `httpx`, `requests` 같은 선택적 의존성이 설치되어 있지 않으면 그냥 건너뜁니다. "
+"`ahttp_client.backend` 는 해당 서드파티 패키지를 import할 수 있는 백엔드만 골라서 내보냅니다."
+
+#: ../../source/backend.rst:51
+msgid "How Backend Selection Works"
+msgstr "백엔드 선택 방식"
+
+#: ../../source/backend.rst:52
+msgid ""
+":class:`~ahttp_client.backend.BaseBackend` keeps a registry mapping "
+"third-party session classes to their backend classes. A concrete backend "
+"adds itself to that registry automatically, through `__init_subclass__`, "
+"as soon as both `session_cls` and `response_cls` are defined on it."
+msgstr ""
+":class:`~ahttp_client.backend.BaseBackend` 는 서드파티 세션 클래스와 백엔드 클래스를 매핑하는 "
+"레지스트리를 갖고 있습니다. 구체적인 백엔드 클래스는 `session_cls` 와 `response_cls` 가 둘 다 정의되는 "
+"순간 `__init_subclass__` 를 통해 알아서 자기 자신을 등록합니다."
+
+#: ../../source/backend.rst:55
+msgid ""
+"When a session such as `AsyncSession(base_url, aiohttp.ClientSession)` is"
+" created, it calls `AsyncBackend.from_session(aiohttp.ClientSession, "
+"base_url=base_url, **kwargs)`, which looks up the registered backend for "
+"that session class and instantiates it. This is why the `session=...` "
+"argument on `AsyncSession`/`Session` is simply the third-party client "
+"class, not a backend instance."
+msgstr ""
+"`AsyncSession(base_url, aiohttp.ClientSession)` 처럼 세션을 만들면 내부적으로 "
+"`AsyncBackend.from_session(aiohttp.ClientSession, base_url=base_url, "
+"**kwargs)` 가 호출되어, 그 세션 클래스에 등록된 백엔드를 찾아 인스턴스화합니다. 그래서 "
+"`AsyncSession`/`Session` 에 넘기는 `session=...` 인자는 백엔드 인스턴스가 아니라 그냥 서드파티 "
+"클라이언트 클래스입니다."
+
+#: ../../source/backend.rst:59
+msgid "Writing a Custom Backend"
+msgstr "커스텀 백엔드 작성하기"
+
+#: ../../source/backend.rst:60
+msgid ""
+"Subclass :class:`~ahttp_client.backend.AsyncBackend` for an asynchronous "
+"client, or :class:`~ahttp_client.backend.SyncBackend` for a synchronous "
+"one, and set `session_cls`/`response_cls` on it. The remaining work is "
+"implementing a handful of abstract methods:"
+msgstr ""
+"커스텀 HTTP 클라이언트 라이브러리를 지원하려면 비동기 클라이언트는 "
+":class:`~ahttp_client.backend.AsyncBackend`, 동기 클라이언트는 "
+":class:`~ahttp_client.backend.SyncBackend` 를 서브클래싱해서 "
+"`session_cls`/`response_cls` 를 정의하고, 아래 역할을 하는 추상 메소드를 구현하면 됩니다:"
+
+#: ../../source/backend.rst:63
+msgid ""
+"`get_request_kwargs` turns a :class:`~ahttp_client.request.RequestCore` "
+"into that client's request keyword arguments."
+msgstr ""
+":class:`~ahttp_client.request.RequestCore` 를 해당 클라이언트의 요청 keyword "
+"arguments로 변환합니다 (`get_request_kwargs`)."
+
+#: ../../source/backend.rst:64
+msgid ""
+"`response_status`, `response_headers`, `response_url`, `response_data`, "
+"`response_text`, `response_json`, and `response_closed` read the status "
+"code, headers, URL, body, and closed state off that client's response "
+"object."
+msgstr ""
+"`response_status`, `response_headers`, `response_url`, `response_data`, "
+"`response_text`, `response_json`, `response_closed` 는 그 클라이언트의 응답 객체에서 상태"
+" 코드, 헤더, URL, 본문, 닫힘 상태를 읽어옵니다."
+
+#: ../../source/backend.rst:65
+msgid ""
+"`response_close` and `session_close`/`session_closed` handle closing a "
+"response and the session itself."
+msgstr ""
+"`response_close` 와 `session_close`/`session_closed` 는 응답과 세션 자체를 닫는 역할을 "
+"맡습니다."
+
+#: ../../source/backend.rst:66
+msgid ""
+"`session_request`, `session_get`, `session_post`, `session_options`, "
+"`session_delete`, `session_patch`, and `session_put` issue each HTTP "
+"method against the underlying session."
+msgstr ""
+"내부 세션에 각 HTTP 메소드를 요청합니다 (`session_request`, `session_get`, "
+"`session_post`, `session_options`, `session_delete`, `session_patch`, "
+"`session_put`)."
+
+#: ../../source/backend.rst:85
+msgid ""
+"Once `MyClientBackend` is imported, `AsyncSession(base_url, "
+"my_client.Session)` resolves to it automatically; no further registration"
+" is required."
+msgstr ""
+"`MyClientBackend` 를 import하고 나면 `AsyncSession(base_url, "
+"my_client.Session)` 이 자동으로 이 백엔드에 연결됩니다. 따로 등록할 필요는 없습니다."
+
+#: ../../source/backend.rst:88
+msgid "Reference"
+msgstr "Reference"
+
+#: ahttp_client.backend.base.BaseBackend:1 of
+msgid "Base adapter for a supported HTTP client library."
+msgstr "지원되는 HTTP 클라이언트 라이브러리를 위한 기본 어댑터입니다."
+
+#: ahttp_client.backend.base.BaseBackend:3 of
+msgid ""
+"A backend creates the client session, converts :class:`RequestCore` "
+"values to client-specific keyword arguments, and exposes a common "
+"response interface. Subclasses that define both ``session_cls`` and "
+"``response_cls`` are registered automatically."
+msgstr ""
+"백엔드는 클라이언트 세션을 만들고, :class:`RequestCore` 값을 클라이언트별 keyword arguments로 "
+"바꾸고, 공통된 응답 인터페이스를 제공합니다. ``session_cls`` 와 ``response_cls`` 를 둘 다 정의한 "
+"서브클래스는 자동으로 등록됩니다."
+
+#: ahttp_client.backend.base.BaseBackend.from_session:1 of
+msgid "Create the backend registered for an HTTP client session class."
+msgstr "HTTP 클라이언트 세션 클래스에 등록된 백엔드를 생성합니다."
+
+#: ../../source/backend.rst
+msgid "Parameters"
+msgstr "Parameters"
+
+#: ahttp_client.backend.base.BaseBackend.from_session:3 of
+msgid "Supported HTTP client session class."
+msgstr "지원되는 HTTP 클라이언트 세션 클래스입니다."
+
+#: ahttp_client.backend.base.BaseBackend.from_session:5 of
+msgid "Keyword arguments forwarded to the backend constructor."
+msgstr "백엔드 생성자로 전달되는 keyword arguments입니다."
+
+#: ../../source/backend.rst
+msgid "Raises"
+msgstr "Raises"
+
+#: ahttp_client.backend.base.BaseBackend.from_session:7 of
+msgid "If ``session`` is not registered with a backend."
+msgstr "``session`` 이 어떤 백엔드에도 등록되어 있지 않은 경우 발생합니다."
+
+#: ahttp_client.backend.base.BaseBackend.get_request_kwargs:1 of
+msgid "Convert a request descriptor into client-specific request arguments."
+msgstr "request 디스크립터를 클라이언트별 요청 인자로 변환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_close:1 of
+msgid "Close a client response object."
+msgstr "클라이언트 응답 객체를 닫습니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_closed:1 of
+msgid "Return response close state, or ``None`` if it is unavailable."
+msgstr "응답의 닫힘 상태를 반환하며, 알 수 없는 경우 ``None`` 을 반환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_data:1 of
+msgid "Return the response body as bytes."
+msgstr "응답 본문을 bytes 형태로 반환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_headers:1 of
+msgid "Return response headers as a dictionary."
+msgstr "응답 헤더를 딕셔너리로 반환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_json:1 of
+msgid "Parse the response body as JSON using an optional custom parser."
+msgstr "선택적인 커스텀 파서를 이용해 응답 본문을 JSON으로 파싱합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_status:1 of
+msgid "Return the HTTP status code from a client response."
+msgstr "클라이언트 응답에서 HTTP 상태 코드를 반환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_text:1 of
+msgid "Return the response body decoded as text."
+msgstr "응답 본문을 텍스트로 디코딩하여 반환합니다."
+
+#: ahttp_client.backend.base.BaseBackend.response_url:1 of
+msgid "Return the URL associated with a client response."
+msgstr "클라이언트 응답과 연관된 URL을 반환합니다."
+
+#: ahttp_client.backend.BaseBackend.session_closed:1 of
+msgid "Return whether the underlying HTTP client session is closed."
+msgstr "내부의 HTTP 클라이언트 세션이 닫혔는지 여부를 반환합니다."
+
+#: ahttp_client.backend.base.AsyncBackend:1 of
+msgid "Base adapter contract for asynchronous HTTP client libraries."
+msgstr "비동기 HTTP 클라이언트 라이브러리를 위한 기본 어댑터 계약(contract)입니다."
+
+#: ahttp_client.backend.base.AsyncBackend.pre_read_response:1 of
+msgid "Read a response before it is exposed through :class:`Response`."
+msgstr ":class:`Response` 로 노출되기 전에 응답을 미리 읽습니다."
+
+#: ahttp_client.backend.base.AsyncBackend.pre_read_response:3 of
+msgid "Backends that require eager reads can override this method."
+msgstr "즉시 읽기(eager read)가 필요한 백엔드는 이 메소드를 오버라이딩할 수 있습니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_close:1 of
+msgid "Close the underlying asynchronous HTTP client session."
+msgstr "내부의 비동기 HTTP 클라이언트 세션을 닫습니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_delete:1 of
+msgid "Make an asynchronous ``DELETE`` request."
+msgstr "비동기 ``DELETE`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_get:1 of
+msgid "Make an asynchronous ``GET`` request."
+msgstr "비동기 ``GET`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_options:1 of
+msgid "Make an asynchronous ``OPTIONS`` request."
+msgstr "비동기 ``OPTIONS`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_patch:1 of
+msgid "Make an asynchronous ``PATCH`` request."
+msgstr "비동기 ``PATCH`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_post:1 of
+msgid "Make an asynchronous ``POST`` request."
+msgstr "비동기 ``POST`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_put:1 of
+msgid "Make an asynchronous ``PUT`` request."
+msgstr "비동기 ``PUT`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.AsyncBackend.session_request:1 of
+msgid "Make an asynchronous HTTP request with the given method and path."
+msgstr "주어진 메소드와 경로로 비동기 HTTP 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend:1 of
+msgid "Base adapter contract for synchronous HTTP client libraries."
+msgstr "동기 HTTP 클라이언트 라이브러리를 위한 기본 어댑터 계약(contract)입니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_close:1 of
+msgid "Close the underlying synchronous HTTP client session."
+msgstr "내부의 동기 HTTP 클라이언트 세션을 닫습니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_delete:1 of
+msgid "Make a synchronous ``DELETE`` request."
+msgstr "동기 ``DELETE`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_get:1 of
+msgid "Make a synchronous ``GET`` request."
+msgstr "동기 ``GET`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_options:1 of
+msgid "Make a synchronous ``OPTIONS`` request."
+msgstr "동기 ``OPTIONS`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_patch:1 of
+msgid "Make a synchronous ``PATCH`` request."
+msgstr "동기 ``PATCH`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_post:1 of
+msgid "Make a synchronous ``POST`` request."
+msgstr "동기 ``POST`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_put:1 of
+msgid "Make a synchronous ``PUT`` request."
+msgstr "동기 ``PUT`` 요청을 만듭니다."
+
+#: ahttp_client.backend.base.SyncBackend.session_request:1 of
+msgid "Make a synchronous HTTP request with the given method and path."
+msgstr "주어진 메소드와 경로로 동기 HTTP 요청을 만듭니다."
+
+#: ahttp_client.backend.aiohttp.AiohttpBackend:1 of
+msgid "Backend adapter for :class:`aiohttp.ClientSession`."
+msgstr ":class:`aiohttp.ClientSession` 을 위한 백엔드 어댑터입니다."
+
+#: ahttp_client.backend.aiohttp.AiohttpBackend:3 of
+msgid ""
+"Requires the ``aiohttp`` package (``pip install aiohttp``). Registered "
+"for ``aiohttp.ClientSession`` and wraps ``aiohttp.ClientResponse`` as its"
+" response type."
+msgstr ""
+"``aiohttp`` 패키지가 필요합니다 (``pip install aiohttp``). "
+"``aiohttp.ClientSession`` 에 등록되어 있고, 응답 타입으로 ``aiohttp.ClientResponse`` 를"
+" 그대로 감쌉니다."
+
+#: ahttp_client.backend.httpx.HttpXAsyncSession:1 of
+msgid "Backend adapter for :class:`httpx.AsyncClient`."
+msgstr ":class:`httpx.AsyncClient` 를 위한 백엔드 어댑터입니다."
+
+#: ahttp_client.backend.httpx.HttpXAsyncSession:3 of
+msgid ""
+"Requires the ``httpx`` package (``pip install httpx``). Registered for "
+"``httpx.AsyncClient`` and used when a session is created with "
+"``AsyncSession(base_url, httpx.AsyncClient)``."
+msgstr ""
+"``httpx`` 패키지가 필요합니다 (``pip install httpx``). ``httpx.AsyncClient`` 에 "
+"등록되어 있으며, ``AsyncSession(base_url, httpx.AsyncClient)`` 로 세션을 생성할 때 "
+"사용됩니다."
+
+#: ahttp_client.backend.httpx.HttpXSyncSession:1 of
+msgid "Backend adapter for :class:`httpx.Client`."
+msgstr ":class:`httpx.Client` 를 위한 백엔드 어댑터입니다."
+
+#: ahttp_client.backend.httpx.HttpXSyncSession:3 of
+msgid ""
+"Requires the ``httpx`` package (``pip install httpx``). Registered for "
+"``httpx.Client`` and used when a session is created with "
+"``Session(base_url, httpx.Client)``."
+msgstr ""
+"``httpx`` 패키지가 필요합니다 (``pip install httpx``). ``httpx.Client`` 에 등록되어 "
+"있으며, ``Session(base_url, httpx.Client)`` 로 세션을 생성할 때 사용됩니다."
+
+#: ahttp_client.backend.requests.RequestsBackend:1 of
+msgid "Backend adapter for :class:`requests.Session`."
+msgstr ":class:`requests.Session` 을 위한 백엔드 어댑터입니다."
+
+#: ahttp_client.backend.requests.RequestsBackend:3 of
+msgid ""
+"Requires the ``requests`` package (``pip install requests``). Registered "
+"for ``requests.Session`` and used when a session is created with "
+"``Session(base_url, requests.Session)``."
+msgstr ""
+"``requests`` 패키지가 필요합니다 (``pip install requests``). ``requests.Session`` "
+"에 등록되어 있으며, ``Session(base_url, requests.Session)`` 으로 세션을 생성할 때 사용됩니다."
+
+#: ahttp_client.backend.requests.RequestsBackend:7 of
+msgid ""
+"``requests.Response`` has no built-in closed state, so this backend "
+"tracks it manually via an internal ``_closed`` flag that is only ever set"
+" by :meth:`session_close`."
+msgstr ""
+"``requests.Response`` 에는 닫힘 상태가 내장되어 있지 않으므로, 이 백엔드는 오직 "
+":meth:`session_close` 에서만 설정되는 내부 ``_closed`` 플래그로 이를 직접 추적합니다."
+
+#~ msgid "none (bundled)"
+#~ msgstr "없음 (기본 포함)"
+
+#~ msgid "Shared request/response conversion logic for the ``httpx`` backends."
+#~ msgstr "``httpx`` 백엔드들이 공유하는 요청/응답 변환 로직입니다."
+
+#~ msgid ""
+#~ ":class:`HttpXAsyncSession` and :class:`HttpXSyncSession`"
+#~ " both derive from this class, so "
+#~ "the request-building and response-"
+#~ "reading behavior only needs to be "
+#~ "implemented once and is shared between"
+#~ " the asynchronous and synchronous ``httpx``"
+#~ " clients."
+#~ msgstr ""
+#~ ":class:`HttpXAsyncSession` 과 :class:`HttpXSyncSession` "
+#~ "둘 다 이 클래스를 상속받아서, 요청을 만들고 "
+#~ "응답을 읽는 로직을 한 번만 구현하면 비동기·동기 "
+#~ "``httpx`` 클라이언트가 그대로 나눠 씁니다."
+
+#~ msgid ""
+#~ "Read status code, headers, URL, body,"
+#~ " and closed state from that client's"
+#~ " response object (`response_status`, "
+#~ "`response_headers`, `response_url`, `response_data`, "
+#~ "`response_text`, `response_json`, `response_closed`)."
+#~ msgstr ""
+#~ "해당 클라이언트의 응답 객체로부터 상태 코드, 헤더, "
+#~ "URL, 본문, 닫힘 상태를 읽어옵니다 "
+#~ "(`response_status`, `response_headers`, `response_url`,"
+#~ " `response_data`, `response_text`, `response_json`, "
+#~ "`response_closed`)."
+
+#~ msgid ""
+#~ "Close a response and the session "
+#~ "itself (`response_close`, `session_close`, "
+#~ "`session_closed`)."
+#~ msgstr "응답과 세션 자체를 닫습니다 (`response_close`, `session_close`, `session_closed`)."
+

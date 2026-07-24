@@ -1,24 +1,46 @@
-import aiohttp
+from __future__ import annotations
+
+import io
 import pytest
 
 from typing import Annotated, Any
 
-from ahttp_client import *
-from ahttp_client.request import RequestCore
+from ahttp_client import (
+    BaseSession,
+    Body,
+    BodyForm,
+    BodyType,
+    Header,
+    Path,
+    Query,
+    Response,
+    request,
+)
+
+
+@request("POST", "/echo/{resource}")
+async def future_annotations_request(
+    session: BaseSession,
+    resource: Annotated[str, Path],
+    query: Annotated[str, Query],
+    header: Annotated[str, Header],
+    body: Annotated[dict[str, Any], Body],
+    response: Response,
+) -> None:
+    pass
 
 
 @pytest.fixture
 def test_method_with_parameter():
-    @Session.single_session("https://test_base_url")
     @request("GET", "/{test_path}")
     async def test_request(
-        session: Session,
-        test_response: aiohttp.ClientResponse,
+        session: BaseSession,
+        test_response: Response,
         test_path: str | Path = "__TEST_PATH__",
         test_query: str | Query = "__TEST_PARAMETER__",
         test_header: str | Header = "__TEST_HEADER__",
         test_body: dict | Body = None,
-    ) -> aiohttp.ClientResponse:
+    ) -> None:
         pass
 
     return test_request
@@ -26,10 +48,9 @@ def test_method_with_parameter():
 
 @pytest.fixture
 def test_method_with_annotated():
-    @Session.single_session("https://test_base_url")
     @request("GET", "/{test_path}")
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_path: Annotated[str, Path],
         test_query: Annotated[str, Query],
         test_header: Annotated[str, Header],
@@ -42,7 +63,6 @@ def test_method_with_annotated():
 
 @pytest.fixture
 def test_method_with_decorator_parameter():
-    @Session.single_session("https://test_base_url")
     @request(
         "GET",
         "/{test_path}",
@@ -52,11 +72,11 @@ def test_method_with_decorator_parameter():
         body_parameter="test_body",
     )
     async def test_request(
-        session: Session,
+        session: BaseSession,
         test_path: str,
         test_query: str,
         test_header: str,
-        test_body: aiohttp.FormData = None,
+        test_body: io.BytesIO = None,
     ) -> None:
         pass
 
@@ -67,7 +87,7 @@ def test_method_with_decorator_parameter():
 def test_method_component_custom_name():
     @request("GET", "/test_path")
     async def test_request(
-        _: Session,
+        _: BaseSession,
         test_header: Annotated[str, Header.custom_name("custom_header_name")],
         test_query: Annotated[int, Query.to_pascal()],
         test_form: Annotated[str, BodyForm.to_camel()],
@@ -78,31 +98,65 @@ def test_method_component_custom_name():
 
 
 def test_component_parameter_1(test_method_with_parameter):
-    assert "test_header" in test_method_with_parameter.header_parameter
-    assert "test_query" in test_method_with_parameter.query_parameter
-    assert "test_path" in test_method_with_parameter.path_parameter
-    assert "test_response" in test_method_with_parameter.response_parameter
+    request_core = test_method_with_parameter
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
+    assert "test_response" in request_core.response_parameter
 
-    assert test_method_with_parameter.body_parameter.name == "test_body"
-    assert test_method_with_parameter.body_parameter_type == "json"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.JSON
+
+
+def test_future_annotations_are_resolved_into_components():
+    annotations = future_annotations_request.func.__annotations__
+    assert isinstance(annotations["resource"], str)
+
+    assert "resource" in future_annotations_request.path_parameter
+    assert "query" in future_annotations_request.query_parameter
+    assert "header" in future_annotations_request.header_parameter
+    assert "response" in future_annotations_request.response_parameter
+    assert future_annotations_request.body_parameter.name == "body"
+    assert future_annotations_request.body_parameter_type == BodyType.JSON
+
+
+def test_unresolved_annotation_does_not_hide_other_components() -> None:
+    @request("GET", "/")
+    def endpoint(
+        session: "MissingSession",
+        query: Annotated[str, Query],
+    ) -> None:
+        pass
+
+    assert set(endpoint.query_parameter) == {"query"}
 
 
 def test_component_parameter_2(test_method_with_decorator_parameter):
-    assert "test_header" in test_method_with_decorator_parameter.header_parameter
-    assert "test_query" in test_method_with_decorator_parameter.query_parameter
-    assert "test_path" in test_method_with_decorator_parameter.path_parameter
+    request_core = test_method_with_decorator_parameter
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
 
-    assert test_method_with_decorator_parameter.body_parameter.name == "test_body"
-    assert test_method_with_decorator_parameter.body_parameter_type == "data"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.RAW
 
 
 def test_component_parameter_3(test_method_with_annotated):
-    assert "test_header" in test_method_with_annotated.header_parameter
-    assert "test_query" in test_method_with_annotated.query_parameter
-    assert "test_path" in test_method_with_annotated.path_parameter
+    request_core = test_method_with_annotated
+    assert "test_header" in request_core.header_parameter
+    assert "test_query" in request_core.query_parameter
+    assert "test_path" in request_core.path_parameter
 
-    assert test_method_with_annotated.body_parameter.name == "test_body"
-    assert test_method_with_annotated.body_parameter_type == "json"
+    assert request_core.body_parameter.name == "test_body"
+    assert request_core.body_parameter_type == BodyType.JSON
+
+
+def test_unknown_legacy_component_parameter_is_rejected() -> None:
+    with pytest.raises(ValueError, match="Unknown query parameter"):
+
+        @request("GET", "/", query_parameter=["qurey"])
+        def endpoint(_: BaseSession, query: str) -> None:
+            pass
 
 
 def test_component_custom_name(test_method_component_custom_name):
@@ -116,7 +170,7 @@ def test_component_custom_name(test_method_component_custom_name):
 
     assert test_method_component_custom_name.header_parameter["custom_header_name"].name == "test_header"
     assert test_method_component_custom_name.query_parameter["TestQuery"].name == "test_query"
-    assert test_method_component_custom_name.body_form_parameter["testForm"].name == "test_form"
+    assert test_method_component_custom_name.body_form_parameter["testForm"].parameter.name == "test_form"
 
 
 def test_body_unsupported_custom_name():
@@ -124,7 +178,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.to_pascal(),
         ) -> None:
             pass
@@ -135,7 +189,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.to_camel(),
         ) -> None:
             pass
@@ -146,7 +200,7 @@ def test_body_unsupported_custom_name():
 
         @request("GET", "/test_path")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_body: str | Body.custom_name("another_name"),
         ) -> None:
             pass
@@ -159,7 +213,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{TestPath}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.to_pascal(),
         ) -> None:
             pass
@@ -170,7 +224,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{testPath}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.to_camel(),
         ) -> None:
             pass
@@ -181,7 +235,7 @@ def test_path_unsupported_custom_name():
 
         @request("GET", "/{test_path}")
         async def test_request(
-            _: Session,
+            _: BaseSession,
             test_path: str | Path.custom_name("another_name"),
         ) -> None:
             pass

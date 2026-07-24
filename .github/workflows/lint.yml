@@ -1,31 +1,29 @@
+---
 name: Lint
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main", "develop", "v2.0"]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: ["main", "develop", "v2.0"]
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [ "3.10", "3.11", "3.12" ]
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.head_ref }}
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .[lint]
-    - name: Analysing the code with pycodestyle
-      run: python -m pycodestyle ahttp_client --max-line-length=120
-    - name: Checking the code for formatted in black
-      run: python -m black --line-length 120 --check ahttp_client example
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[lint]"
+      - name: Analyze code with pycodestyle
+        run: python -m pycodestyle ahttp_client --max-line-length=120
+      - name: Check formatting with Black
+        run: python -m black --check ahttp_client example

@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 
-from ahttp_client import request, Session, Query
+from ahttp_client import AsyncSession, Query, Response, request
 from typing import NamedTuple
 
 
@@ -17,12 +17,10 @@ class StationInfo(NamedTuple):
     subwayId: int
 
 
-@Session.single_session("https://api.yhs.kr")
+@AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
 @request("GET", "/metro/station")
-async def station_search_with_query(
-    session: Session, response: aiohttp.ClientResponse, name: Query | str
-) -> list[StationInfo]:
-    data = await response.json()
+async def station_search_with_query(session: AsyncSession, response: Response, name: Query | str) -> list[StationInfo]:
+    data = response.json()
     return [StationInfo(**x) for x in data]
 
 
