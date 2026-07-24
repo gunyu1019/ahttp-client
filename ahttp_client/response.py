@@ -46,7 +46,7 @@ class Response:
         Original response object returned by the HTTP client library.
     backend: BaseBackend
         Backend that provides response operations for ``response_obj``.
-    serializer: Optional[BaseDeserializer]
+    deserializer: Optional[BaseDeserializer]
         Deserializer used to build :attr:`model` from this response. Left
         unset when the request has no ``@deserialize`` decorator applied.
     """
@@ -55,12 +55,11 @@ class Response:
         self,
         response_obj: Any,
         backend: BaseBackend,
-        serializer: Optional[BaseDeserializer[Any]] = None,
+        deserializer: Optional[BaseDeserializer[Any]] = None,
     ) -> None:
         self._raw_response_obj = response_obj
         self._backend = backend
-        self._deserializer = serializer
-
+        self._deserializer = deserializer
         self._closed = False
 
     @property
