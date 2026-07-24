@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import copy
 import inspect
+import string
 from abc import ABC, abstractmethod
 from urllib.parse import quote
 from typing import (
@@ -104,6 +105,8 @@ if TYPE_CHECKING:
 HookResultT = TypeVar("HookResultT")
 RequestBeforeHookT = TypeVar("RequestBeforeHookT", bound=Callable[..., Any])
 RequestAfterHookT = TypeVar("RequestAfterHookT", bound=Callable[..., Any])
+
+_IDEMPOTENT_METHODS = {"GET", "HEAD", "OPTIONS", "PUT", "DELETE", "TRACE"}
 
 
 class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
@@ -441,6 +444,44 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                     raise ValueError(f"BodyJson parameters {other_name!r} and {name!r} use conflicting JSON paths.")
             paths.append((name, path))
 
+    @staticmethod
+    def _add_component_parameter(
+        target: dict[str, Any],
+        name: str,
+        value: Any,
+        component_name: str,
+    ) -> None:
+        """Add a transmitted component name without silently overwriting it."""
+        if name in target:
+            raise ValueError(f"Duplicate transmitted {component_name} name: {name!r}")
+        target[name] = value
+
+    def _validate_path_parameters(self) -> None:
+        """Ensure request path placeholders and ``Path`` parameters match."""
+        placeholders: set[str] = set()
+        try:
+            for _, field_name, _, _ in string.Formatter().parse(self.path):
+                if field_name is None:
+                    continue
+                if not field_name or not field_name.isidentifier():
+                    raise ValueError(f"Invalid request path placeholder: {field_name!r}")
+                placeholders.add(field_name)
+        except ValueError as exc:
+            if str(exc).startswith("Invalid request path placeholder"):
+                raise
+            raise ValueError(f"Invalid request path template: {self.path!r}") from exc
+
+        parameters = set(self.path_parameter)
+        missing_parameters = placeholders - parameters
+        unused_parameters = parameters - placeholders
+        if missing_parameters or unused_parameters:
+            details: list[str] = []
+            if missing_parameters:
+                details.append("missing Path parameter(s): " + ", ".join(sorted(missing_parameters)))
+            if unused_parameters:
+                details.append("unused Path parameter(s): " + ", ".join(sorted(unused_parameters)))
+            raise ValueError("Request path declaration mismatch: " + "; ".join(details))
+
     # Setup
     def _parse_extension(self) -> None:
         if not hasattr(self.func, "__extension__"):
@@ -453,7 +494,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         if "deserializer" in extension.keys():
             self._deserializer = extension["deserializer"]
         if "retry" in extension.keys():
-            self._retry_config = extension["retry"]
+            self._bind_retry(extension["retry"])
 
     def _bind_serializer(self, serializer: Optional[BaseCodec]) -> bool:
         """Resolve and attach a serializer using the stored body annotation.
@@ -524,6 +565,11 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
 
     def _bind_retry(self, config: RetryConfig) -> None:
         """Attach a retry configuration to this request."""
+        method = str(self.method).upper()
+        if config.max_retries > 0 and method not in _IDEMPOTENT_METHODS and not config.retry_unsafe:
+            raise ValueError(
+                f"Retries for non-idempotent HTTP method {method!r} require retry_unsafe=True."
+            )
         self._retry_config = config
 
     def _capture_retry_stream_positions(self) -> list[tuple[Any, int]]:
@@ -658,12 +704,12 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 header_parameter is not None and parameter.name in header_parameter
             ):
                 name = self._get_component_name(parameter.name, component_instance)
-                self.header_parameter[name] = parameter
+                self._add_component_parameter(self.header_parameter, name, parameter, "header")
             elif issubclass(component_type, Query) or (
                 query_parameter is not None and parameter.name in query_parameter
             ):
                 name = self._get_component_name(parameter.name, component_instance)
-                self.query_parameter[name] = parameter
+                self._add_component_parameter(self.query_parameter, name, parameter, "query")
             elif issubclass(component_type, Path) or (path_parameter is not None and parameter.name in path_parameter):
                 self.path_parameter[parameter.name] = parameter
             elif issubclass(component_type, BodyForm) or (
@@ -682,7 +728,12 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 elif form_encoding == BodyFormEncoding.AUTO and self.body_parameter_type is None:
                     self.body_parameter_type = BodyType.URL_ENCODED
 
-                self.body_form_parameter[name] = BodyFormEntry(parameter, is_file_type, form_component)
+                self._add_component_parameter(
+                    self.body_form_parameter,
+                    name,
+                    BodyFormEntry(parameter, is_file_type, form_component),
+                    "form",
+                )
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
             elif issubclass(component_type, BodyJson) or (
@@ -692,7 +743,12 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 name = self._get_component_name(parameter.name, component_instance)
                 key = getattr(component_instance, "json_key", None)
 
-                self.body_json_parameter[name] = BodyJsonEntry(parameter, key)
+                self._add_component_parameter(
+                    self.body_json_parameter,
+                    name,
+                    BodyJsonEntry(parameter, key),
+                    "JSON body",
+                )
                 self._duplicated_check_body_parameter()
                 self._duplicated_check_body()
                 self._validate_body_json_paths()
@@ -720,6 +776,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             self._signature.return_annotation,
         )
         self._return_model = return_annotation
+        self._validate_path_parameters()
 
         # A boolean directly_response value enables automatic mode selection.
         if isinstance(self.directly_response, bool) and self.directly_response:
@@ -740,6 +797,13 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
                 if self._bind_deserializer(None, required=False):
                     self.directly_response = DirectResponseType.DESERIALIZED
                 else:
+                    if return_annotation not in (inspect.Signature.empty, Any, None, type(None)):
+                        raise TypeError(
+                            f"No deserializer is registered for return annotation "
+                            f"{return_annotation!r} on {self.func.__name__}; use "
+                            "DirectResponseType.RESPONSE with a Response return annotation "
+                            "to return the raw response."
+                        )
                     # CASE-3(default): deserializer, return annotation not defined.
                     # @request(directly_response=True)
                     # def request_method1(...):

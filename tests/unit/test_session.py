@@ -99,6 +99,46 @@ def test_aiohttp_session_preserves_base_url_path_prefix() -> None:
     asyncio.run(scenario())
 
 
+def test_async_session_can_be_constructed_before_event_loop() -> None:
+    session = AsyncSession(
+        "http://example.test",
+        aiohttp.ClientSession,
+    )
+
+    assert session.closed is False
+    asyncio.run(session.close())
+    assert session.closed is True
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "",
+        "example.test",
+        "/relative",
+        "ftp://example.test",
+        "https:///missing-host",
+    ],
+)
+def test_session_rejects_invalid_base_url(base_url: str) -> None:
+    with pytest.raises(ValueError, match=r"absolute HTTP\(S\) URL"):
+        BaseSession.__init__(object.__new__(AsyncSession), base_url)
+
+
+def test_async_session_raises_consistent_error_after_close() -> None:
+    async def scenario() -> None:
+        session = AsyncSession(
+            "http://example.test",
+            aiohttp.ClientSession,
+        )
+        await session.close()
+
+        with pytest.raises(RuntimeError, match="Session is closed"):
+            await session.get("/users")
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize(
     "path",
     [

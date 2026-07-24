@@ -192,6 +192,25 @@ from the registered return type, the decorated method body is not executed.
 Pass a model explicitly, such as `@serialize(CreateUser)`, when it cannot be
 inferred from an annotation.
 
+### Static type checking
+
+The package includes an optional mypy plugin for declarative endpoint methods.
+It preserves their public call signatures and allows a skipped direct-response
+body to contain only `...` or `pass`, including when mypy strict mode is used.
+No additional package is required:
+
+```ini
+[mypy]
+plugins = ahttp_client.mypy
+```
+
+When Pydantic models are also checked, both installed plugins can be enabled:
+
+```ini
+[mypy]
+plugins = pydantic.mypy, ahttp_client.mypy
+```
+
 ### Retries
 
 Use `@retry` to repeat a request when a selected exception is raised. By
@@ -239,6 +258,17 @@ Exceptions raised during request transport or the session-level
 `after_request()` hook are eligible for retry. Request-level `after_hook`
 callbacks run after the retry operation and are not retried. Retry counts and
 delays must be finite, non-negative values.
+
+Retries are enabled automatically only for idempotent HTTP methods. Retrying a
+POST, PATCH, or another non-idempotent request can duplicate a server-side
+operation, so it requires an explicit `retry_unsafe=True` opt-in:
+
+```python
+@retry(max_retries=1, retry_unsafe=True)
+@post("/jobs")
+async def create_job(self, payload: Annotated[dict[str, Any], BodyJson]) -> None:
+    ...
+```
 
 ### Hooks
 

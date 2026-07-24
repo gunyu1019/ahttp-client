@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, TypeVar
 
@@ -22,6 +23,7 @@ class BaseBackend(ABC):
     session_cls: ClassVar[type[Any]]
     response_cls: ClassVar[type[Any]]
     native_base_url: ClassVar[bool] = False
+    replace_registered_backend: ClassVar[bool] = False
 
     _registry: ClassVar[dict[type[Any], type[BaseBackend]]] = {}
 
@@ -54,7 +56,16 @@ class BaseBackend(ABC):
 
         if not hasattr(cls, "response_cls") or not hasattr(cls, "session_cls"):
             return
+        if inspect.isabstract(cls):
+            return
 
+        existing = BaseBackend._registry.get(cls.session_cls)
+        if existing is not None and existing is not cls and not cls.replace_registered_backend:
+            raise RuntimeError(
+                f"A backend for {cls.session_cls.__name__} is already registered "
+                f"as {existing.__name__}; set replace_registered_backend=True "
+                "to replace it explicitly."
+            )
         BaseBackend._registry[cls.session_cls] = cls
 
     @classmethod

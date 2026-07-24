@@ -51,6 +51,8 @@ The wait before retry attempt `n` is `backoff_factor * 2 ** (n - 1)` seconds, ca
 
 .. note:: `max_retries`, `backoff_factor`, and `max_delay` all need to be finite, non-negative values. Bad values raise `TypeError` or `ValueError` as soon as `@retry` is applied.
 
+.. warning:: Automatic retries are limited to idempotent HTTP methods. Retrying a POST, PATCH, or another non-idempotent request can duplicate a server-side operation, so it must be explicitly enabled with `retry_unsafe=True`.
+
 Decoration Order
 -----------------
 `@retry` works whether it sits above or below `@request` (or `@get`, `@post`, etc.) on the same method — both orders end up with the same retry configuration:

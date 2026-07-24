@@ -21,6 +21,7 @@ async def async_endpoint(session: Any) -> None:
     backoff_factor=0.5,
     retry_on=(HTTPServerError, HTTPClientError),
     max_delay=4.0,
+    retry_unsafe=False,
 )
 def sync_endpoint(session: Any) -> None:
     pass
@@ -33,6 +34,7 @@ config = RetryConfig(
     backoff_factor=1.0,
     retry_on=(OSError,),
     max_delay=None,
+    retry_unsafe=False,
 )
 
 

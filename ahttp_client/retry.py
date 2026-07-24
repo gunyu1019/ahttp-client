@@ -26,6 +26,9 @@ class RetryConfig:
         Exception classes that trigger another attempt.
     max_delay: Optional[float]
         Maximum delay in seconds, or ``None`` for no upper bound.
+    retry_unsafe: bool
+        Whether retries are explicitly allowed for non-idempotent HTTP
+        methods such as POST and PATCH.
 
     Raises
     ------
@@ -47,6 +50,7 @@ class RetryConfig:
         backoff_factor: float = 1.0,
         retry_on: tuple[type[Exception], ...] = (HTTPServerError,),
         max_delay: Optional[float] = None,
+        retry_unsafe: bool = False,
     ) -> None:
         if isinstance(max_retries, bool) or not isinstance(max_retries, int):
             raise TypeError("max_retries must be an integer")
@@ -68,11 +72,14 @@ class RetryConfig:
             isinstance(exception_type, type) and issubclass(exception_type, Exception) for exception_type in retry_on
         ):
             raise TypeError("retry_on must contain only Exception subclasses")
+        if not isinstance(retry_unsafe, bool):
+            raise TypeError("retry_unsafe must be a boolean")
 
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.retry_on = retry_on
         self.max_delay = max_delay
+        self.retry_unsafe = retry_unsafe
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, RetryConfig):
@@ -82,6 +89,7 @@ class RetryConfig:
             and self.backoff_factor == other.backoff_factor
             and self.retry_on == other.retry_on
             and self.max_delay == other.max_delay
+            and self.retry_unsafe == other.retry_unsafe
         )
 
     def _backoff_delay(self, attempt: int) -> float:
@@ -171,6 +179,7 @@ def retry(
     backoff_factor: float = 1.0,
     retry_on: tuple[type[Exception], ...] | type[Exception] = (HTTPServerError,),
     max_delay: Optional[float] = None,
+    retry_unsafe: bool = False,
 ) -> RequestDecorator[Any, Any]:
     """Decorate a request to retry on failure with exponential backoff.
 
@@ -186,6 +195,10 @@ def retry(
         :class:`HTTPServerError` (5xx responses).
     max_delay: Optional[float]
         Upper bound on the sleep delay in seconds. ``None`` means no cap.
+    retry_unsafe: bool
+        Explicitly allow retries for non-idempotent methods. Defaults to
+        ``False`` so POST, PATCH, and other unsafe requests are not repeated
+        accidentally.
 
     Returns
     -------
@@ -212,6 +225,7 @@ def retry(
         backoff_factor=backoff_factor,
         retry_on=retry_on,
         max_delay=max_delay,
+        retry_unsafe=retry_unsafe,
     )
 
     def decorator(func: RequestDecorator[Any, Any] | RequestCore[Any, Any]) -> Any:

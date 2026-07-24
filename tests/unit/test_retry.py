@@ -157,7 +157,7 @@ def test_retry_rewinds_seekable_body_stream() -> None:
             response = _make_sync_response()
             return response, response
 
-    @retry(max_retries=1, backoff_factor=0, retry_on=RetriableError)
+    @retry(max_retries=1, backoff_factor=0, retry_on=RetriableError, retry_unsafe=True)
     @request("POST", "/")
     def upload(
         session: BaseSession,
@@ -175,7 +175,7 @@ def test_retry_rejects_non_seekable_body_stream() -> None:
         def read(self) -> bytes:
             return b"payload"
 
-    @retry(max_retries=1, backoff_factor=0)
+    @retry(max_retries=1, backoff_factor=0, retry_unsafe=True)
     @request("POST", "/")
     def upload(
         session: BaseSession,
@@ -214,6 +214,37 @@ def test_retry_applied_before_request_binds_via_extension() -> None:
     assert endpoint._retry_config.max_retries == 2
 
 
+@pytest.mark.parametrize("decorator_order", ["retry_first", "request_first"])
+def test_retry_rejects_non_idempotent_method_without_opt_in(decorator_order: str) -> None:
+    async def endpoint(session) -> None:
+        pass
+
+    with pytest.raises(ValueError, match="retry_unsafe=True"):
+        if decorator_order == "retry_first":
+            retry(max_retries=1)(request("POST", "/")(endpoint))
+        else:
+            request("PATCH", "/")(retry(max_retries=1)(endpoint))
+
+
+def test_retry_allows_non_idempotent_method_with_explicit_opt_in() -> None:
+    @retry(max_retries=1, retry_unsafe=True)
+    @request("POST", "/")
+    async def endpoint(session) -> None:
+        pass
+
+    assert endpoint._retry_config is not None
+    assert endpoint._retry_config.retry_unsafe is True
+
+
+def test_zero_retries_does_not_require_unsafe_opt_in() -> None:
+    @retry(max_retries=0)
+    @request("POST", "/")
+    async def endpoint(session) -> None:
+        pass
+
+    assert endpoint._retry_config is not None
+
+
 def test_retry_default_retry_on_is_http_server_error() -> None:
     config = RetryConfig()
     assert config.retry_on == (HTTPServerError,)
@@ -244,6 +275,7 @@ def test_retry_single_exception_type_is_normalized_to_tuple() -> None:
         ({"retry_on": ValueError}, TypeError, "retry_on"),
         ({"retry_on": (ValueError(),)}, TypeError, "retry_on"),
         ({"retry_on": (BaseException,)}, TypeError, "retry_on"),
+        ({"retry_unsafe": 1}, TypeError, "retry_unsafe"),
     ],
 )
 def test_retry_config_rejects_invalid_values(

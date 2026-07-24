@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import ssl
+from abc import abstractmethod
 from types import SimpleNamespace
 from typing import Any
 import warnings
@@ -10,7 +11,8 @@ import pytest
 
 from ahttp_client import BaseSession, request
 from ahttp_client.backend.aiohttp import AiohttpBackend
-from ahttp_client.backend.base import AsyncBackend
+from ahttp_client.backend.base import AsyncBackend, BaseBackend
+from ahttp_client.backend.requests import RequestsBackend
 
 
 def test_request_kwargs_preserve_non_copyable_native_objects() -> None:
@@ -76,3 +78,46 @@ def test_registered_client_subclass_uses_nearest_backend() -> None:
             await backend.session_close()
 
     asyncio.run(scenario())
+
+
+def test_backend_registration_rejects_implicit_replacement() -> None:
+    class FakeSession:
+        pass
+
+    try:
+        class OriginalBackend(RequestsBackend):
+            session_cls = FakeSession
+            response_cls = object
+
+        with pytest.raises(RuntimeError, match="already registered"):
+
+            class DuplicateBackend(RequestsBackend):
+                session_cls = FakeSession
+                response_cls = object
+
+        class ExplicitReplacementBackend(RequestsBackend):
+            session_cls = FakeSession
+            response_cls = object
+            replace_registered_backend = True
+
+        assert BaseBackend._registry[FakeSession] is ExplicitReplacementBackend
+    finally:
+        BaseBackend._registry.pop(FakeSession, None)
+
+
+def test_abstract_backend_is_not_registered() -> None:
+    class FakeSession:
+        pass
+
+    try:
+        class AbstractBackend(RequestsBackend):
+            session_cls = FakeSession
+            response_cls = object
+
+            @abstractmethod
+            def extension_point(self) -> None:
+                pass
+
+        assert FakeSession not in BaseBackend._registry
+    finally:
+        BaseBackend._registry.pop(FakeSession, None)

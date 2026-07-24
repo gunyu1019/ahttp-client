@@ -98,12 +98,19 @@ class BaseSession(ABC):
             return relative_path
         return self.base_url + relative_path
 
+    def _ensure_open(self) -> None:
+        """Raise a backend-independent error when the session is closed."""
+        if self.closed:
+            raise RuntimeError("Session is closed")
+
     @staticmethod
     def _normalize_base_url(base_url: str) -> str:
         """Normalize a base URL so native clients preserve its path prefix."""
         parsed = urlsplit(base_url)
         if parsed.query or parsed.fragment:
             raise ValueError("base_url must not contain a query string or fragment.")
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("base_url must be an absolute HTTP(S) URL.")
 
         path = parsed.path or "/"
         if not path.endswith("/"):
@@ -172,11 +179,32 @@ class AsyncSession(BaseSession):
         **kwargs: Any,
     ) -> None:
         base_url = self._normalize_base_url(base_url)
-        self.backend: AsyncBackend = AsyncBackend.from_session(session, base_url=base_url, **kwargs)
+        self._backend: AsyncBackend | None = None
+        self._session_cls = session
+        self._session_kwargs = kwargs
+        self._closed = False
         super(AsyncSession, self).__init__(
             base_url,
             directly_response=directly_response,
         )
+
+    @property  # type: ignore[override]
+    def backend(self) -> AsyncBackend:
+        """Create the asynchronous backend lazily inside the running loop."""
+        self._ensure_open()
+        if self._backend is None:
+            self._backend = AsyncBackend.from_session(
+                self._session_cls,
+                base_url=self.base_url,
+                **self._session_kwargs,
+            )
+        return self._backend
+
+    @backend.setter
+    def backend(self, value: AsyncBackend) -> None:
+        self._backend = value
+        if not hasattr(self, "_closed"):
+            self._closed = False
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -185,10 +213,14 @@ class AsyncSession(BaseSession):
     @property
     def closed(self) -> bool:
         """Return whether the underlying HTTP client session is closed."""
-        return self.backend.session_closed
+        return self._closed or (
+            self._backend is not None and bool(getattr(self._backend, "session_closed", False))
+        )
 
     async def __aenter__(self) -> Self:
         """Enter the asynchronous session context."""
+        self._ensure_open()
+        _ = self.backend
         return self
 
     async def __aexit__(
@@ -202,7 +234,11 @@ class AsyncSession(BaseSession):
 
     async def close(self) -> None:
         """Close the underlying asynchronous HTTP client session."""
-        await self.backend.session_close()
+        if self._closed:
+            return
+        if self._backend is not None and not self._backend.session_closed:
+            await self._backend.session_close()
+        self._closed = True
 
     async def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous HTTP request.
@@ -210,36 +246,43 @@ class AsyncSession(BaseSession):
         ``path`` is joined with the base URL when required. Keyword arguments
         are passed directly to the underlying HTTP client.
         """
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_request(method, url, **kwargs)
 
     async def get(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``GET`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_get(url, **kwargs)
 
     async def post(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``POST`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_post(url, **kwargs)
 
     async def options(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``OPTIONS`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_options(url, **kwargs)
 
     async def delete(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``DELETE`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_delete(url, **kwargs)
 
     async def patch(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``PATCH`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_patch(url, **kwargs)
 
     async def put(self, path: str, **kwargs: Any) -> Any:
         """Make a raw asynchronous ``PUT`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return await self.backend.session_put(url, **kwargs)
 
@@ -248,6 +291,7 @@ class AsyncSession(BaseSession):
         request: RequestCore[Any, Any],
         path: str,
     ) -> tuple[Response, Any]:
+        self._ensure_open()
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
@@ -413,7 +457,7 @@ class Session(BaseSession):
     @property
     def closed(self) -> bool:
         """Return whether the underlying HTTP client session is closed."""
-        return self.backend.session_closed
+        return bool(getattr(self.backend, "session_closed", False))
 
     def __enter__(self) -> Self:
         """Enter the session context."""
@@ -438,36 +482,43 @@ class Session(BaseSession):
         ``path`` is joined with the base URL when required. Keyword arguments
         are passed directly to the underlying HTTP client.
         """
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_request(method, url, **kwargs)
 
     def get(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``GET`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_get(url, **kwargs)
 
     def post(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``POST`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_post(url, **kwargs)
 
     def options(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``OPTIONS`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_options(url, **kwargs)
 
     def delete(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``DELETE`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_delete(url, **kwargs)
 
     def patch(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``PATCH`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_patch(url, **kwargs)
 
     def put(self, path: str, **kwargs: Any) -> Any:
         """Make a raw synchronous ``PUT`` request."""
+        self._ensure_open()
         url = self._get_request_url(path)
         return self.backend.session_put(url, **kwargs)
 
@@ -476,6 +527,7 @@ class Session(BaseSession):
         request: RequestCore[Any, Any],
         path: str,
     ) -> tuple[Response, Any]:
+        self._ensure_open()
         _req_obj = request
 
         if self._has_overridden_method(self.before_request):
