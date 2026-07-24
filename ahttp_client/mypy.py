@@ -21,7 +21,6 @@ from mypy.nodes import CallExpr, Decorator, Expression, MemberExpr, NameExpr, Re
 from mypy.plugin import ClassDefContext, Plugin
 from mypy.types import CallableType, Instance, Type, UnboundType, UnionType, get_proper_type
 
-
 _SESSION_BASES: Final = frozenset(
     {
         "ahttp_client.session.AsyncSession",
@@ -100,11 +99,7 @@ def _restore_endpoint_signature(statement: Decorator) -> bool:
     if not isinstance(original, CallableType):
         return False
 
-    retained = [
-        index
-        for index, argument_type in enumerate(original.arg_types)
-        if not _is_response_type(argument_type)
-    ]
+    retained = [index for index, argument_type in enumerate(original.arg_types) if not _is_response_type(argument_type)]
     if len(retained) != len(original.arg_types):
         return False
     fallback = decorated if isinstance(decorated, Instance) else original.fallback
@@ -124,17 +119,13 @@ def _mark_direct_endpoint_bodies(ctx: ClassDefContext) -> None:
     for statement in ctx.cls.defs.body:
         if not isinstance(statement, Decorator):
             continue
-        request_decorators = [
-            item for item in statement.original_decorators if _request_call(item) is not None
-        ]
+        request_decorators = [item for item in statement.original_decorators if _request_call(item) is not None]
         if not request_decorators:
             continue
 
         if _restore_endpoint_signature(statement):
             statement.decorators[:] = [
-                item
-                for item in statement.decorators
-                if _decorator_fullname(item) not in _TRANSPARENT_DECORATORS
+                item for item in statement.decorators if _decorator_fullname(item) not in _TRANSPARENT_DECORATORS
             ]
         if not any(_is_explicit_direct_response(item) for item in request_decorators):
             continue

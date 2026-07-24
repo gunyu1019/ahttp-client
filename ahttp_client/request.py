@@ -567,9 +567,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         """Attach a retry configuration to this request."""
         method = str(self.method).upper()
         if config.max_retries > 0 and method not in _IDEMPOTENT_METHODS and not config.retry_unsafe:
-            raise ValueError(
-                f"Retries for non-idempotent HTTP method {method!r} require retry_unsafe=True."
-            )
+            raise ValueError(f"Retries for non-idempotent HTTP method {method!r} require retry_unsafe=True.")
         self._retry_config = config
 
     def _capture_retry_stream_positions(self) -> list[tuple[Any, int]]:

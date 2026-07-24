@@ -213,9 +213,7 @@ class AsyncSession(BaseSession):
     @property
     def closed(self) -> bool:
         """Return whether the underlying HTTP client session is closed."""
-        return self._closed or (
-            self._backend is not None and bool(getattr(self._backend, "session_closed", False))
-        )
+        return self._closed or (self._backend is not None and bool(getattr(self._backend, "session_closed", False)))
 
     async def __aenter__(self) -> Self:
         """Enter the asynchronous session context."""
