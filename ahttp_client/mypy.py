@@ -100,8 +100,6 @@ def _restore_endpoint_signature(statement: Decorator) -> bool:
         return False
 
     retained = [index for index, argument_type in enumerate(original.arg_types) if not _is_response_type(argument_type)]
-    if len(retained) == len(original.arg_types):
-        return False
     fallback = decorated if isinstance(decorated, Instance) else original.fallback
     public_signature = original.copy_modified(
         arg_types=[original.arg_types[index] for index in retained],
