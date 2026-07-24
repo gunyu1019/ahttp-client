@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from asyncio import iscoroutinefunction
-from inspect import isawaitable
+from inspect import isawaitable, iscoroutinefunction
 from typing import TYPE_CHECKING, Any, Callable, cast, TypeVar
 
 if TYPE_CHECKING:
