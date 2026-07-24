@@ -67,7 +67,7 @@ __all__ = [
 __title__ = "ahttp_client"
 __author__ = "gunyu1019"
 __license__ = "MIT"
-__copyright__ = "Copyright 2023-present-present gunyu1019"
+__copyright__ = "Copyright 2023-present gunyu1019"
 __version__ = "2.0.0"  # version_info.to_string()
 
 
