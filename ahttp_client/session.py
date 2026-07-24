@@ -23,53 +23,202 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import logging
-from typing import TYPE_CHECKING, TypeVar
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeVar, cast
+from urllib.parse import urlsplit, urlunsplit
 
-import aiohttp
-
-from .request import RequestCore
+from .backend.base import BaseBackend, SyncBackend, AsyncBackend
+from .enum import DirectResponseType
+from ._types import RequestFunction
+from .request_bound import RequestBound, AsyncRequestBound, SyncRequestBound
+from .response import Response
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
     from types import TracebackType
-    from typing import Optional
+    from typing import Optional, Self
 
-    from ._types import RequestFunction
+    from .request import RequestCore
 
-T = TypeVar("T")
 _log = logging.getLogger(__name__)
+_SpecialMethodT = TypeVar("_SpecialMethodT", bound=Callable[..., Any])
 
 
-class Session:
-    """A class to manage session for managing decoration functions."""
+class BaseSession(ABC):
+    """Base class for sessions that own and execute request descriptors.
+
+    Subclasses select a supported HTTP client through a backend adapter. When
+    a decorated request is accessed on a session instance, it is bound to that
+    session and can be called as a regular synchronous or asynchronous method.
+    """
+
+    backend: BaseBackend
 
     def __init__(
         self,
         base_url: str,
         *,
-        directly_response: bool = False,
-        loop: asyncio.AbstractEventLoop = None,
-        _is_single_session: bool = False,
-        **kwargs,
-    ):
+        directly_response: DirectResponseType | bool = False,
+    ) -> None:
+        DirectResponseType.validate(directly_response)
         self.directly_response = directly_response
-        self.base_url = base_url
-        self.loop = loop
+        self.base_url = self._normalize_base_url(base_url)
 
-        self.session = aiohttp.ClientSession(self.base_url, loop=self.loop, **kwargs)
+        self._request_bound_func: dict[str, RequestBound] = dict()
 
-        if not _is_single_session:
-            for name, func in inspect.getmembers(self):
-                if not isinstance(func, RequestCore):
-                    continue
+    @staticmethod
+    def _has_overridden_method(method: Callable[..., Any]) -> bool:
+        """Return whether a session hook was overridden by a subclass."""
+        return not hasattr(method, "__special_method__")
 
-                func.session = self
+    @staticmethod
+    def _special_method(func: _SpecialMethodT) -> _SpecialMethodT:
+        special_method: Any = func
+        special_method.__special_method__ = None
+        return func
+
+    @property
+    @abstractmethod
+    def closed(self) -> bool:
+        pass
+
+    def _get_request_url(self, path: str) -> str:
+        parsed_path = urlsplit(path)
+        if parsed_path.scheme or parsed_path.netloc:
+            raise ValueError("Request path must be relative to the session base URL.")
+        if parsed_path.fragment:
+            raise ValueError("Request path must not contain a URL fragment.")
+        if ".." in parsed_path.path.split("/"):
+            raise ValueError("Request path must not escape the session base URL.")
+
+        relative_path = path.lstrip("/")
+        if self.backend.native_base_url:
+            return relative_path
+        return self.base_url + relative_path
+
+    def _ensure_open(self) -> None:
+        """Raise a backend-independent error when the session is closed."""
+        if self.closed:
+            raise RuntimeError("Session is closed")
+
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        """Normalize a base URL so native clients preserve its path prefix."""
+        parsed = urlsplit(base_url)
+        if parsed.query or parsed.fragment:
+            raise ValueError("base_url must not contain a query string or fragment.")
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("base_url must be an absolute HTTP(S) URL.")
+
+        path = parsed.path or "/"
+        if not path.endswith("/"):
+            path += "/"
+        return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
+
+    @abstractmethod
+    def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any] | Awaitable[tuple[Response, Any]]:
+        pass
+
+    @abstractmethod
+    def _get_request_bound(self, request: RequestCore[Any, Any]) -> RequestBound:
+        pass
+
+    @classmethod
+    def _validate_request_core_duplicated(cls) -> None:
+        members: dict[str, Any] = dict()
+        for _, func in inspect.getmembers(cls):
+            request_obj = getattr(func, "__core__", func)
+
+            if not getattr(request_obj, "__request_core__", False):
+                continue
+
+            expects_async = issubclass(cls, AsyncSession)
+            if inspect.iscoroutinefunction(request_obj.func) != expects_async:
+                expected_kind = "asynchronous" if expects_async else "synchronous"
+                raise TypeError(
+                    f"Request {request_obj.name} must use a {expected_kind} handler " f"with {cls.__name__}."
+                )
+
+            if request_obj.name in members.keys():
+                raise ValueError(f"Request name {request_obj.name} is duplicated")
+            members[request_obj.name] = request_obj
+
+
+class AsyncSession(BaseSession):
+    """A session for asynchronous requests.
+
+    Supported client classes are ``aiohttp.ClientSession`` and
+    ``httpx.AsyncClient``. Decorated coroutine methods are bound to this
+    session and executed with the configured base URL.
+
+    Parameters
+    ----------
+    base_url: str
+        Base URL used for request paths.
+    session: type
+        Supported asynchronous HTTP client session class.
+    directly_response: DirectResponseType | bool
+        Return the response-pipeline result instead of executing decorated
+        request functions.
+    **kwargs
+        Keyword arguments passed to the HTTP client session constructor.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        session: type[Any],
+        *,
+        directly_response: DirectResponseType | bool = False,
+        **kwargs: Any,
+    ) -> None:
+        base_url = self._normalize_base_url(base_url)
+        self._backend: AsyncBackend | None = None
+        self._session_cls = session
+        self._session_kwargs = kwargs
+        self._closed = False
+        super(AsyncSession, self).__init__(
+            base_url,
+            directly_response=directly_response,
+        )
+
+    @property  # type: ignore[override]
+    def backend(self) -> AsyncBackend:
+        """Create the asynchronous backend lazily inside the running loop."""
+        self._ensure_open()
+        if self._backend is None:
+            self._backend = AsyncBackend.from_session(
+                self._session_cls,
+                base_url=self.base_url,
+                **self._session_kwargs,
+            )
+        return self._backend
+
+    @backend.setter
+    def backend(self, value: AsyncBackend) -> None:
+        self._backend = value
+        if not hasattr(self, "_closed"):
+            self._closed = False
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._validate_request_core_duplicated()
+
+    @property
+    def closed(self) -> bool:
+        """Return whether the underlying HTTP client session is closed."""
+        return self._closed or (self._backend is not None and bool(getattr(self._backend, "session_closed", False)))
 
     async def __aenter__(self) -> Self:
+        """Enter the asynchronous session context."""
+        self._ensure_open()
+        _ = self.backend
         return self
 
     async def __aexit__(
@@ -77,136 +226,411 @@ class Session:
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> None:
+        """Close the session when leaving the asynchronous context."""
         await self.close()
 
-    @staticmethod
-    def _has_overridden_method(method):
-        """Return False if the method is not overridden. Otherwise returns True if the overridden method."""
-        return not hasattr(method, "__special_method__")
+    async def close(self) -> None:
+        """Close the underlying asynchronous HTTP client session."""
+        if self._closed:
+            return
+        if self._backend is not None and not self._backend.session_closed:
+            await self._backend.session_close()
+        self._closed = True
 
-    @staticmethod
-    def _special_method(func):
-        func.__special_method__ = None
-        return func
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous HTTP request.
 
-    @property
-    def closed(self) -> bool:
-        return self.session.closed
+        ``path`` is joined with the base URL when required. Keyword arguments
+        are passed directly to the underlying HTTP client.
+        """
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_request(method, url, **kwargs)
 
-    async def close(self):
-        return await self.session.close()
+    async def get(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``GET`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_get(url, **kwargs)
 
-    async def request(self, method: str, path: str, **kwargs):
-        return await self.session.request(method, path, **kwargs)
+    async def post(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``POST`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_post(url, **kwargs)
 
-    async def get(self, path: str, **kwargs):
-        return await self.session.get(path, **kwargs)
+    async def options(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``OPTIONS`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_options(url, **kwargs)
 
-    async def post(self, path: str, **kwargs):
-        return await self.session.post(path, **kwargs)
+    async def delete(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``DELETE`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_delete(url, **kwargs)
 
-    async def options(self, path: str, **kwargs):
-        return await self.session.options(path, **kwargs)
+    async def patch(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``PATCH`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_patch(url, **kwargs)
 
-    async def delete(self, path: str, **kwargs):
-        return await self.session.delete(path, **kwargs)
+    async def put(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw asynchronous ``PUT`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return await self.backend.session_put(url, **kwargs)
 
-    async def _make_request(self, request: RequestCore, path: str, **kwargs):
+    async def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any]:
+        self._ensure_open()
         _req_obj = request
-        _path = path
 
         if self._has_overridden_method(self.before_request):
-            _req_obj, _path = await self.before_request(request, path)
+            _req_obj, path = await self.before_request(request, path)
 
-        request_kwargs = _req_obj.get_request_kwargs()
-        _log.debug("Request Called: [%s] %s" % (_req_obj.method, _path))
-        response = await self.session.request(_req_obj.method, _path, **request_kwargs)
-
+        request_kwargs = self.backend.get_request_kwargs(_req_obj)
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
+        url = self._get_request_url(path)
+        raw_response_data = await self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        try:
+            await self.backend.pre_read_response(raw_response_data)
+        except BaseException:
+            if not raw_response.closed:
+                try:
+                    await raw_response.async_close()
+                except BaseException:
+                    _log.exception("Failed to close response after pre-read error")
+            raise
+        response = raw_response
         if self._has_overridden_method(self.after_request):
-            response = await self.after_request(response)
-        return response
+            try:
+                response = await self.after_request(raw_response)
+            except BaseException:
+                if not raw_response.closed:
+                    try:
+                        await raw_response.async_close()
+                    except BaseException:
+                        _log.exception("Failed to close response after after_request error")
+                raise
+        return raw_response, response
 
-    @_special_method
-    async def before_request(self, request: RequestCore, path: str) -> tuple[RequestCore, str]:
-        """A special method that acts as a session local pre-invoke hook.
-        This is similar to :meth:`RequestCore.before_request`.
+    @BaseSession._special_method
+    async def before_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[RequestCore[Any, Any], str]:
+        """Run after a request-level pre-hook and before dispatching the request.
 
-        When :meth:`RequestCore.before_request` exists, this method is called after
-        :meth:`RequestCore.before_request` called.
+        Override this method to alter the request object or final path for all
+        requests made by this session.
 
         Parameters
         ----------
         request: RequestCore
-            The instance of RequestCore.
+            Request descriptor prepared for this invocation.
         path: str
-            The final string of the request url.
+            Request path after path parameters have been substituted.
 
         Returns
         -------
-        Tuple[RequestCore, str]
-            The return type must be the same as the parameter.
+        tuple[RequestCore, str]
+            Request descriptor and path to dispatch.
         """
-        pass
+        return request, path
 
-    @_special_method
-    async def after_request(self, response: aiohttp.ClientResponse) -> aiohttp.ClientResponse | T:
-        """A special method that acts as a session local post-invoke.
-        This is similar to :meth:`RequestCore.after_request`.
+    @BaseSession._special_method
+    async def after_request(self, response: Any) -> Any:
+        """Run after the backend receives a response and before a request hook.
 
-        When :meth:`RequestCore.after_request` exists, this method is called before
-        :meth:`RequestCore.after_request` called.
+        Override this method to transform the :class:`Response` for every
+        request made by this session.
 
         Parameters
         ----------
-        response: aiohttp.ClientResponse
-            The result of HTTP request.
+        response: Any
+            Response returned by the backend.
 
         Returns
         -------
-        aiohttp.ClientResponse | T
-            Cleanup response HTTP results.
-            If RequestCore.after_request exists, the response type of :meth:`RequestCore.after_request` will follow
-            the type of this method.
+        Any
+            Value passed to the request-level post-hook or decorated function.
         """
-        pass
+        return response
 
     @classmethod
-    def single_session(cls, base_url: str, loop: asyncio.AbstractEventLoop = None, **session_kwargs):
-        """A single session for one request.
+    def single_session(
+        cls,
+        base_url: str,
+        session: type[Any],
+        **session_kwargs: Any,
+    ) -> Callable[[RequestCore[Any, Any]], RequestFunction[..., Any]]:
+        """Decorate a request to create and close a session per invocation.
+
+        The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
+        for the call, then closes it after the request completes.
 
         Parameters
         ----------
         base_url: str
-            base url of the API. (for example, https://api.yhs.kr)
-        loop: asyncio.AbstractEventLoop
-            [event loop](https://docs.python.org/3/library/asyncio-eventloop.html#asyncio-event-loop)
-             used for processing HTTP requests.
-
-        Examples
-        --------
-        The session is defined through the function's decoration.
-
-        >>> @Session.single_session("https://api.yhs.kr")
-        ... @request("GET", "/bus/station")
-        ... async def station_query(session: Session, name: Query | str) -> aiohttp.ClientResponse:
-        ...     pass
+            Base URL of the API.
+        session: type
+            The HTTP session class to use (e.g. aiohttp.ClientSession, httpx.AsyncClient).
 
         """
 
-        def decorator(func: RequestFunction):
+        def decorator(func: RequestCore[Any, Any]) -> RequestFunction[..., Any]:
             @functools.wraps(func)
-            async def wrapper(*args, **kwargs):
-                client = cls(base_url, loop=loop, _is_single_session=True, **session_kwargs)
-                func.session = client
-                response = await func(*args, **kwargs)
-                if not client.closed:
-                    await client.close()
+            async def wrapper(*args: Any, **kwargs: Any) -> Any:
+                client = cls(base_url, session, **session_kwargs)
+                try:
+                    response = await func._execute(client, *args, **kwargs)
+                finally:
+                    if not client.closed:
+                        await client.close()
                 return response
 
-            wrapper.__core__ = func
-            wrapper.before_hook = func.before_hook
-            wrapper.after_hook = func.after_hook
-            return wrapper
+            wrapper.__core__ = func  # type: ignore[attr-defined]
+            wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
+            wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
+            return cast(RequestFunction[..., Any], wrapper)
 
         return decorator
+
+    def _get_request_bound(self, request_obj: RequestCore[Any, Any]) -> AsyncRequestBound:
+        bound = self._request_bound_func.get(request_obj.name)
+        if bound is None:
+            bound = AsyncRequestBound(request_obj, self)
+            self._request_bound_func[request_obj.name] = bound
+        return cast(AsyncRequestBound, bound)
+
+
+class Session(BaseSession):
+    """A session for synchronous requests.
+
+    Supported client classes are ``requests.Session`` and ``httpx.Client``.
+    Decorated functions are bound to this session and executed with the
+    configured base URL.
+
+    Parameters
+    ----------
+    base_url: str
+        Base URL used for request paths.
+    session: type
+        Supported synchronous HTTP client session class.
+    directly_response: DirectResponseType | bool
+        Return the response-pipeline result instead of executing decorated
+        request functions.
+    **kwargs
+        Keyword arguments passed to the HTTP client session constructor.
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        session: type[Any],
+        *,
+        directly_response: DirectResponseType | bool = False,
+        **kwargs: Any,
+    ) -> None:
+        base_url = self._normalize_base_url(base_url)
+        self.backend: SyncBackend = SyncBackend.from_session(session, base_url=base_url, **kwargs)
+        super(Session, self).__init__(
+            base_url,
+            directly_response=directly_response,
+        )
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        cls._validate_request_core_duplicated()
+
+    @property
+    def closed(self) -> bool:
+        """Return whether the underlying HTTP client session is closed."""
+        return bool(getattr(self.backend, "session_closed", False))
+
+    def __enter__(self) -> Self:
+        """Enter the session context."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Close the session when leaving the context."""
+        self.close()
+
+    def close(self) -> None:
+        """Close the underlying HTTP client session."""
+        self.backend.session_close()
+
+    def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous HTTP request.
+
+        ``path`` is joined with the base URL when required. Keyword arguments
+        are passed directly to the underlying HTTP client.
+        """
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_request(method, url, **kwargs)
+
+    def get(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``GET`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_get(url, **kwargs)
+
+    def post(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``POST`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_post(url, **kwargs)
+
+    def options(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``OPTIONS`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_options(url, **kwargs)
+
+    def delete(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``DELETE`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_delete(url, **kwargs)
+
+    def patch(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``PATCH`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_patch(url, **kwargs)
+
+    def put(self, path: str, **kwargs: Any) -> Any:
+        """Make a raw synchronous ``PUT`` request."""
+        self._ensure_open()
+        url = self._get_request_url(path)
+        return self.backend.session_put(url, **kwargs)
+
+    def _make_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[Response, Any]:
+        self._ensure_open()
+        _req_obj = request
+
+        if self._has_overridden_method(self.before_request):
+            _req_obj, path = self.before_request(request, path)
+
+        request_kwargs = self.backend.get_request_kwargs(_req_obj)
+        url = self._get_request_url(path)
+        _log.debug("Request Called: [%s] %s" % (_req_obj.method, path))
+        raw_response_data = self.backend.session_request(_req_obj.method.__str__(), url, **request_kwargs)
+        response = raw_response = Response(raw_response_data, self.backend, request._deserializer)
+        if self._has_overridden_method(self.after_request):
+            try:
+                response = self.after_request(raw_response)
+            except BaseException:
+                if not raw_response.closed:
+                    raw_response.close()
+                raise
+        return raw_response, response
+
+    @BaseSession._special_method
+    def before_request(
+        self,
+        request: RequestCore[Any, Any],
+        path: str,
+    ) -> tuple[RequestCore[Any, Any], str]:
+        """Run after a request-level pre-hook and before dispatching the request.
+
+        Override this method to alter the request object or final path for all
+        requests made by this session.
+
+        Parameters
+        ----------
+        request: RequestCore
+            Request descriptor prepared for this invocation.
+        path: str
+            Request path after path parameters have been substituted.
+
+        Returns
+        -------
+        tuple[RequestCore, str]
+            Request descriptor and path to dispatch.
+        """
+        return request, path
+
+    @BaseSession._special_method
+    def after_request(self, response: Any) -> Any:
+        """Run after the backend receives a response and before a request hook.
+
+        Override this method to transform the :class:`Response` for every
+        request made by this session.
+
+        Parameters
+        ----------
+        response: Any
+            Response returned by the backend.
+
+        Returns
+        -------
+        Any
+            Value passed to the request-level post-hook or decorated function.
+        """
+        return response
+
+    @classmethod
+    def single_session(
+        cls,
+        base_url: str,
+        session: type[Any],
+        **session_kwargs: Any,
+    ) -> Callable[[RequestCore[Any, Any]], RequestFunction[..., Any]]:
+        """Decorate a request to create and close a session per invocation.
+
+        The wrapper creates ``session`` with ``base_url`` and ``session_kwargs``
+        for the call, then closes it after the request completes.
+
+        Parameters
+        ----------
+        base_url: str
+            Base URL of the API.
+        session: type
+            The HTTP session class to use (e.g. requests.Session, httpx.Client).
+
+        """
+
+        def decorator(func: RequestCore[Any, Any]) -> RequestFunction[..., Any]:
+            @functools.wraps(func)
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                client = cls(base_url, session, **session_kwargs)
+                try:
+                    response = func._execute(client, *args, **kwargs)
+                finally:
+                    if not client.closed:
+                        client.close()
+                return response
+
+            wrapper.__core__ = func  # type: ignore[attr-defined]
+            wrapper.before_hook = func.before_hook  # type: ignore[attr-defined]
+            wrapper.after_hook = func.after_hook  # type: ignore[attr-defined]
+            return cast(RequestFunction[..., Any], wrapper)
+
+        return decorator
+
+    def _get_request_bound(self, request_obj: RequestCore[Any, Any]) -> SyncRequestBound:
+        bound = self._request_bound_func.get(request_obj.name)
+        if bound is None:
+            bound = SyncRequestBound(request_obj, self)
+            self._request_bound_func[request_obj.name] = bound
+        return cast(SyncRequestBound, bound)

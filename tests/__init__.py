@@ -19,19 +19,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Test package for shared test helpers.
 """
-
-from .component import UnsupportedCustomNameComponent
-
-
-class Path(UnsupportedCustomNameComponent):
-    """This class is used when a function's parameters are used as path in an HTTP request.
-    The parameters associated with the Path populate a portion of the HTTP URL.
-
-    Examples
-    --------
-    >>> def function(path: str | Path):
-    ...    pass
-    """
-
-    pass

@@ -1,0 +1,208 @@
+"""MIT License
+
+Copyright (c) 2023-present gunyu1019
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import pytest
+
+from ahttp_client import BodyType, Response, request
+from ahttp_client.enum import DirectResponseType
+from ahttp_client.serialization import BaseDeserializer, BaseSerializer
+from ahttp_client.serializer import deserialize, serialize
+
+
+@dataclass
+class Model:
+    value: str
+
+
+class ModelSerializer(BaseSerializer[Model]):
+    base_model_type = Model
+    body_type = BodyType.JSON
+
+    def __init__(self, prefix: str = ""):
+        self.prefix = prefix
+        super().__init__()
+
+    def single_serialize(self, model: Model) -> dict[str, str]:
+        return {"value": f"{self.prefix}{model.value}"}
+
+
+class ModelDeserializer(BaseDeserializer[Model]):
+    base_model_type = Model
+
+    def __init__(self, model: type[Model], prefix: str = ""):
+        self.prefix = prefix
+        super().__init__(model)
+
+    def single_deserialize(self, data: Any) -> Model:
+        return self._model(f"{self.prefix}{data['value']}")
+
+    def get_data(self, response: Response) -> Any:
+        return response.payload
+
+
+def test_registered_codecs_convert_single_and_multiple_values() -> None:
+    serializer = BaseSerializer.from_model(Model, prefix="serialized-")
+    deserializer = BaseDeserializer.from_model(Model, prefix="deserialized-")
+
+    assert isinstance(serializer, ModelSerializer)
+    assert isinstance(deserializer, ModelDeserializer)
+    assert serializer.serialize(Model("one")) == {"value": "serialized-one"}
+    assert serializer.serialize([Model("one"), Model("two")]) == [
+        {"value": "serialized-one"},
+        {"value": "serialized-two"},
+    ]
+    assert deserializer.deserialize({"value": "one"}) == Model("deserialized-one")
+    assert deserializer.deserialize([{"value": "one"}, {"value": "two"}]) == [
+        Model("deserialized-one"),
+        Model("deserialized-two"),
+    ]
+
+
+def test_registry_and_late_binding_resolve_nested_model_annotations() -> None:
+    annotation = list[dict[str, Model | None]]
+
+    assert isinstance(BaseSerializer.from_model(annotation), ModelSerializer)
+    assert isinstance(BaseDeserializer.from_model(annotation), ModelDeserializer)
+
+    serializer = BaseSerializer.set_model(
+        Model,
+        BaseSerializer.late_bind(prefix="late-"),
+    )
+    deserializer = BaseDeserializer.set_model(
+        Model,
+        BaseDeserializer.late_bind(prefix="late-"),
+    )
+
+    assert serializer.serialize(Model("value")) == {"value": "late-value"}
+    assert deserializer.deserialize({"value": "value"}) == Model("late-value")
+
+
+def test_registered_serializer_converts_models_in_nested_containers() -> None:
+    serializer = BaseSerializer.from_model(list[dict[str, Model]])
+
+    assert serializer is not None
+    assert serializer.serialize([{"item": Model("nested")}]) == [
+        {"item": {"value": "nested"}},
+    ]
+
+
+def test_request_resolves_local_postponed_model_for_nested_serializer() -> None:
+    class LocalModel:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+    class LocalModelSerializer(BaseSerializer[LocalModel]):
+        base_model_type = LocalModel
+        body_type = BodyType.JSON
+
+        def single_serialize(self, model: LocalModel) -> dict[str, str]:
+            return {"value": model.value}
+
+    @request("POST", "/", body_parameter="payload")
+    @serialize()
+    def endpoint(session, payload: list[dict[str, LocalModel]]) -> None:
+        pass
+
+    endpoint._fill_parameter(
+        object(),
+        {"payload": [{"item": LocalModel("nested")}]},
+    )
+
+    assert endpoint.body == [{"item": {"value": "nested"}}]
+
+
+def test_pydantic_single_model_rejects_root_array() -> None:
+    pydantic = pytest.importorskip("pydantic")
+    from ahttp_client.serialization.pydantic import PydanticDeserializer
+
+    class Item(pydantic.BaseModel):
+        value: int
+
+    deserializer = PydanticDeserializer(Item)
+
+    with pytest.raises(pydantic.ValidationError):
+        deserializer.deserialize([{"value": 1}])
+
+
+def test_request_decorators_bind_serialization_from_annotations() -> None:
+    @request("POST", "/", body_parameter="model")
+    @serialize(prefix="request-")
+    def serialize_endpoint(session, model: Model):
+        pass
+
+    @request("GET", "/", directly_response=True)
+    @deserialize(prefix="response-")
+    def deserialize_endpoint(session) -> Model:
+        pass
+
+    serialize_endpoint._fill_parameter(object(), {"model": Model("value")})
+
+    assert serialize_endpoint.body == {"value": "request-value"}
+    assert serialize_endpoint.body_type is BodyType.JSON
+    assert deserialize_endpoint.directly_response is DirectResponseType.DESERIALIZED
+    assert isinstance(deserialize_endpoint._deserializer, ModelDeserializer)
+    assert deserialize_endpoint._deserializer.prefix == "response-"
+
+
+def test_serialize_options_can_wrap_an_already_created_request() -> None:
+    @serialize(prefix="outer-")
+    @request("POST", "/", body_parameter="model")
+    def endpoint(session, model: Model):
+        pass
+
+    endpoint._fill_parameter(object(), {"model": Model("value")})
+
+    assert isinstance(endpoint._serializer, ModelSerializer)
+    assert endpoint._serializer.prefix == "outer-"
+    assert endpoint.body == {"value": "outer-value"}
+    assert endpoint.body_type is BodyType.JSON
+
+
+def test_deserialize_options_can_wrap_an_already_created_request() -> None:
+    @deserialize(prefix="outer-")
+    @request("GET", "/", directly_response=True)
+    def endpoint(session) -> Model:
+        pass
+
+    assert endpoint.directly_response is DirectResponseType.DESERIALIZED
+    assert isinstance(endpoint._deserializer, ModelDeserializer)
+    assert endpoint._deserializer.prefix == "outer-"
+
+
+def test_explicit_deserialized_mode_and_response_model_use_registered_codec() -> None:
+    @request("GET", "/", directly_response=DirectResponseType.DESERIALIZED)
+    def endpoint(session) -> Model:
+        pass
+
+    assert isinstance(endpoint._deserializer, ModelDeserializer)
+
+    response = Response.__new__(Response)
+    response.payload = {"value": "model"}
+    response._deserializer = endpoint._deserializer
+
+    assert response.model == Model("model")

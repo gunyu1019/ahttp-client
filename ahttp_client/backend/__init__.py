@@ -21,27 +21,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
-from .component import Component
+from .base import BaseBackend, AsyncBackend, SyncBackend
 
+__all__ = ["BaseBackend", "AsyncBackend", "SyncBackend"]
 
-class Header(Component):
-    """This class is used when a function's parameters are used as headers in an HTTP request.
+try:
+    from .aiohttp import AiohttpBackend
+except ModuleNotFoundError as exc:
+    if exc.name != "aiohttp":
+        raise
+else:
+    AiohttpSession = AiohttpBackend  # backward-compatible alias
+    __all__ += ["AiohttpBackend", "AiohttpSession"]
 
-    Examples
-    --------
-    >>> def function(header: str | Header):
-    ...    pass
-    """
+try:
+    from .httpx import HttpXAsyncSession, HttpXSyncSession
+except ModuleNotFoundError as exc:
+    if exc.name != "httpx":
+        raise
+else:
+    __all__ += ["HttpXAsyncSession", "HttpXSyncSession"]
 
-    DEFAULT_KEY = "__DEFAULT_HEADER__"
-
-    @staticmethod
-    def default_header(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Header.DEFAULT_KEY):
-                setattr(func, Header.DEFAULT_KEY, dict())
-            getattr(func, Header.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+try:
+    from .requests import RequestsBackend
+except ModuleNotFoundError as exc:
+    if exc.name != "requests":
+        raise
+else:
+    RequestSession = RequestsBackend  # backward-compatible alias
+    __all__ += ["RequestsBackend", "RequestSession"]

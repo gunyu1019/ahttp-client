@@ -1,27 +1,50 @@
+"""MIT License
+
+Copyright (c) 2023-present gunyu1019
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import asyncio
 import aiohttp
 
-from ahttp_client import request, Session, Query
-from typing import Any, Annotated
+from ahttp_client import AsyncSession, Query, Response, request
+from typing import Annotated
 
 
-class MetroAPI(Session):
-    def __init__(self, loop: asyncio.AbstractEventLoop):
-        super().__init__("https://api.yhs.kr", loop=loop)
+class MetroAPI(AsyncSession):
+    def __init__(self):
+        super().__init__("https://api.yhs.kr", aiohttp.ClientSession)
 
     @request("GET", "/metro/station", directly_response=True)
-    async def station_search_with_query(
+    async def station_search_with_query(  # type: ignore[empty-body]
         self,
-        response: aiohttp.ClientResponse,
+        response: Response,
         station_name: Annotated[str, Query.custom_name("name")],
-    ) -> aiohttp.ClientResponse:
+    ) -> Response:
         pass
 
 
 async def main():
     async with MetroAPI() as client:
         response = await client.station_search_with_query(station_name="강남")
-        data = await response.json()
+        data = response.json()
         print(data)
 
 

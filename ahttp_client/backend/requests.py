@@ -1,0 +1,142 @@
+"""MIT License
+
+Copyright (c) 2023-present gunyu1019
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+from __future__ import annotations
+
+import requests
+from typing import TYPE_CHECKING
+
+from .base import SyncBackend
+from ..enum import BodyType
+
+if TYPE_CHECKING:
+    from typing import Any, Optional, Callable
+    from ..request import RequestCore
+
+
+class RequestsBackend(SyncBackend):
+    """Backend adapter for :class:`requests.Session`.
+
+    Requires the ``requests`` package (``pip install requests``). Registered
+    for ``requests.Session`` and used when a session is created with
+    ``Session(base_url, requests.Session)``.
+
+    ``requests.Response`` has no built-in closed state, so this backend
+    tracks it manually via an internal ``_closed`` flag that is only ever
+    set by :meth:`session_close`.
+    """
+
+    session_cls = requests.Session
+    response_cls = requests.Response
+    session: requests.Session
+
+    def __init__(self, session: type[requests.Session], **kwargs: Any) -> None:
+        super(RequestsBackend, self).__init__(session, **kwargs)
+        self._closed = False
+
+    def response_data(self, response_obj: requests.Response) -> bytes:
+        return response_obj.content
+
+    def response_text(self, response_obj: requests.Response) -> str:
+        return response_obj.text
+
+    def response_json(
+        self,
+        response_obj: requests.Response,
+        json_parser: Optional[Callable[..., Any]] = None,
+        json_kwargs: Optional[dict[str, Any]] = None,
+    ) -> Optional[Any]:
+        if not response_obj.content:
+            return None
+
+        json_kwargs = json_kwargs or dict()
+        if json_parser is not None:
+            return json_parser(response_obj.content, **json_kwargs)
+        return response_obj.json(**json_kwargs)
+
+    def response_status(self, response_obj: requests.Response) -> int:
+        return response_obj.status_code
+
+    def response_headers(self, response_obj: requests.Response) -> dict[str, Any]:
+        return dict(response_obj.headers)
+
+    def response_url(self, response_obj: requests.Response) -> str:
+        return response_obj.url
+
+    def response_close(self, response_obj: requests.Response) -> None:
+        response_obj.close()
+
+    def response_closed(self, response_obj: requests.Response) -> Optional[bool]:
+        return None
+
+    @property
+    def session_closed(self) -> bool:
+        return self._closed
+
+    def get_request_kwargs(self, request_obj: RequestCore[Any, Any]) -> dict[str, Any]:
+        request_kwargs = dict(request_obj.request_kwargs)
+        if len(request_obj.headers) > 0:
+            request_kwargs["headers"] = request_obj.headers
+        if len(request_obj.params) > 0:
+            request_kwargs["params"] = request_obj.params
+
+        if request_obj.is_body:
+            body_type = request_obj.body_type
+            if body_type == BodyType.JSON:
+                request_kwargs["json"] = request_obj.body
+            elif body_type == BodyType.URL_ENCODED:
+                request_kwargs["data"] = request_obj.body
+            elif body_type == BodyType.FORM_DATA:
+                files = {
+                    k: (None, v if isinstance(v, (str, bytes)) else str(v)) for k, v in (request_obj.body or {}).items()
+                }
+                files.update(request_obj._body_file or {})
+                request_kwargs["files"] = files
+            elif body_type == BodyType.RAW:
+                request_kwargs["data"] = request_obj.body
+        return request_kwargs
+
+    def session_close(self) -> None:
+        self.session.close()
+        self._closed = True
+
+    def session_request(self, method: str, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.request(method, path, **kwargs)
+
+    def session_get(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.get(path, **kwargs)
+
+    def session_post(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.post(path, **kwargs)
+
+    def session_options(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.options(path, **kwargs)
+
+    def session_delete(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.delete(path, **kwargs)
+
+    def session_patch(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.patch(path, **kwargs)
+
+    def session_put(self, path: str, **kwargs: Any) -> requests.Response:
+        return self.session.put(path, **kwargs)

@@ -21,16 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .component import Component
+from ahttp_client.retry import RetryConfig, retry
 
+retry("three")  # type: ignore[arg-type]
+retry(backoff_factor="slow")  # type: ignore[arg-type]
+retry(retry_on=ValueError())  # type: ignore[arg-type]
+retry(max_delay="never")  # type: ignore[arg-type]
+retry(retry_unsafe=1)  # type: ignore[arg-type]
 
-class BodyJson(Component):
-    """This class defines the parameters of a function used in Body of the HTTP request in dictionary format.
-
-    Examples
-    --------
-    >>> def function(data: typing.Annotated[str, BodyJson]):
-    ...    pass
-    """
-
-    pass
+RetryConfig(max_retries="three")  # type: ignore[arg-type]
+RetryConfig(backoff_factor="slow")  # type: ignore[arg-type]
+RetryConfig(retry_on=(ValueError(),))  # type: ignore[arg-type]
+RetryConfig(max_delay="never")  # type: ignore[arg-type]
+RetryConfig(retry_unsafe=1)  # type: ignore[arg-type]

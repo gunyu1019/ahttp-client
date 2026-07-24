@@ -11,27 +11,27 @@ A component for HTTP sending. (Header, Query, Path, Body)
     :members:
     :member-order: groupwise
 
-.. autoclass:: ahttp_client.body_json.BodyJson()
+.. autoclass:: ahttp_client.component.Body()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.body.Body()
+.. autoclass:: ahttp_client.component.BodyJson()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.form.Form()
+.. autoclass:: ahttp_client.component.BodyForm()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.header.Header()
+.. autoclass:: ahttp_client.component.Header()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.path.Path()
+.. autoclass:: ahttp_client.component.Path()
     :members:
     :show-inheritance:
 
-.. autoclass:: ahttp_client.query.Query()
+.. autoclass:: ahttp_client.component.Query()
     :members:
     :show-inheritance:
 
@@ -54,18 +54,20 @@ Request Core
 
         .. code-block:: python
 
-            class GithubService(Session):
+            class GithubService(AsyncSession):
                 def __init__(self, token: str):
                     self.token = token
-                    super().__init__("https://api.github.com")
+                    super().__init__("https://api.github.com", aiohttp.ClientSession)
 
                 @request("GET", "/users/{user}/repos")
-                def list_repositories(user: Annotated[str, Path]) -> dict[str, Any]:
-                    pass
+                async def list_repositories(
+                    self, response: Response, user: Annotated[str, Path]
+                ) -> list[dict[str, Any]]:
+                    return response.json()
 
-                @list_repoisitories.before_hook
+                @list_repositories.before_hook
                 async def authorization(self, req_obj: RequestCore, path: str):
-                    req_obj.header["Authorization"] = f"Bearer: {self.token}"
+                    req_obj.headers["Authorization"] = f"Bearer: {self.token}"
                     return req_obj, path
 
     .. py:decorator:: after_hook
@@ -79,19 +81,21 @@ Request Core
 
         .. code-block:: python
 
-            class GithubService(Session):
+            class GithubService(AsyncSession):
                 def __init__(self):
-                    super().__init__("https://api.github.com")
+                    super().__init__("https://api.github.com", aiohttp.ClientSession)
 
                 @request("GET", "/users/{user}/repos")
-                def list_repositories(user: Annotated[str, Path]) -> dict[str, Any]:
-                    pass
+                async def list_repositories(
+                    self, response: Response, user: Annotated[str, Path]
+                ) -> list[dict[str, Any]]:
+                    return response.json()
 
-                @list_repoisitories.after_hook
-                async def validation_status(self, response: aiohttp.ClientResponse):
-                    if response.status_code != 200:
+                @list_repositories.after_hook
+                async def validation_status(self, response: Response):
+                    if response.status != 200:
                         raise Exception("ERROR!")
-                    return await response.json()
+                    return response
 
 .. autodecorator:: ahttp_client.request.request(method: str, path: str)
 
@@ -101,6 +105,8 @@ Request Core
 
 .. autodecorator:: ahttp_client.request.options(path: str)
 
+.. autodecorator:: ahttp_client.request.patch(path: str)
+
 .. autodecorator:: ahttp_client.request.put(path: str)
 
 .. autodecorator:: ahttp_client.request.delete(path: str)
@@ -108,21 +114,29 @@ Request Core
     Same feature as `ahttp_client.request`.
 
 
+Response
+--------
+
+.. autoclass:: ahttp_client.response.Response()
+    :members:
+    :member-order: groupwise
+
+
 Session
 -------
 
-.. autoclass:: ahttp_client.session.Session()
+.. autoclass:: ahttp_client.session.AsyncSession()
     :members:
     :member-order: groupwise
     :exclude-members: single_session
 
-    .. py:decorator:: single_session(base_url: str, loop: Optional[asyncio.AbstractEventLoop], **session_kwargs)
+    .. py:decorator:: single_session(base_url: str, session: type, **session_kwargs)
 
         A single session for one request.
         
         :param str base_url: base url of the API.
-        :param asynico.AbstractEventLoop loop: event loop used for processing HTTP requests.
-        :param  session_kwargs: Keyword argument used in `aiohttp.ClientSession`
+        :param type session: HTTP session class used for processing requests.
+        :param session_kwargs: Keyword arguments passed to the HTTP session class.
         
         .. rubric:: Example
 
@@ -131,7 +145,16 @@ Session
 
         .. code-block:: python
 
-            @Session.single_session("https://api.yhs.kr")
+            @AsyncSession.single_session("https://api.yhs.kr", aiohttp.ClientSession)
             @request("GET", "/bus/station")
-            async def station_query(session: Session, name: Query | str) -> aiohttp.ClientResponse:
+            async def station_query(
+                session: AsyncSession, name: Query | str
+            ) -> Response:
                 pass
+
+.. seealso::
+    This page covers the core request/component/session API. The backend
+    adapter classes have their own page at :doc:`backend`, retry
+    configuration at :doc:`retry`, the serializer/deserializer classes at
+    :doc:`serialization`, and the HTTP exception hierarchy at
+    :doc:`exception`.

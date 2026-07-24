@@ -10,16 +10,17 @@ When a `list_repository_activites` method is called, the request is called as sh
     :linenos:
     :emphasize-lines: 19, 20
 
-    @Session.single_session("https://api.github.com/")
+    @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
     @request("GET", "/repos/{owner}/{repo}/activity")
-    def list_repository_activites(
-        session, 
+    async def list_repository_activites(
+        session: AsyncSession,
+        response: Response,
         owner: Annotated[str, Path],
         repo: Annotated[str, Path],
         activity_type: Annotated[str, Query],
         authorization: Annotated[str, Header]
     ) -> dict[str, Any]:
-        return await response.json()
+        return response.json()
 
     await list_repository_activites(
         owner="gunyu1019",
@@ -35,16 +36,17 @@ When a `list_repository_activites` method is called, the request is called as sh
     
     .. code-block:: python
 
-        @Session.single_session("https://api.github.com/")
+        @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
         @request("GET", "/repos/{owner}/{repo}/activity")
-        def list_repository_activites(
-            session, 
+        async def list_repository_activites(
+            session: AsyncSession,
+            response: Response,
             owner:str | Path,
             repo: str | Path,
             activity_type: str | Query,
             authorization: str | Header  # or, authorization: typing.Union[str, Header]
         ) -> dict[str, Any]:
-            return await response.json()
+            return response.json()
 
     However, using typing.Annotated is recommended to follow correct Python syntax.
 
@@ -52,14 +54,14 @@ Usage by Component
 ------------------
 
 * **Header** - Configure the header for the HTTP component.
-* **Body** - Configure the body for the HTTP component.
-* **Form** - Configure the body with `aiohttp.FormData <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_
-* **BodyJson** - Configure the body with `Dictionaries <https://docs.python.org/3/tutorial/datastructures.html#dictionaries>`_
 * **Query** - Insert a value inside the URL parameter.
 * **Path** - Insert the specified value(s) inside the path placeholder. The path placeholder is using curly brackets: `{}`
+* **Body** - Send the whole request body as one value. `dict`, `list`, and `tuple` are encoded as JSON. Anything else, including a file-like object, is sent as raw body data.
+* **BodyJson** - Send one field of a JSON request body. Several `BodyJson` parameters on the same method are merged into a single JSON object. Use `custom_key` for a nested (dot-separated) key.
+* **BodyForm** - Send one field of a form request body. Adding file metadata (see `metadata`) or passing a file-like value switches the request to `multipart/form-data <https://docs.aiohttp.org/en/v3.8.0/client_reference.html#aiohttp.FormData>`_ automatically; otherwise all `BodyForm` fields are sent URL-encoded.
 
-.. warning:: Defining the Body parameter at HTTP request decoration can only be of one of the following types: Body, BodyJson, or Form.
-    If more than one Component is used, a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_ can be thrown.
+.. warning:: A request can only use one of `Body`, `BodyJson`, or `BodyForm` for its body.
+    Mixing `Body` with `BodyJson` or `BodyForm` on the same method can raise a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_.
 
 Custom Component Name
 ---------------------
@@ -73,16 +75,17 @@ To follow the PEP 8 rules as described, an `ahttp_client` package provides a cus
     :linenos:
     :emphasize-lines: 19, 20
 
-    @Session.single_session("https://api.github.com/")
+    @AsyncSession.single_session("https://api.github.com/", aiohttp.ClientSession)
     @request("GET", "/repos/{owner}/{repo}/activity")
-    def list_repository_activites(
-        session, 
+    async def list_repository_activites(
+        session: AsyncSession,
+        response: Response,
         owner: Annotated[str, Path],
         repo: Annotated[str, Path],
         activity_type: Annotated[str, Query],
         token: Annotated[str, Header.custom_name("Authorization")]
     ) -> dict[str, Any]:
-        return await response.json()
+        return response.json()
 
     await list_repository_activites(
         owner="gunyu1019",
@@ -97,5 +100,5 @@ To follow the PEP 8 rules as described, an `ahttp_client` package provides a cus
 As in the example above, insert the `GITHUB API TOKEN` in token argument of `list_repository_activites` method.
 During the calling process, the key of Header has been overridden to "Authorization".
 
-.. warning:: The custom component name feature only supports Header, Query, BodyJson, and Form. 
-    Using it in other components may cause a `TypeError <https://docs.python.org/3/library/exceptions.html#TypeError>`_.
+.. warning:: Custom component names only work on Header, Query, BodyJson, and BodyForm.
+    `Path` values have to match a placeholder in the request path, and `Body` has no field key to rename in the first place, so calling `custom_name` on either one raises `NotImplementedError <https://docs.python.org/3/library/exceptions.html#NotImplementedError>`_.

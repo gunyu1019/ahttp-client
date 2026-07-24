@@ -7,7 +7,7 @@ name = "ahttp_client"
 dynamic = ["version", "dependencies"]
 description = "A framework for easy asynchronous HTTP request calling with decorations"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [
     {name = "gunyu1019", email = "gunyu1019@yhs.kr"}
@@ -20,9 +20,10 @@ classifiers = [
     "Natural Language :: English",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet",
     "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -30,13 +31,35 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+pydantic = [
+    "pydantic>=2.12",
+]
+marshmallow = [
+    "marshmallow>=3",
+]
+aiohttp = [
+    "aiohttp>=3.11.2",
+]
+httpx = [
+    "httpx>=0.28.1",
+]
+requests = [
+    "requests>=2.32.3",
+]
 test = [
     "pytest",
-    "pytest-cov"
+    "pytest-cov",
+    "aiohttp>=3.11.2",
+    "httpx>=0.28.1",
+    "pydantic>=2.12",
+    "requests>=2.32.3",
 ]
 lint = [
     "pycodestyle",
     "black"
+]
+typecheck = [
+    "mypy==2.3.0",
 ]
 docs = [
     "Sphinx",
@@ -51,10 +74,35 @@ Homepage = "https://github.com/gunyu1019/ahttp-client"
 [tool.setuptools]
 packages = [
     "ahttp_client",
-    "ahttp_client.extension"
+    "ahttp_client.backend",
+    "ahttp_client.serialization",
 ]
 include-package-data = true
 
 [tool.setuptools.dynamic]
 version = {attr = "ahttp_client.__version__"}
 dependencies = { file = "requirements.txt"}
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "integration: tests that make actual loopback HTTP requests",
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py311", "py312", "py313", "py314"]
+
+[tool.mypy]
+python_version = "3.11"
+files = [
+    "ahttp_client",
+    "tests/typecheck",
+]
+plugins = [
+    "ahttp_client.mypy",
+]
+strict = true
+show_error_codes = true
+pretty = true
+warn_unused_configs = true

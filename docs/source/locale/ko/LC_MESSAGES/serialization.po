@@ -1,0 +1,310 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, gunyu1019
+# This file is distributed under the same license as the ahttp-client
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: ahttp-client \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-24 03:58+0900\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: ../../source/serialization.rst:3
+msgid "Serialization"
+msgstr "직렬화 (Serialization)"
+
+#: ../../source/serialization.rst:4
+msgid ""
+"`@serialize` and `@deserialize` convert a request body or a response to "
+"and from a model class. `ahttp_client` ships codecs for `dataclasses "
+"<https://docs.python.org/3/library/dataclasses.html>`_ (no extra "
+"dependency), `pydantic <https://docs.pydantic.dev/latest/>`_, and "
+"`marshmallow <https://marshmallow.readthedocs.io/>`_ out of the box."
+msgstr ""
+"요청 본문이나 응답은 `@serialize` 와 `@deserialize` 로 모델 클래스와 서로 변환할 수 있습니다. "
+"`ahttp_client` 는 `dataclasses "
+"<https://docs.python.org/3/library/dataclasses.html>`_ (추가 의존성 없음), "
+"`pydantic <https://docs.pydantic.dev/latest/>`_, `marshmallow "
+"<https://marshmallow.readthedocs.io/>`_ 코덱을 기본으로 갖추고 있습니다."
+
+#: ../../source/serialization.rst:7
+msgid "Deserializing a Response into a Pydantic Model"
+msgstr "응답을 Pydantic 모델로 역직렬화하기"
+
+#: ../../source/serialization.rst:38
+msgid ""
+"`@deserialize` looks at the method's return annotation (`list[Station]`),"
+" picks the deserializer registered for `Station`, then reads it off the "
+"response through :attr:`Response.model "
+"<ahttp_client.response.Response.model>`. Pair it with "
+"`directly_response=True` and the method body never runs at all — the "
+"decorated method just hands back the deserialized model."
+msgstr ""
+"`@deserialize` 는 메소드의 반환 애너테이션(`list[Station]`)을 보고 `Station` 에 등록된 "
+"deserializer를 고른 다음, :attr:`Response.model "
+"<ahttp_client.response.Response.model>` 로 응답에서 그 값을 읽어옵니다. "
+"`directly_response=True` 와 같이 쓰면 메소드 본문은 아예 실행되지 않고, 역직렬화된 모델이 곧바로 반환됩니다."
+
+#: ../../source/serialization.rst:41
+msgid ""
+"`@serialize` mirrors this in the other direction: instead of the return "
+"annotation, it picks its serializer from whichever parameter is annotated"
+" as the complete request `Body` (see :doc:`component`)."
+msgstr ""
+"`@serialize` 는 방향만 반대일 뿐 동작은 똑같습니다. 반환 애너테이션 대신 요청 본문 전체를 나타내는 `Body` "
+"애너테이션 매개변수에서 serializer를 고릅니다 (:doc:`component` 참고)."
+
+#: ../../source/serialization.rst:44
+msgid "Selecting a Model Type"
+msgstr "모델 타입 선택하기"
+
+#: ../../source/serialization.rst:45
+msgid ""
+"When the model type cannot be inferred from an annotation, pass it "
+"explicitly, such as `@serialize(CreateUser)` or `@deserialize(Station)`. "
+"Any other keyword arguments get forwarded to the serializer or "
+"deserializer once the model type is known — this is the \"late-bind\" "
+"mechanism at work: "
+":meth:`~ahttp_client.serialization.base.BaseCodec.late_bind` holds onto "
+"the options until "
+":meth:`~ahttp_client.serialization.base.BaseSerializer.set_model`/:meth:`~ahttp_client.serialization.base.BaseDeserializer.set_model`"
+" can resolve them against the actual annotated type."
+msgstr ""
+"애너테이션만으로 모델 타입을 추론할 수 없다면 `@serialize(CreateUser)` 나 "
+"`@deserialize(Station)` 처럼 `model` 을 직접 넘기면 됩니다. `model` 을 뺀 나머지 keyword "
+"arguments는 모델 타입이 정해진 뒤에 내부 serializer/deserializer로 넘어갑니다. 이게 바로 \"late-"
+"bind\" 방식인데, :meth:`~ahttp_client.serialization.base.BaseCodec.late_bind`"
+" 가 일단 옵션을 저장해두면, 애너테이션 타입을 알게 되는 시점에 "
+":meth:`~ahttp_client.serialization.base.BaseSerializer.set_model`/:meth:`~ahttp_client.serialization.base.BaseDeserializer.set_model`"
+" 이 실제 값을 확정합니다."
+
+#: ../../source/serialization.rst:49
+msgid "Built-in Codecs"
+msgstr "기본 제공 코덱"
+
+#: ../../source/serialization.rst:52
+msgid "dataclasses"
+msgstr "dataclasses"
+
+#: ../../source/serialization.rst:53
+msgid ""
+"No extra dependency is required. Any `@dataclasses.dataclass`-decorated "
+"class is supported automatically, including nested dataclasses, lists, "
+"and common field types such as `datetime`, `UUID`, `Decimal`, and `Enum`."
+msgstr ""
+"추가 의존성이 필요하지 않습니다. 중첩된 dataclass, 리스트는 물론 `datetime`, `UUID`, `Decimal`, "
+"`Enum` 같은 흔히 쓰이는 필드 타입까지, `@dataclasses.dataclass` 로 데코레이팅된 클래스는 모두 자동으로 "
+"지원됩니다."
+
+#: ../../source/serialization.rst:80
+msgid "pydantic"
+msgstr "pydantic"
+
+#: ../../source/serialization.rst:81
+msgid "`pydantic` package is required."
+msgstr "`pydantic` 패키지가 필요합니다."
+
+#: ../../source/serialization.rst:87
+msgid ""
+"Any `pydantic.BaseModel` subclass is supported. The "
+"serializer/deserializer keyword arguments (`by_alias`, `exclude_none`, "
+"`strict`, ...) map directly onto "
+"`pydantic.BaseModel.model_dump`/`TypeAdapter.validate_python`; see "
+":class:`~ahttp_client.serialization._types.PydanticSerializeOptions` and "
+":class:`~ahttp_client.serialization._types.PydanticDeserializeOptions` "
+"for the full list."
+msgstr ""
+"`pydantic.BaseModel` 서브클래스는 모두 지원됩니다. serializer/deserializer의 keyword "
+"arguments(`by_alias`, `exclude_none`, `strict` 등)는 "
+"`pydantic.BaseModel.model_dump`/`TypeAdapter.validate_python` 인자와 그대로 "
+"매핑되며, 자세한 옵션은 "
+":class:`~ahttp_client.serialization._types.PydanticSerializeOptions` 와 "
+":class:`~ahttp_client.serialization._types.PydanticDeserializeOptions` 를 "
+"참고하세요."
+
+#: ../../source/serialization.rst:90
+msgid "marshmallow"
+msgstr "marshmallow"
+
+#: ../../source/serialization.rst:91
+msgid "`marshmallow` package is required."
+msgstr "`marshmallow` 패키지가 필요합니다."
+
+#: ../../source/serialization.rst:97
+msgid ""
+"A `marshmallow.Schema` **instance** always has to be passed explicitly as"
+" the `schema` keyword argument here — unlike the dataclasses and pydantic"
+" codecs, a schema isn't itself the data's Python type, so there's nothing"
+" for `ahttp_client` to infer it from. For the same reason, pass the "
+"schema *class* explicitly as `model` too, rather than counting on "
+"inference from the `Body`/return annotation: a plain `dict` doesn't tell "
+"`ahttp_client` which schema to use, the way a dataclass or pydantic model"
+" would."
+msgstr ""
+"dataclasses나 pydantic 코덱과 달리, 스키마 자체는 데이터의 파이썬 타입이 아니기 때문에 "
+"`marshmallow.Schema` **인스턴스** 는 항상 `schema` keyword argument로 직접 전달해야 합니다."
+" 같은 이유로, `Body`/반환 애너테이션으로부터의 자동 추론에 의존하는 대신 스키마 *클래스* 도 `model` 에 함께 "
+"명시하는 것이 좋습니다 (평범한 `dict` 는 dataclass나 pydantic 모델과 달리 그 자체만으로는 어떤 스키마를 "
+"사용해야 할지 알 수 없습니다):"
+
+#: ../../source/serialization.rst:125
+msgid "Reference"
+msgstr "Reference"
+
+#: ahttp_client.serialization.base.BaseCodec:1 of
+msgid "Base class for codecs that resolve model-specific implementations."
+msgstr "모델별 구현을 결정하는 코덱의 기본 클래스입니다."
+
+#: ahttp_client.serialization.base.BaseCodec.is_late_bind:1 of
+msgid "Return whether this codec is waiting for a model type."
+msgstr "이 코덱이 모델 타입을 기다리고 있는 상태인지 반환합니다."
+
+#: ahttp_client.serialization.base.BaseCodec.is_model_type:1 of
+msgid "Return whether an annotation contains the configured model type."
+msgstr "애너테이션에 설정된 모델 타입이 포함되어 있는지 반환합니다."
+
+#: ahttp_client.serialization.base.BaseCodec.is_sequence:1 of
+msgid "Return whether *value* is a collection of values to convert."
+msgstr "*value* 가 변환할 값들의 컬렉션인지 반환합니다."
+
+#: ahttp_client.serialization.base.BaseCodec.late_bind:1 of
+msgid "Return a placeholder that stores options until a model type is known."
+msgstr "모델 타입이 확인될 때까지 옵션을 저장해두는 placeholder를 반환합니다."
+
+#: ahttp_client.serialization.base.BaseSerializer:1 of
+msgid "Base codec that converts models into transport-safe values."
+msgstr "모델을 전송 가능한 값으로 변환하는 기본 코덱입니다."
+
+#: ahttp_client.serialization.base.BaseSerializer.from_model:1 of
+msgid "Return the serializer registered for a model annotation, if any."
+msgstr "모델 애너테이션에 등록된 serializer가 있으면 반환합니다."
+
+#: ahttp_client.serialization.base.BaseSerializer.multiple_serialize:1 of
+msgid "Serialize a sequence of models."
+msgstr "모델들의 시퀀스를 직렬화합니다."
+
+#: ahttp_client.serialization.base.BaseSerializer.serialize:1 of
+msgid "Serialize one model or a sequence of models."
+msgstr "모델 하나 또는 모델들의 시퀀스를 직렬화합니다."
+
+#: ahttp_client.serialization.base.BaseSerializer.set_model:1 of
+msgid "Resolve a late-bound serializer for a model annotation."
+msgstr "모델 애너테이션에 대해 late-bind된 serializer를 확정합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.set_model:3
+#: ahttp_client.serialization.base.BaseSerializer.set_model:3 of
+msgid "Keyword arguments override options stored by ``origin_cls``."
+msgstr "keyword arguments는 ``origin_cls`` 에 저장된 옵션을 재정의(override)합니다."
+
+#: ../../source/serialization.rst
+msgid "Raises"
+msgstr "Raises"
+
+#: ahttp_client.serialization.base.BaseDeserializer.set_model:5
+#: ahttp_client.serialization.base.BaseSerializer.set_model:5 of
+msgid "If ``origin_cls`` is not late-bound."
+msgstr "``origin_cls`` 가 late-bind 상태가 아닌 경우 발생합니다."
+
+#: ahttp_client.serialization.base.BaseSerializer.single_serialize:1 of
+msgid "Serialize one model."
+msgstr "모델 하나를 직렬화합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer:1 of
+msgid "Base codec that converts transport-safe values into models."
+msgstr "전송 가능한 값을 모델로 변환하는 기본 코덱입니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.deserialize:1 of
+msgid "Deserialize one value or a sequence of values."
+msgstr "값 하나 또는 값들의 시퀀스를 역직렬화합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.from_model:1 of
+msgid "Return the deserializer registered for a model annotation, if any."
+msgstr "모델 애너테이션에 등록된 deserializer가 있으면 반환합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.get_data:1 of
+msgid "Extract deserializer input from a response."
+msgstr "응답으로부터 deserializer의 입력값을 추출합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.get_data:3 of
+msgid ""
+"Custom deserializers that consume the response object directly can rely "
+"on this identity implementation."
+msgstr "응답 객체를 직접 사용하는 커스텀 deserializer는 이 항등(identity) 구현을 그대로 활용할 수 있습니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.multiple_deserialize:1 of
+msgid "Deserialize a sequence of values into models."
+msgstr "값들의 시퀀스를 모델들로 역직렬화합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.set_model:1 of
+msgid "Resolve a late-bound deserializer for a model annotation."
+msgstr "모델 애너테이션에 대해 late-bind된 deserializer를 확정합니다."
+
+#: ahttp_client.serialization.base.BaseDeserializer.single_deserialize:1 of
+msgid "Deserialize one value into a model."
+msgstr "값 하나를 모델로 역직렬화합니다."
+
+#: ahttp_client.serializer.serialize:1 of
+msgid "Decorate a request to serialize its complete body."
+msgstr "본문 전체를 직렬화하도록 요청을 데코레이팅합니다."
+
+#: ahttp_client.serializer.serialize:3 of
+msgid ""
+"When ``model`` is empty, the serializer is selected from the complete "
+"body parameter annotation. Serializer keyword arguments are applied after"
+" the model type is resolved."
+msgstr ""
+"``model`` 이 비어 있으면, 본문 전체를 나타내는 매개변수의 애너테이션으로부터 serializer가 선택됩니다. "
+"serializer의 keyword arguments는 모델 타입이 결정된 뒤에 적용됩니다."
+
+#: ../../source/serialization.rst
+msgid "Parameters"
+msgstr "Parameters"
+
+#: ahttp_client.serializer.serialize:7 of
+msgid "Model type used to select a registered serializer."
+msgstr "등록된 serializer를 선택하는 데 사용되는 모델 타입입니다."
+
+#: ahttp_client.serializer.serialize:9 of
+msgid "Keyword arguments forwarded to the serializer constructor."
+msgstr "serializer 생성자로 전달되는 keyword arguments입니다."
+
+#: ahttp_client.serializer.serialize:11 of
+msgid "If no serializer is registered for the model type."
+msgstr "해당 모델 타입에 등록된 serializer가 없는 경우 발생합니다."
+
+#: ahttp_client.serializer.deserialize:1 of
+msgid "Decorate a request to deserialize its HTTP response."
+msgstr "HTTP 응답을 역직렬화하도록 요청을 데코레이팅합니다."
+
+#: ahttp_client.serializer.deserialize:3 of
+msgid ""
+"When ``model`` is empty, the deserializer is selected from the return "
+"annotation. Deserializer keyword arguments are applied after the model "
+"type is resolved."
+msgstr ""
+"``model`` 이 비어 있으면, 반환 애너테이션으로부터 deserializer가 선택됩니다. deserializer의 "
+"keyword arguments는 모델 타입이 결정된 뒤에 적용됩니다."
+
+#: ahttp_client.serializer.deserialize:7 of
+msgid "Model type used to select a registered deserializer."
+msgstr "등록된 deserializer를 선택하는 데 사용되는 모델 타입입니다."
+
+#: ahttp_client.serializer.deserialize:9 of
+msgid "Keyword arguments forwarded to the deserializer constructor."
+msgstr "deserializer 생성자로 전달되는 keyword arguments입니다."
+
+#: ahttp_client.serializer.deserialize:11 of
+msgid "If no deserializer is registered for the model type."
+msgstr "해당 모델 타입에 등록된 deserializer가 없는 경우 발생합니다."
+

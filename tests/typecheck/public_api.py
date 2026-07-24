@@ -21,27 +21,46 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Any
-from .component import Component
+from ahttp_client import (
+    AsyncSession,
+    BaseSession,
+    Body,
+    BodyForm,
+    BodyJson,
+    Header,
+    Path,
+    Query,
+    RequestCore,
+    Response,
+    Session,
+    delete,
+    get,
+    options,
+    patch,
+    post,
+    request,
+    retry,
+    put,
+)
 
-
-class Query(Component):
-    """This class is used when a function's parameters are used as query in an HTTP request.
-
-    Examples
-    --------
-    >>> def function(query: str | Query):
-    ...    pass
-    """
-
-    DEFAULT_KEY = "__DEFAULT_QUERY__"
-
-    @staticmethod
-    def default_query(key: str, value: Any):
-        def decorator(func):
-            if not hasattr(func, Query.DEFAULT_KEY):
-                setattr(func, Query.DEFAULT_KEY, dict())
-            getattr(func, Query.DEFAULT_KEY)[key] = value
-            return func
-
-        return decorator
+print(
+    AsyncSession,
+    BaseSession,
+    Body,
+    BodyForm,
+    BodyJson,
+    Header,
+    Path,
+    Query,
+    RequestCore,
+    Response,
+    Session,
+    delete,
+    get,
+    options,
+    patch,
+    post,
+    request,
+    retry,
+    put,
+)

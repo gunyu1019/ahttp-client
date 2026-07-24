@@ -21,9 +21,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .multiple_hook import multiple_hook
-from .pydantic import (
-    get_pydantic_response_model,
-    pydantic_response_model,
-    pydantic_request_model,
-)
+from .base import BaseCodec, BaseSerializer, BaseDeserializer
+from .dataclasses import DataclassesDeserializer, DataclassesSerializer
+
+__all__ = [
+    "BaseCodec",
+    "BaseSerializer",
+    "BaseDeserializer",
+    "DataclassesSerializer",
+    "DataclassesDeserializer",
+]
+
+try:
+    from .pydantic import PydanticSerializer, PydanticDeserializer
+except ModuleNotFoundError as exc:
+    if exc.name != "pydantic":
+        raise
+else:
+    __all__ += ["PydanticSerializer", "PydanticDeserializer"]
+
+try:
+    from .marshmallow import MarshmallowSerializer, MarshmallowDeserializer
+except ModuleNotFoundError as exc:
+    if exc.name != "marshmallow":
+        raise
+else:
+    __all__ += ["MarshmallowSerializer", "MarshmallowDeserializer"]
