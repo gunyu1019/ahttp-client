@@ -96,6 +96,9 @@ files = [
     "ahttp_client",
     "tests/typecheck",
 ]
+plugins = [
+    "ahttp_client.mypy",
+]
 strict = true
 show_error_codes = true
 pretty = true
