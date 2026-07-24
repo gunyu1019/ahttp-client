@@ -55,4 +55,4 @@ jobs:
           cp tests/typecheck/*.py "$RUNNER_TEMP/typecheck-consumer/"
           python -m pip install --force-reinstall --no-deps "$GITHUB_WORKSPACE"/dist/*.whl
           cd "$RUNNER_TEMP/typecheck-consumer"
-          python -m mypy --strict .
+          python -m mypy --config-file "$GITHUB_WORKSPACE/pyproject.toml" --strict .
