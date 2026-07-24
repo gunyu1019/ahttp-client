@@ -11,25 +11,25 @@ on:
 
 jobs:
   source:
-    name: mypy (Python ${{ matrix.python-version }})
+    name: mypy (Python 3.14; targets 3.11–3.14)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.14"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install ".[typecheck,aiohttp,httpx,requests,pydantic,marshmallow]"
       - name: Run strict type checks
-        run: python -m mypy --python-version "${{ matrix.python-version }}"
+        run: |
+          python -m mypy --python-version 3.11
+          python -m mypy --python-version 3.12
+          python -m mypy --python-version 3.13
+          python -m mypy --python-version 3.14
 
   package:
     name: Installed package typing
@@ -40,7 +40,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
