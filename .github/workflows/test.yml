@@ -61,4 +61,24 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "${{ matrix.backend.extras }}"
       - name: Run backend integration tests
-        run: python -m pytest -v -s tests/integration -k ${{ matrix.backend.selector }}
+        run: python -m pytest -v -s tests/backend_integration -k ${{ matrix.backend.selector }}
+
+  serialization-integration:
+    name: Serialization integration (aiohttp, Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[test]"
+      - name: Run serialization integration tests
+        run: python -m pytest -v -s tests/serialization_integration
