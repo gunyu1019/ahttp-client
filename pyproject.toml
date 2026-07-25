@@ -64,7 +64,10 @@ typecheck = [
 docs = [
     "Sphinx",
     "sphinxawesome-theme",
-    "sphinx-intl"
+    "sphinx-intl",
+    "aiohttp>=3.11.2",
+    "httpx>=0.28.1",
+    "requests>=2.32.3",
 ]
 
 [project.urls]
