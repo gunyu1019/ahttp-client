@@ -135,8 +135,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         Return the response-pipeline result without executing the decorated
         function.
     raise_on: bool
-        Raise :class:`HTTPException` when the HTTP response status is not
-        ``200``.
+        Raise ``HTTPException`` when the HTTP response status is not ``200``.
+        4xx and 5xx statuses use their matching concrete exception class when
+        available.
     params: dict[str, Any]
         Static query parameters.
     headers: dict[str, Any]
@@ -1430,8 +1431,9 @@ def request(
         Return the response after hooks without executing the decorated
         function.
     raise_on: bool
-        Raise :class:`HTTPException` when the HTTP response status is not
-        ``200``.
+        Raise ``HTTPException`` when the HTTP response status is not ``200``.
+        4xx and 5xx statuses use their matching concrete exception class when
+        available.
     header_parameter: list[str]
         Legacy list of parameter names to use as headers.
     query_parameter: list[str]

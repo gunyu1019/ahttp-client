@@ -35,7 +35,7 @@ from .response import Response
 
 
 class RetryConfig:
-    """Configure retry attempts, exception matching, and exponential backoff.
+    """Configure retry attempts, exception/status matching, and exponential backoff.
 
     Parameters
     ----------
@@ -45,19 +45,19 @@ class RetryConfig:
         Multiplier used to calculate the exponential delay before each retry.
     retry_on: tuple[type[Exception], ...]
         Exception classes that trigger another attempt.
-    retry_on_status: tuple[int, ...]
-        HTTP response statuses that trigger another attempt without requiring
-        an exception to be raised.
     max_delay: Optional[float]
         Maximum delay in seconds, or ``None`` for no upper bound.
     retry_unsafe: bool
         Whether retries are explicitly allowed for non-idempotent HTTP
         methods such as POST and PATCH.
+    retry_on_status: tuple[int, ...]
+        HTTP response statuses from 100 through 599 that trigger another
+        attempt without requiring an exception to be raised.
 
     Raises
     ------
     TypeError
-        If a retry count, delay, or exception filter has an invalid type.
+        If a retry count, delay, or retry filter has an invalid type.
     ValueError
         If a retry count or delay is negative or non-finite.
 
@@ -154,7 +154,9 @@ class RetryConfig:
         Returns
         -------
         tuple[Response, Any]
-            Raw response and processed result from the successful attempt.
+            Raw response and processed result from the final attempt. A
+            matching status response is returned when its retry budget is
+            exhausted.
 
         Raises
         ------
@@ -196,7 +198,9 @@ class RetryConfig:
         Returns
         -------
         tuple[Response, Any]
-            Raw response and processed result from the successful attempt.
+            Raw response and processed result from the final attempt. A
+            matching status response is returned when its retry budget is
+            exhausted.
 
         Raises
         ------
@@ -266,15 +270,17 @@ def retry(
     Raises
     ------
     TypeError
-        If a retry count, delay, or exception filter has an invalid type.
+        If a retry count, delay, or retry filter has an invalid type.
     ValueError
         If a retry count or delay is negative or non-finite.
 
     Notes
     -----
     Exceptions raised by request transport or a session-level
-    ``after_request`` hook are eligible for retry. Request-level ``after_hook``
-    callbacks run after the retry operation and are outside its scope.
+    ``after_request`` hook are eligible for retry. ``retry_on_status`` checks
+    returned raw response statuses without requiring an exception. Request-level
+    ``after_hook`` callbacks run after the retry operation and are outside its
+    scope.
     """
     if isinstance(retry_on, type):
         retry_on = (retry_on,)
