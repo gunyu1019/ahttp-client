@@ -144,6 +144,16 @@ Set `directly_response=True` on a request (or a session) when you need the
 case, close it yourself with `await response.async_close()` for async clients
 or `response.close()` for sync clients.
 
+Set `raise_on=True` when an endpoint must treat every status other than `200`
+as a failure. It raises `HTTPException` before the response is returned or
+deserialized, so it also participates in configured retry handling.
+
+```python
+@get("/health", raise_on=True)
+async def health(self) -> None:
+    ...
+```
+
 ### Model serialization
 
 Registered codecs can convert a complete `Body` parameter before transport and

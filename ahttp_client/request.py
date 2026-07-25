@@ -67,6 +67,7 @@ from .component import (
     Query,
 )
 from .enum import Method, BodyFormEncoding, BodyType, DirectResponseType
+from .exception import HTTPException, exception_for_status
 from .response import Response
 from .serialization.base import BaseCodec, BaseSerializer, BaseDeserializer
 from .session import BaseSession
@@ -133,6 +134,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
     directly_response: DirectResponseType | bool
         Return the response-pipeline result without executing the decorated
         function.
+    raise_on: bool
+        Raise :class:`HTTPException` when the HTTP response status is not
+        ``200``.
     params: dict[str, Any]
         Static query parameters.
     headers: dict[str, Any]
@@ -170,6 +174,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         *,
         name: Optional[str] = None,
         directly_response: DirectResponseType | bool = False,
+        raise_on: bool = False,
         params: Optional[dict[str, Any]] = None,
         headers: Optional[dict[str, Any]] = None,
         body: Optional[Any] = None,
@@ -192,6 +197,9 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
         self.path = path
         self.directly_response = directly_response
         DirectResponseType.validate(self.directly_response)
+        if not isinstance(raise_on, bool):
+            raise TypeError("raise_on must be a boolean")
+        self.raise_on = raise_on
 
         self._handler_signature = inspect.signature(self.func)
         self._signature = self._handler_signature
@@ -285,6 +293,7 @@ class RequestCore(Generic[RequestBeforeHookT, RequestAfterHookT], ABC):
             self.path,
             name=self.name,
             directly_response=self.directly_response,
+            raise_on=self.raise_on,
             headers=copy.deepcopy(self.headers),
             params=copy.deepcopy(self.params),
             body=body,
@@ -1226,7 +1235,7 @@ class AsyncRequestCore(
 
         def make_request_func() -> Awaitable[tuple[Response, Any]]:
             req_obj._rewind_retry_streams(stream_positions)
-            return session._make_request(req_obj, formatted_path)
+            return self._make_request_with_status_check(session, req_obj, formatted_path)
 
         if self._retry_config is not None:
             raw_response, response = await self._retry_config.execute_async(make_request_func)
@@ -1257,6 +1266,16 @@ class AsyncRequestCore(
             if should_close_raw_response and not raw_response.closed:
                 await raw_response.async_close()
         return result
+
+    async def _make_request_with_status_check(
+        self, session: AsyncSession, request: RequestCore[Any, Any], path: str
+    ) -> tuple[Response, Any]:
+        raw_response, response = await session._make_request(request, path)
+        if request.raise_on and raw_response.status != 200:
+            if not raw_response.closed:
+                await raw_response.async_close()
+            raise (exception_for_status(raw_response.status) or HTTPException)(raw_response)
+        return raw_response, response
 
 
 class SyncRequestCore(
@@ -1312,7 +1331,7 @@ class SyncRequestCore(
 
         def make_request_func() -> tuple[Response, Any]:
             req_obj._rewind_retry_streams(stream_positions)
-            return session._make_request(req_obj, formatted_path)
+            return self._make_request_with_status_check(session, req_obj, formatted_path)
 
         if self._retry_config is not None:
             raw_response, response = self._retry_config.execute_sync(make_request_func)
@@ -1344,6 +1363,16 @@ class SyncRequestCore(
                 raw_response.close()
         return result
 
+    def _make_request_with_status_check(
+        self, session: Session, request: RequestCore[Any, Any], path: str
+    ) -> tuple[Response, Any]:
+        raw_response, response = session._make_request(request, path)
+        if request.raise_on and raw_response.status != 200:
+            if not raw_response.closed:
+                raw_response.close()
+            raise (exception_for_status(raw_response.status) or HTTPException)(raw_response)
+        return raw_response, response
+
 
 def _make_request_core(
     func: RequestFunction[..., Any],
@@ -1361,6 +1390,7 @@ def request(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1399,6 +1429,9 @@ def request(
     directly_response: DirectResponseType | bool
         Return the response after hooks without executing the decorated
         function.
+    raise_on: bool
+        Raise :class:`HTTPException` when the HTTP response status is not
+        ``200``.
     header_parameter: list[str]
         Legacy list of parameter names to use as headers.
     query_parameter: list[str]
@@ -1434,6 +1467,7 @@ def request(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1453,6 +1487,7 @@ def get(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1481,6 +1516,7 @@ def get(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1500,6 +1536,7 @@ def post(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1528,6 +1565,7 @@ def post(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1547,6 +1585,7 @@ def options(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1575,6 +1614,7 @@ def options(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1594,6 +1634,7 @@ def patch(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1622,6 +1663,7 @@ def patch(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1641,6 +1683,7 @@ def put(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1669,6 +1712,7 @@ def put(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,
@@ -1688,6 +1732,7 @@ def delete(
     *,
     name: Optional[str] = None,
     directly_response: DirectResponseType | bool = False,
+    raise_on: bool = False,
     params: Optional[dict[str, Any]] = None,
     headers: Optional[dict[str, Any]] = None,
     body: Optional[Any] = None,
@@ -1716,6 +1761,7 @@ def delete(
             headers=headers,
             body=body,
             directly_response=directly_response,
+            raise_on=raise_on,
             header_parameter=header_parameter,
             query_parameter=query_parameter,
             form_parameter=form_parameter,

@@ -30,11 +30,14 @@ import pytest
 
 from ahttp_client import Response, request
 from ahttp_client.enum import DirectResponseType
+from ahttp_client.exception import HTTPException
 
 
 class _RawResponse:
     def __init__(self) -> None:
         self.closed = False
+        self.status = 200
+        self.url = "https://example.test/"
 
 
 class _SyncBackend:
@@ -46,6 +49,12 @@ class _SyncBackend:
     def response_close(self, response: _RawResponse) -> None:
         response.closed = True
 
+    def response_status(self, response: _RawResponse) -> int:
+        return response.status
+
+    def response_url(self, response: _RawResponse) -> str:
+        return response.url
+
 
 class _AsyncBackend:
     session = object()
@@ -55,6 +64,12 @@ class _AsyncBackend:
 
     async def response_close(self, response: _RawResponse) -> None:
         response.closed = True
+
+    def response_status(self, response: _RawResponse) -> int:
+        return response.status
+
+    def response_url(self, response: _RawResponse) -> str:
+        return response.url
 
 
 def test_async_close_supports_synchronous_backend_close() -> None:
@@ -121,6 +136,54 @@ class _TransformingSyncSession(_SyncSession):
 class _TransformingAsyncSession(_AsyncSession):
     async def after_request(self, response: Response) -> dict[str, str]:
         return {"transformed": response.payload}
+
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_raise_on_rejects_every_status_except_200(is_async: bool) -> None:
+    if is_async:
+
+        @request("GET", "/", raise_on=True)
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession(DirectResponseType.RESPONSE)
+        session.response.raw.status = 201
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(endpoint._execute(session))
+    else:
+
+        @request("GET", "/", raise_on=True)
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession(DirectResponseType.RESPONSE)
+        session.response.raw.status = 201
+        with pytest.raises(HTTPException) as exc_info:
+            endpoint._execute(session)
+
+    assert exc_info.value.status == 201
+    assert exc_info.value.response is session.response
+    assert session.response.closed is True
+
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_raise_on_defaults_to_false(is_async: bool) -> None:
+    if is_async:
+
+        @request("GET", "/")
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession(DirectResponseType.RESPONSE)
+        session.response.raw.status = 201
+        result = asyncio.run(endpoint._execute(session))
+    else:
+
+        @request("GET", "/")
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession(DirectResponseType.RESPONSE)
+        session.response.raw.status = 201
+        result = endpoint._execute(session)
+
+    assert result is session.response
 
 
 @pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
