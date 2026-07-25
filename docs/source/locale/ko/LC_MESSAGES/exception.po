@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-24 03:58+0900\n"
+"POT-Creation-Date: 2026-07-25 14:48+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -20,11 +20,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: ../../source/exception.rst:3
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:3
 msgid "Exception"
 msgstr "예외 (Exception)"
 
-#: ../../source/exception.rst:4
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:4
 msgid ""
 "`ahttp_client` provides a ready-made exception class for every standard "
 "HTTP 4xx/5xx status code, so error handling does not require checking "
@@ -33,11 +33,11 @@ msgstr ""
 "`ahttp_client` 는 표준 HTTP 4xx/5xx 상태 코드마다 예외 클래스를 미리 만들어둬서, "
 "`response.status` 를 직접 확인하고 커스텀 예외를 던지는 코드를 따로 짤 필요가 없습니다."
 
-#: ../../source/exception.rst:6
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:6
 msgid "Raising an HTTPException from a Response"
 msgstr "응답에서 HTTPException 발생시키기"
 
-#: ../../source/exception.rst:26
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:26
 msgid ""
 "`Response.raise_for_status()` looks up the exception class registered for"
 " the response's status code and raises it, response attached, if it finds"
@@ -47,11 +47,39 @@ msgstr ""
 "`Response.raise_for_status()` 는 응답 상태 코드에 등록된 예외 클래스를 찾아서, 있으면 응답을 붙여 그 "
 "예외를 던집니다. 성공했거나 리다이렉트된 응답(2xx/3xx)은 그냥 놔둡니다."
 
-#: ../../source/exception.rst:29
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:29
+msgid "Request Status Validation"
+msgstr "요청 상태 검증"
+
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:30
+msgid ""
+"Set ``raise_on=True`` on ``@request`` or an HTTP method decorator when an"
+" endpoint accepts only HTTP 200. The request execution path validates the"
+" raw response before it is returned or deserialized. Every other status "
+"raises an exception carrying that response: 4xx and 5xx responses use "
+"their registered subclass (or ``HTTPClientError``/``HTTPServerError``), "
+"while other statuses use the base ``HTTPException``. The response is "
+"closed before the exception is raised."
+msgstr ""
+"엔드포인트가 HTTP 200만 허용할 때 ``@request`` 또는 HTTP 메서드 데코레이터에 ``raise_on=True`` 를 지정합니다. "
+"요청 실행 경로는 응답을 반환하거나 역직렬화하기 전에 원본 응답을 검증합니다. 그 밖의 모든 상태는 해당 응답을 담은 예외를 "
+"발생시킵니다. 4xx와 5xx 응답은 등록된 하위 클래스(또는 ``HTTPClientError``/``HTTPServerError``)를 사용하고, "
+"나머지 상태는 기본 ``HTTPException`` 을 사용합니다. 예외를 발생시키기 전에 응답을 닫습니다."
+
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:45
+msgid ""
+"Unlike ``Response.raise_for_status()``, ``raise_on=True`` rejects all "
+"statuses other than 200, including successful alternatives such as 201 or"
+" 204 and redirects."
+msgstr ""
+"``Response.raise_for_status()`` 와 달리 ``raise_on=True`` 는 201이나 204 같은 다른 성공 상태와 "
+"리다이렉트를 포함해 200 이외의 모든 상태를 거부합니다."
+
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:50
 msgid "Exception Hierarchy"
 msgstr "예외 계층 구조"
 
-#: ../../source/exception.rst:30
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:51
 msgid ""
 "Every exception inherits from :class:`HTTPException "
 "<ahttp_client.exception.HTTPException>`, which carries the `response` "
@@ -60,7 +88,7 @@ msgstr ""
 "모든 예외는 :class:`HTTPException <ahttp_client.exception.HTTPException>` 을 "
 "상속받고, 예외를 유발한 `response` 와 그 `status` 코드, `url` 을 들고 있습니다."
 
-#: ../../source/exception.rst:32
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:53
 msgid ""
 "**HTTPClientError** - the base class for 4xx responses, used directly "
 "whenever a 4xx status has no dedicated class of its own."
@@ -68,11 +96,11 @@ msgstr ""
 "**HTTPClientError** - 4xx 응답을 위한 기본 클래스입니다. 전용 클래스가 없는 4xx 상태 코드에 직접 "
 "사용됩니다."
 
-#: ../../source/exception.rst:33
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:54
 msgid "**HTTPServerError** - the base class for 5xx responses, used the same way."
 msgstr "**HTTPServerError** - 5xx 응답에 대해서도 같은 방식으로 동작합니다."
 
-#: ../../source/exception.rst:34
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:55
 msgid ""
 "Beyond those two, there is one concrete subclass per standard status "
 "code: `HTTPBadRequest` (400), `HTTPNotFound` (404), `HTTPTooManyRequests`"
@@ -83,7 +111,7 @@ msgstr ""
 "(404), `HTTPTooManyRequests` (429), `HTTPInternalServerError` (500), "
 "`HTTPServiceUnavailable` (503) 같은 식입니다."
 
-#: ../../source/exception.rst:36
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:57
 msgid ""
 "RFC 9110 renamed a few statuses; both the current and legacy names are "
 "exported as aliases of the same class: "
@@ -96,18 +124,18 @@ msgstr ""
 "`HTTPRequestURITooLong`/`HTTPURITooLong` (414), "
 "`HTTPUnprocessableEntity`/`HTTPUnprocessableContent` (422)."
 
-#: ../../source/exception.rst:38
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:59
 msgid ""
 "Catching by category instead of exact status code comes in handy when "
 "every 4xx (or every 5xx) response should be retried or logged the same "
 "way:"
 msgstr "정확한 상태 코드 대신 카테고리 단위로 잡으면, 모든 4xx나 5xx 응답을 똑같이 재시도하거나 로그로 남기고 싶을 때 편합니다:"
 
-#: ../../source/exception.rst:52
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:73
 msgid "Combining with Retry"
 msgstr "재시도(Retry)와 함께 사용하기"
 
-#: ../../source/exception.rst:53
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:74
 msgid ""
 "Because `raise_for_status()` turns a failing response into a typed "
 "exception, that exception can be listed directly in `retry_on` (see "
@@ -117,7 +145,23 @@ msgstr ""
 "`raise_for_status()` 가 실패한 응답을 타입 있는 예외로 바꿔주니까, 상태 코드를 직접 검사하는 코드 없이도 그 "
 "예외를 `retry_on` 에 그냥 적어 넣으면 서버 오류에서만 재시도하게 만들 수 있습니다 (:doc:`retry` 참고):"
 
-#: ../../source/exception.rst:70
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:90
+msgid ""
+"``raise_on=True`` performs the same typed conversion for 4xx and 5xx "
+"statuses while also rejecting every non-200 status, so it can be used "
+"directly with the default ``retry_on=(HTTPServerError,)`` configuration:"
+msgstr ""
+"``raise_on=True`` 는 4xx와 5xx 상태에 같은 타입 변환을 적용하면서 200 이외의 모든 상태도 거부하므로, "
+"기본 ``retry_on=(HTTPServerError,)`` 설정과 직접 함께 사용할 수 있습니다:"
+
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:101
+msgid ""
+"Use ``retry_on_status`` instead when the response should be retried "
+"without raising an exception; see :doc:`retry`."
+msgstr ""
+"예외를 발생시키지 않고 응답을 재시도해야 한다면 ``retry_on_status`` 를 사용하세요. :doc:`retry` 를 참고하세요."
+
+#: Z:/aiohttp_client_decorator/docs/source/exception.rst:105
 msgid "Reference"
 msgstr "Reference"
 
@@ -166,4 +210,3 @@ msgstr ""
 #~ "**HTTPServerError** - 5xx 응답을 위한 기본 "
 #~ "클래스입니다. 전용 클래스가 없는 5xx 상태 코드에 "
 #~ "직접 사용됩니다."
-
