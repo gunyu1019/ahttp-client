@@ -25,6 +25,27 @@ Exception
 
 `Response.raise_for_status()` looks up the exception class registered for the response's status code and raises it, response attached, if it finds one. A successful or redirect response (2xx/3xx) passes through untouched.
 
+Request Status Validation
+-------------------------
+Set ``raise_on=True`` on ``@request`` or an HTTP method decorator when an
+endpoint accepts only HTTP 200. The request execution path validates the raw
+response before it is returned or deserialized. Every other status raises an
+exception carrying that response: 4xx and 5xx responses use their registered
+subclass (or ``HTTPClientError``/``HTTPServerError``), while other statuses use
+the base ``HTTPException``. The response is closed before the exception is
+raised.
+
+.. code-block:: python
+
+    class GithubService(AsyncSession):
+        @get("/health", raise_on=True)
+        async def health(self) -> None:
+            ...
+
+Unlike ``Response.raise_for_status()``, ``raise_on=True`` rejects all statuses
+other than 200, including successful alternatives such as 201 or 204 and
+redirects.
+
 Exception Hierarchy
 --------------------
 Every exception inherits from :class:`HTTPException <ahttp_client.exception.HTTPException>`, which carries the `response` that triggered it along with its `status` code and `url`.
@@ -65,6 +86,20 @@ Because `raise_for_status()` turns a failing response into a typed exception, th
         @get("/users/{user}/repos")
         async def list_repositories(self, response: Response, user: Annotated[str, Path]):
             return response.json()
+
+``raise_on=True`` performs the same typed conversion for 4xx and 5xx statuses
+while also rejecting every non-200 status, so it can be used directly with the
+default ``retry_on=(HTTPServerError,)`` configuration:
+
+.. code-block:: python
+
+    @retry(max_retries=3)
+    @get("/health", raise_on=True)
+    async def health(self, response: Response):
+        return response.json()
+
+Use ``retry_on_status`` instead when the response should be retried without
+raising an exception; see :doc:`retry`.
 
 Reference
 ---------

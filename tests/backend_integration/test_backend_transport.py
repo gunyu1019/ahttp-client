@@ -41,7 +41,7 @@ from ahttp_client import (
     Session,
     post,
 )
-from tests.integration.backend_matrix import (
+from tests.backend_integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
     BACKEND_BY_SESSION,
@@ -189,7 +189,7 @@ def _assert_request_kwargs(
         }
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_backends_convert_payloads_on_the_wire(
     backend: type, base_url: str, monkeypatch: pytest.MonkeyPatch
@@ -210,7 +210,7 @@ def test_async_backends_convert_payloads_on_the_wire(
     _assert_request_kwargs(backend, captured, raw_file)
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_backends_convert_payloads_on_the_wire(
     backend: type, base_url: str, monkeypatch: pytest.MonkeyPatch

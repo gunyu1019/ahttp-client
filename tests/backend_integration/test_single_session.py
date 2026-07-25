@@ -31,7 +31,7 @@ from typing import Annotated, Any
 import pytest
 
 from ahttp_client import AsyncSession, Query, Response, Session, get
-from tests.integration.backend_matrix import (
+from tests.backend_integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
     SYNC_BACKEND_IDS,
@@ -39,7 +39,7 @@ from tests.integration.backend_matrix import (
 )
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_single_session_executes_request_and_closes(backend: type, base_url: str) -> None:
     clients: list[AsyncSession] = []
@@ -60,7 +60,7 @@ def test_async_single_session_executes_request_and_closes(backend: type, base_ur
     assert clients[0].closed is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_single_session_executes_request_and_closes(backend: type, base_url: str) -> None:
     clients: list[Session] = []
@@ -81,7 +81,7 @@ def test_sync_single_session_executes_request_and_closes(backend: type, base_url
     assert clients[0].closed is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_single_session_closes_after_user_exception(backend: type, base_url: str) -> None:
     clients: list[AsyncSession] = []
@@ -98,7 +98,7 @@ def test_async_single_session_closes_after_user_exception(backend: type, base_ur
     assert clients[0].closed is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_single_session_closes_after_user_exception(backend: type, base_url: str) -> None:
     clients: list[Session] = []

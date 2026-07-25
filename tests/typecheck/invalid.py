@@ -21,16 +21,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from ahttp_client import AsyncSession, request
 from ahttp_client.retry import RetryConfig, retry
 
 retry("three")  # type: ignore[arg-type]
 retry(backoff_factor="slow")  # type: ignore[arg-type]
 retry(retry_on=ValueError())  # type: ignore[arg-type]
+retry(retry_on_status="503")  # type: ignore[arg-type]
 retry(max_delay="never")  # type: ignore[arg-type]
 retry(retry_unsafe=1)  # type: ignore[arg-type]
 
 RetryConfig(max_retries="three")  # type: ignore[arg-type]
 RetryConfig(backoff_factor="slow")  # type: ignore[arg-type]
 RetryConfig(retry_on=(ValueError(),))  # type: ignore[arg-type]
+RetryConfig(retry_on_status=("503",))  # type: ignore[arg-type]
 RetryConfig(max_delay="never")  # type: ignore[arg-type]
 RetryConfig(retry_unsafe=1)  # type: ignore[arg-type]
+
+
+@request("GET", "/", raise_on=1)  # type: ignore[arg-type]
+async def invalid_raise_on(session: AsyncSession) -> None: ...

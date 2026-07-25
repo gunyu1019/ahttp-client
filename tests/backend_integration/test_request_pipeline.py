@@ -46,7 +46,7 @@ from ahttp_client import (
     post,
 )
 
-from tests.integration.backend_matrix import (
+from tests.backend_integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
     SYNC_BACKEND_IDS,
@@ -247,7 +247,7 @@ def _assert_body_variants(
     assert inferred_file["files"]["upload"][0]["base64"] == base64.b64encode(FILE_CONTENT).decode("ascii")
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_path_query_and_header_are_transmitted(backend: type, base_url: str) -> None:
     payload = asyncio.run(
@@ -269,7 +269,7 @@ def test_async_path_query_and_header_are_transmitted(backend: type, base_url: st
     _assert_components(payload)
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_path_query_and_header_are_transmitted(backend: type, base_url: str) -> None:
     _assert_components(
@@ -290,7 +290,7 @@ def test_sync_path_query_and_header_are_transmitted(backend: type, base_url: str
     )
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_body_json_and_form_variants_are_transmitted(backend: type, base_url: str) -> None:
     _assert_body_variants(
@@ -302,7 +302,7 @@ def test_async_body_json_and_form_variants_are_transmitted(backend: type, base_u
     )
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_body_json_and_form_variants_are_transmitted(backend: type, base_url: str) -> None:
     _assert_body_variants(

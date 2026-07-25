@@ -50,6 +50,7 @@ test = [
     "pytest",
     "pytest-cov",
     "aiohttp>=3.11.2",
+    "marshmallow>=3",
     "httpx>=0.28.1",
     "pydantic>=2.12",
     "requests>=2.32.3",
@@ -64,7 +65,10 @@ typecheck = [
 docs = [
     "Sphinx",
     "sphinxawesome-theme",
-    "sphinx-intl"
+    "sphinx-intl",
+    "aiohttp>=3.11.2",
+    "httpx>=0.28.1",
+    "requests>=2.32.3",
 ]
 
 [project.urls]
@@ -86,7 +90,8 @@ dependencies = { file = "requirements.txt"}
 [tool.pytest.ini_options]
 pythonpath = ["."]
 markers = [
-    "integration: tests that make actual loopback HTTP requests",
+    "backend_integration: tests that compare supported HTTP backends",
+    "serialization_integration: aiohttp loopback tests for third-party codecs",
 ]
 
 [tool.black]

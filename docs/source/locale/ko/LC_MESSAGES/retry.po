@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ahttp-client \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-24 03:58+0900\n"
+"POT-Creation-Date: 2026-07-25 14:48+0900\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: gunyu1019 <gunyu1019@gmail.com>\n"
 "Language: ko\n"
@@ -20,80 +20,107 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: ../../source/retry.rst:3
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:3
 msgid "Retry"
 msgstr "재시도 (Retry)"
 
-#: ../../source/retry.rst:4
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:4
 msgid ""
-"The `@retry` decorator repeats a request automatically when it fails, "
-"waiting longer between each attempt. Stack it on a request method the "
-"same way as `@AsyncSession.single_session` or a hook decorator."
+"The `@retry` decorator repeats a request automatically when it raises a "
+"selected exception or returns a selected HTTP status, waiting longer "
+"between each attempt. Stack it on a request method the same way as "
+"`@AsyncSession.single_session` or a hook decorator."
 msgstr ""
-"요청이 실패하면 시도 간격을 지수적으로 늘려가며(exponential backoff) 자동으로 재시도할 수 있습니다. "
-"`@retry` 데코레이터로 설정하며, `@AsyncSession.single_session` 이나 훅 데코레이터처럼 요청 메소드 "
-"위에 그대로 얹어서 씁니다."
+"`@retry` 데코레이터는 선택한 예외가 발생하거나 선택한 HTTP 상태가 반환되면, "
+"시도 사이의 대기 시간을 늘려 가며 요청을 자동으로 재시도합니다. "
+"`@AsyncSession.single_session` 또는 훅 데코레이터와 마찬가지로 요청 메서드에 적용합니다."
 
-#: ../../source/retry.rst:7
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:7
 msgid "Retry Example"
 msgstr "재시도 예제"
 
-#: ../../source/retry.rst:40
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:41
 msgid ""
-"Retrying depends on `Response.raise_for_status()`: it turns a 4xx or 5xx "
-"response into the matching :class:`HTTPException "
+"Exception-based retries use ``retry_on``. Calling "
+"`Response.raise_for_status()` in a session-level ``after_request()`` hook"
+" turns a 4xx or 5xx response into the matching :class:`HTTPException "
 "<ahttp_client.exception.HTTPException>` subclass (see :doc:`exception`), "
-"and that exception is what `retry_on` catches. Without it, a failed "
-"response returns normally, and there is no exception for `retry` to act "
-"on."
+"which ``retry_on`` can catch. Alternatively, ``raise_on=True`` on a "
+"request treats every status other than 200 as a failure before the "
+"request result is returned."
 msgstr ""
-"`Response.raise_for_status()` 는 4xx나 5xx 응답을 그에 맞는 :class:`HTTPException "
-"<ahttp_client.exception.HTTPException>` 하위 클래스로 바꿔줍니다 (:doc:`exception` "
-"참고). 이 변환이 있어야 그 응답이 `retry_on` 대상이 될 수 있는 것이고, 이 메소드를 호출하지 않으면 실패한 응답도 "
-"그냥 그대로 반환될 뿐이라 `retry` 가 잡을 예외 자체가 생기지 않습니다."
+"예외 기반 재시도에는 ``retry_on`` 을 사용합니다. 세션 수준 ``after_request()`` 훅에서 "
+"`Response.raise_for_status()` 를 호출하면 4xx 또는 5xx 응답이 해당 :class:`HTTPException "
+"<ahttp_client.exception.HTTPException>` 하위 클래스로 변환되고(:doc:`exception` 참고), "
+"``retry_on`` 이 이 예외를 잡을 수 있습니다. 또는 요청에 ``raise_on=True`` 를 지정하면 요청 결과를 "
+"반환하기 전에 200 이외의 모든 상태를 실패로 처리합니다."
 
-#: ../../source/retry.rst:43
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:49
+msgid ""
+"Status-based retries use ``retry_on_status`` and do not require an "
+"exception or an ``after_request()`` hook. Use it when a response status "
+"itself should be retried while still allowing the final response to be "
+"returned normally:"
+msgstr ""
+"상태 코드 기반 재시도에는 ``retry_on_status`` 를 사용하며 예외나 ``after_request()`` 훅이 필요하지 않습니다. "
+"최종 응답은 정상적으로 반환하면서, 응답 상태 자체를 재시도해야 할 때 사용합니다:"
+
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:61
 msgid "Backoff and Retry Scope"
 msgstr "백오프와 재시도 범위"
 
-#: ../../source/retry.rst:44
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:62
 msgid ""
 "The defaults retry up to three times after the initial request, triggered"
-" by `HTTPServerError` (any 5xx response)."
-msgstr "기본값은 최초 요청 이후 최대 세 번 재시도이고, `HTTPServerError` (모든 5xx 응답)를 재시도 트리거로 씁니다."
+" by ``HTTPServerError``. To make a returned 5xx response raise that "
+"exception, use ``Response.raise_for_status()`` or ``raise_on=True``. "
+"``retry_on_status`` defaults to an empty tuple."
+msgstr ""
+"기본값은 최초 요청 이후 최대 세 번 재시도하며, ``HTTPServerError`` 가 이를 유발합니다. 반환된 5xx "
+"응답에서 이 예외를 발생시키려면 ``Response.raise_for_status()`` 또는 ``raise_on=True`` 를 사용합니다. "
+"``retry_on_status`` 의 기본값은 빈 튜플입니다."
 
-#: ../../source/retry.rst:46
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:67
 msgid ""
 "The wait before retry attempt `n` is `backoff_factor * 2 ** (n - 1)` "
 "seconds, capped by `max_delay` when it is set. With the defaults above "
 "(`backoff_factor=0.5`, `max_delay=4.0`), the delays are `0.5`, `1.0`, "
 "`2.0`, and `4.0` (capped) seconds."
 msgstr ""
+"``retry_on`` 은 예외 클래스 하나 또는 튜플을 받으므로 ``TimeoutError`` 같은 전송 단계 실패를 "
+"``HTTPServerError`` 와 함께, 또는 대신 사용할 수 있습니다. ``retry_on_status`` 도 하나의 HTTP 상태 코드 "
+"또는 100부터 599까지의 상태 코드 튜플을 받습니다. 재시도할 시도의 응답은 자동으로 닫습니다. 재시도 횟수를 모두 "
+"소진하면 마지막으로 일치한 상태 응답은 미리 닫지 않고 일반 응답 처리 과정을 계속 진행합니다."
 "`n` 번째 재시도까지의 대기 시간은 `backoff_factor * 2 ** (n - 1)` 초이고, `max_delay` 를 "
 "정해두면 그 값이 상한이 됩니다. 위 예제 기본값(`backoff_factor=0.5`, `max_delay=4.0`)이라면 대기 "
 "시간은 순서대로 `0.5`, `1.0`, `2.0`, `4.0` (상한 적용) 초가 됩니다."
 
-#: ../../source/retry.rst:48
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:69
 msgid ""
-"`retry_on` also accepts a tuple, so transport-level failures such as "
-"`TimeoutError` can be added alongside `HTTPServerError`, or used in its "
-"place."
+"``retry_on`` accepts one exception class or a tuple, so transport-level "
+"failures such as ``TimeoutError`` can be added alongside "
+"``HTTPServerError``, or used in its place. ``retry_on_status`` likewise "
+"accepts one HTTP status code or a tuple of status codes from 100 through "
+"599. Responses from attempts that will be retried are closed "
+"automatically. When the retry budget is exhausted, the final matching-"
+"status response is not pre-closed and proceeds through normal response "
+"handling."
 msgstr ""
-"`retry_on` 은 튜플도 받습니다. `HTTPServerError` 옆에 `TimeoutError` 같은 전송 단계 실패를 "
-"같이 넣거나, 아예 통째로 바꿔치기할 수도 있습니다."
 
-#: ../../source/retry.rst:50
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:77
 msgid ""
-"Retries only cover exceptions from request transport or the session-level"
-" `after_request()` hook. A request-level `after_hook` (see "
-":doc:`hooking`) runs after the retry operation is already done, so "
-"anything it raises never gets retried."
+"Exception retries cover failures from request transport, a session-level "
+"``after_request()`` hook, and ``raise_on=True`` validation. Status "
+"retries inspect the response before request-level ``after_hook`` "
+"callbacks run. A request-level ``after_hook`` (see :doc:`hooking`) runs "
+"after the retry operation is already done, so anything it raises never "
+"gets retried."
 msgstr ""
-"재시도 대상은 요청 전송 과정이나 세션 단위 `after_request()` 훅에서 난 예외뿐입니다. 요청 단위 "
-"`after_hook` (:doc:`hooking` 참고)은 재시도가 다 끝난 다음에 실행되기 때문에, 여기서 예외가 나도 "
-"재시도되지 않습니다."
+"예외 재시도는 요청 전송, 세션 수준 ``after_request()`` 훅, ``raise_on=True`` 검증에서 발생한 실패를 "
+"처리합니다. 상태 재시도는 요청 수준 ``after_hook`` 콜백이 실행되기 전에 응답을 검사합니다. 요청 수준 "
+"``after_hook`` (:doc:`hooking` 참고)은 재시도 작업이 끝난 뒤 실행되므로, 여기서 발생한 예외는 재시도되지 않습니다."
 
-#: ../../source/retry.rst:52
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:84
 msgid ""
 "`max_retries`, `backoff_factor`, and `max_delay` all need to be finite, "
 "non-negative values. Bad values raise `TypeError` or `ValueError` as soon"
@@ -102,11 +129,19 @@ msgstr ""
 "`max_retries`, `backoff_factor`, `max_delay` 는 전부 유한하고 음수가 아닌 값이어야 합니다. "
 "잘못된 값을 넣으면 `@retry` 가 적용되는 순간 `TypeError` 나 `ValueError` 가 납니다."
 
-#: ../../source/retry.rst:55
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:86
+msgid ""
+"Automatic retries are limited to idempotent HTTP methods. Retrying a "
+"POST, PATCH, or another non-idempotent request can duplicate a server-"
+"side operation, so it must be explicitly enabled with "
+"`retry_unsafe=True`."
+msgstr ""
+
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:89
 msgid "Decoration Order"
 msgstr "데코레이션 순서"
 
-#: ../../source/retry.rst:56
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:90
 msgid ""
 "`@retry` works whether it sits above or below `@request` (or `@get`, "
 "`@post`, etc.) on the same method — both orders end up with the same "
@@ -115,15 +150,18 @@ msgstr ""
 "`@retry` 는 같은 메소드에서 `@request` (또는 `@get`, `@post` 등) 위에 두든 아래에 두든 "
 "상관없습니다. 둘 다 똑같은 재시도 설정이 적용됩니다:"
 
-#: ../../source/retry.rst:73
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst:107
 msgid "Reference"
 msgstr "Reference"
 
 #: ahttp_client.retry.RetryConfig:1 of
-msgid "Configure retry attempts, exception matching, and exponential backoff."
-msgstr "재시도 횟수, 예외 매칭, 지수 백오프를 설정합니다."
+msgid ""
+"Configure retry attempts, exception/status matching, and exponential "
+"backoff."
+msgstr "재시도 횟수, 예외/상태 매칭, 지수 백오프를 설정합니다."
 
-#: ../../source/retry.rst ahttp_client.retry.retry of
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst ahttp_client.retry.retry
+#: of
 msgid "Parameters"
 msgstr "Parameters"
 
@@ -143,23 +181,36 @@ msgstr "재시도를 유발하는 예외 클래스입니다."
 msgid "Maximum delay in seconds, or ``None`` for no upper bound."
 msgstr "최대 지연 시간(초)이며, 상한이 없으면 ``None`` 입니다."
 
-#: ../../source/retry.rst ahttp_client.retry.retry of
+#: ahttp_client.retry.RetryConfig:11 of
+msgid ""
+"Whether retries are explicitly allowed for non-idempotent HTTP methods "
+"such as POST and PATCH."
+msgstr ""
+
+#: ahttp_client.retry.RetryConfig:14 of
+msgid ""
+"HTTP response statuses from 100 through 599 that trigger another attempt "
+"without requiring an exception to be raised."
+msgstr "예외를 발생시키지 않고도 재시도를 유발하는 100부터 599까지의 HTTP 응답 상태입니다."
+
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst ahttp_client.retry.retry
+#: of
 msgid "Raises"
 msgstr "Raises"
 
-#: ahttp_client.retry.RetryConfig:12 ahttp_client.retry.retry:17 of
-msgid "If a retry count, delay, or exception filter has an invalid type."
-msgstr "재시도 횟수, 지연 시간, 예외 필터의 타입이 올바르지 않은 경우 발생합니다."
+#: ahttp_client.retry.RetryConfig:18 ahttp_client.retry.retry:24 of
+msgid "If a retry count, delay, or retry filter has an invalid type."
+msgstr "재시도 횟수, 지연 시간 또는 재시도 필터의 타입이 올바르지 않은 경우 발생합니다."
 
-#: ahttp_client.retry.RetryConfig:13 ahttp_client.retry.retry:18 of
+#: ahttp_client.retry.RetryConfig:19 ahttp_client.retry.retry:25 of
 msgid "If a retry count or delay is negative or non-finite."
 msgstr "재시도 횟수나 지연 시간이 음수이거나 유한하지 않은 경우 발생합니다."
 
-#: ahttp_client.retry.RetryConfig:16 ahttp_client.retry.retry:21 of
+#: ahttp_client.retry.RetryConfig:22 ahttp_client.retry.retry:28 of
 msgid "Notes"
 msgstr "Notes"
 
-#: ahttp_client.retry.RetryConfig:17 of
+#: ahttp_client.retry.RetryConfig:23 of
 msgid ""
 "``max_retries`` excludes the initial request. The delay before retry "
 "attempt ``n`` is ``backoff_factor * 2 ** (n - 1)`` and is capped by "
@@ -179,21 +230,25 @@ msgid ""
 "pipeline result."
 msgstr "원본 응답과 응답 파이프라인 결과를 반환하는, 인자를 받지 않는 호출 가능 객체입니다."
 
-#: ../../source/retry.rst ahttp_client.retry.retry of
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst ahttp_client.retry.retry
+#: of
 msgid "Returns"
 msgstr "Returns"
 
 #: ahttp_client.retry.RetryConfig.execute_async:7
 #: ahttp_client.retry.RetryConfig.execute_sync:7 of
-msgid "Raw response and processed result from the successful attempt."
-msgstr "성공한 시도에서 얻은 원본 응답과 처리된 결과입니다."
+msgid ""
+"Raw response and processed result from the final attempt. A matching "
+"status response is returned when its retry budget is exhausted."
+msgstr "최종 시도의 원본 응답과 처리된 결과입니다. 재시도 횟수를 소진하면 일치한 상태의 응답을 반환합니다."
 
-#: ../../source/retry.rst ahttp_client.retry.retry of
+#: Z:/aiohttp_client_decorator/docs/source/retry.rst ahttp_client.retry.retry
+#: of
 msgid "Return type"
 msgstr "Return type"
 
-#: ahttp_client.retry.RetryConfig.execute_async:10
-#: ahttp_client.retry.RetryConfig.execute_sync:10 of
+#: ahttp_client.retry.RetryConfig.execute_async:12
+#: ahttp_client.retry.RetryConfig.execute_sync:12 of
 msgid ""
 "Re-raises a non-matching exception immediately or the last     matching "
 "exception after the retry budget is exhausted."
@@ -224,22 +279,37 @@ msgid ""
 msgstr "재시도를 유발하는 예외 타입입니다. 기본값은 :class:`HTTPServerError` (5xx 응답)입니다."
 
 #: ahttp_client.retry.retry:11 of
+msgid ""
+"HTTP response statuses that trigger a retry attempt without an exception."
+" Defaults to an empty tuple."
+msgstr "예외 없이 재시도를 유발하는 HTTP 응답 상태입니다. 기본값은 빈 튜플입니다."
+
+#: ahttp_client.retry.retry:14 of
 msgid "Upper bound on the sleep delay in seconds. ``None`` means no cap."
 msgstr "대기 시간의 상한(초)입니다. ``None`` 이면 상한이 없습니다."
 
-#: ahttp_client.retry.retry:14 of
+#: ahttp_client.retry.retry:16 of
+msgid ""
+"Explicitly allow retries for non-idempotent methods. Defaults to "
+"``False`` so POST, PATCH, and other unsafe requests are not repeated "
+"accidentally."
+msgstr ""
+
+#: ahttp_client.retry.retry:21 of
 msgid "Decorator that attaches the retry configuration to a request."
 msgstr "재시도 설정을 요청에 붙이는 데코레이터입니다."
 
-#: ahttp_client.retry.retry:22 of
+#: ahttp_client.retry.retry:29 of
 msgid ""
 "Exceptions raised by request transport or a session-level "
-"``after_request`` hook are eligible for retry. Request-level "
-"``after_hook`` callbacks run after the retry operation and are outside "
-"its scope."
+"``after_request`` hook are eligible for retry. ``retry_on_status`` checks"
+" returned raw response statuses without requiring an exception. Request-"
+"level ``after_hook`` callbacks run after the retry operation and are "
+"outside its scope."
 msgstr ""
-"재시도 대상은 요청 전송 과정이나 세션 단위 ``after_request`` 훅에서 난 예외뿐입니다. 요청 단위 "
-"``after_hook`` 콜백은 재시도가 끝난 뒤에 실행되므로 그 범위 밖입니다."
+"요청 전송 또는 세션 수준 ``after_request`` 훅에서 발생한 예외는 재시도 대상입니다. "
+"``retry_on_status`` 는 예외 없이 반환된 원본 응답 상태를 검사합니다. 요청 수준 ``after_hook`` 콜백은 "
+"재시도 작업이 끝난 뒤 실행되므로 그 범위 밖입니다."
 
 #~ msgid ""
 #~ "Pass one exception class or a "
@@ -253,3 +323,15 @@ msgstr ""
 #~ "대신 `TimeoutError` 같은 전송 단계 실패도 재시도"
 #~ " 대상에 넣을 수 있습니다."
 
+#~ msgid ""
+#~ "`retry_on` also accepts a tuple, so "
+#~ "transport-level failures such as "
+#~ "`TimeoutError` can be added alongside "
+#~ "`HTTPServerError`, or used in its place."
+#~ msgstr ""
+#~ "`retry_on` 은 튜플도 받습니다. `HTTPServerError` "
+#~ "옆에 `TimeoutError` 같은 전송 단계 실패를 같이"
+#~ " 넣거나, 아예 통째로 바꿔치기할 수도 있습니다."
+
+#~ msgid "Raw response and processed result from the successful attempt."
+#~ msgstr "성공한 시도에서 얻은 원본 응답과 처리된 결과입니다."

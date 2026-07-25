@@ -39,6 +39,8 @@ from ahttp_client.retry import RetryConfig, retry
 class _RawResponse:
     def __init__(self) -> None:
         self.closed = False
+        self.status = 200
+        self.url = "https://example.test/"
 
 
 class _SyncBackend:
@@ -50,6 +52,12 @@ class _SyncBackend:
     def response_close(self, response: _RawResponse) -> None:
         response.closed = True
 
+    def response_status(self, response: _RawResponse) -> int:
+        return response.status
+
+    def response_url(self, response: _RawResponse) -> str:
+        return response.url
+
 
 class _AsyncBackend:
     session = object()
@@ -59,6 +67,12 @@ class _AsyncBackend:
 
     async def response_close(self, response: _RawResponse) -> None:
         response.closed = True
+
+    def response_status(self, response: _RawResponse) -> int:
+        return response.status
+
+    def response_url(self, response: _RawResponse) -> str:
+        return response.url
 
 
 class _FailingPreReadBackend(_AsyncBackend):
@@ -85,12 +99,16 @@ class _FailingClosePreReadBackend(_FailingPreReadBackend):
         raise RuntimeError("cleanup failed")
 
 
-def _make_sync_response() -> Response:
-    return Response(_RawResponse(), _SyncBackend())
+def _make_sync_response(status: int = 200) -> Response:
+    raw_response = _RawResponse()
+    raw_response.status = status
+    return Response(raw_response, _SyncBackend())
 
 
-def _make_async_response() -> Response:
-    return Response(_RawResponse(), _AsyncBackend())
+def _make_async_response(status: int = 200) -> Response:
+    raw_response = _RawResponse()
+    raw_response.status = status
+    return Response(raw_response, _AsyncBackend())
 
 
 def test_async_make_request_closes_response_when_pre_read_fails() -> None:
@@ -271,6 +289,7 @@ def test_zero_retries_does_not_require_unsafe_opt_in() -> None:
 def test_retry_default_retry_on_is_http_server_error() -> None:
     config = RetryConfig()
     assert config.retry_on == (HTTPServerError,)
+    assert config.retry_on_status == ()
 
 
 def test_retry_single_exception_type_is_normalized_to_tuple() -> None:
@@ -279,6 +298,14 @@ def test_retry_single_exception_type_is_normalized_to_tuple() -> None:
     async def endpoint(session) -> None: ...
 
     assert endpoint._retry_config.retry_on == (HTTPClientError,)
+
+
+def test_retry_single_status_is_normalized_to_tuple() -> None:
+    @retry(retry_on_status=503)
+    @request("GET", "/")
+    async def endpoint(session) -> None: ...
+
+    assert endpoint._retry_config.retry_on_status == (503,)
 
 
 @pytest.mark.parametrize(
@@ -298,6 +325,10 @@ def test_retry_single_exception_type_is_normalized_to_tuple() -> None:
         ({"retry_on": ValueError}, TypeError, "retry_on"),
         ({"retry_on": (ValueError(),)}, TypeError, "retry_on"),
         ({"retry_on": (BaseException,)}, TypeError, "retry_on"),
+        ({"retry_on_status": 503}, TypeError, "retry_on_status"),
+        ({"retry_on_status": (True,)}, TypeError, "retry_on_status"),
+        ({"retry_on_status": (99,)}, TypeError, "retry_on_status"),
+        ({"retry_on_status": (600,)}, TypeError, "retry_on_status"),
         ({"retry_unsafe": 1}, TypeError, "retry_unsafe"),
     ],
 )
@@ -344,6 +375,122 @@ def test_no_retry_on_success(is_async: bool) -> None:
 
     assert result is good_response
     assert session._call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# Retry on matching response status
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_retries_on_matching_response_status_and_succeeds(is_async: bool) -> None:
+    retry_response = _make_async_response(503) if is_async else _make_sync_response(503)
+    good_response = _make_async_response() if is_async else _make_sync_response()
+
+    if is_async:
+        @retry(max_retries=2, backoff_factor=1.0, retry_on_status=(503,))
+        @request("GET", "/")
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession([retry_response, good_response])
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            result = asyncio.run(endpoint._execute(session))
+        mock_sleep.assert_called_once_with(1.0)
+    else:
+        @retry(max_retries=2, backoff_factor=1.0, retry_on_status=(503,))
+        @request("GET", "/")
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession([retry_response, good_response])
+        with patch("time.sleep") as mock_sleep:
+            result = endpoint._execute(session)
+        mock_sleep.assert_called_once_with(1.0)
+
+    assert retry_response.closed is True
+    assert result is good_response
+    assert session._call_count == 2
+
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_non_matching_response_status_is_not_retried(is_async: bool) -> None:
+    response = _make_async_response(500) if is_async else _make_sync_response(500)
+
+    if is_async:
+        @retry(max_retries=2, retry_on_status=(503,))
+        @request("GET", "/")
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession([response])
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            result = asyncio.run(endpoint._execute(session))
+        mock_sleep.assert_not_called()
+    else:
+        @retry(max_retries=2, retry_on_status=(503,))
+        @request("GET", "/")
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession([response])
+        with patch("time.sleep") as mock_sleep:
+            result = endpoint._execute(session)
+        mock_sleep.assert_not_called()
+
+    assert result is response
+    assert response.closed is False
+    assert session._call_count == 1
+
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_returns_last_matching_response_when_status_retry_is_exhausted(is_async: bool) -> None:
+    first_response = _make_async_response(503) if is_async else _make_sync_response(503)
+    final_response = _make_async_response(503) if is_async else _make_sync_response(503)
+
+    if is_async:
+        @retry(max_retries=1, retry_on_status=503)
+        @request("GET", "/")
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession([first_response, final_response])
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = asyncio.run(endpoint._execute(session))
+    else:
+        @retry(max_retries=1, retry_on_status=503)
+        @request("GET", "/")
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession([first_response, final_response])
+        with patch("time.sleep"):
+            result = endpoint._execute(session)
+
+    assert first_response.closed is True
+    assert result is final_response
+    assert final_response.closed is False
+    assert session._call_count == 2
+
+
+@pytest.mark.parametrize("is_async", [False, True], ids=["sync", "async"])
+def test_raise_on_server_error_retries_with_default_exception_filter(is_async: bool) -> None:
+    failed_response = _make_async_response(503) if is_async else _make_sync_response(503)
+    good_response = _make_async_response() if is_async else _make_sync_response()
+
+    if is_async:
+        @retry(max_retries=1)
+        @request("GET", "/", raise_on=True)
+        async def endpoint(session) -> None: ...
+
+        session = _AsyncSession([failed_response, good_response])
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = asyncio.run(endpoint._execute(session))
+    else:
+        @retry(max_retries=1)
+        @request("GET", "/", raise_on=True)
+        def endpoint(session) -> None: ...
+
+        session = _SyncSession([failed_response, good_response])
+        with patch("time.sleep"):
+            result = endpoint._execute(session)
+
+    assert failed_response.closed is True
+    assert result is good_response
+    assert session._call_count == 2
 
 
 # ---------------------------------------------------------------------------
