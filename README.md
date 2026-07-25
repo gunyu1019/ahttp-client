@@ -228,6 +228,10 @@ default, `HTTPServerError` retries HTTP 5xx failures up to three times after
 the initial request. Call `Response.raise_for_status()` from `after_request()`
 when HTTP error responses should participate in retry handling.
 
+Alternatively, use `retry_on_status` to retry returned response statuses
+directly. This does not require an exception or an `after_request()` hook;
+responses from attempts that will be retried are closed automatically.
+
 ```python
 from typing import Annotated, Any
 
@@ -250,6 +254,7 @@ class GitHubService(AsyncSession):
         max_retries=3,
         backoff_factor=0.5,
         retry_on=(HTTPServerError, TimeoutError),
+        retry_on_status=(502, 503, 504),
         max_delay=4.0,
     )
     @get("/users/{user}/repos")
@@ -262,7 +267,9 @@ class GitHubService(AsyncSession):
 The wait before retry attempt `n` is
 `backoff_factor * 2 ** (n - 1)` seconds and is capped by `max_delay` when set.
 Pass one exception class or a tuple through `retry_on` to include transport or
-application failures.
+application failures. Pass an HTTP status code or a tuple through
+`retry_on_status` to retry responses without raising an exception. If its
+retry budget is exhausted, the last response is returned normally.
 
 Exceptions raised during request transport or the session-level
 `after_request()` hook are eligible for retry. Request-level `after_hook`

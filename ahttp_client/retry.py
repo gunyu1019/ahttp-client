@@ -45,6 +45,9 @@ class RetryConfig:
         Multiplier used to calculate the exponential delay before each retry.
     retry_on: tuple[type[Exception], ...]
         Exception classes that trigger another attempt.
+    retry_on_status: tuple[int, ...]
+        HTTP response statuses that trigger another attempt without requiring
+        an exception to be raised.
     max_delay: Optional[float]
         Maximum delay in seconds, or ``None`` for no upper bound.
     retry_unsafe: bool
@@ -72,6 +75,7 @@ class RetryConfig:
         retry_on: tuple[type[Exception], ...] = (HTTPServerError,),
         max_delay: Optional[float] = None,
         retry_unsafe: bool = False,
+        retry_on_status: tuple[int, ...] = (),
     ) -> None:
         if isinstance(max_retries, bool) or not isinstance(max_retries, int):
             raise TypeError("max_retries must be an integer")
@@ -93,12 +97,18 @@ class RetryConfig:
             isinstance(exception_type, type) and issubclass(exception_type, Exception) for exception_type in retry_on
         ):
             raise TypeError("retry_on must contain only Exception subclasses")
+        if not isinstance(retry_on_status, tuple) or not all(
+            not isinstance(status, bool) and isinstance(status, int) and 100 <= status < 600
+            for status in retry_on_status
+        ):
+            raise TypeError("retry_on_status must contain HTTP status codes")
         if not isinstance(retry_unsafe, bool):
             raise TypeError("retry_unsafe must be a boolean")
 
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.retry_on = retry_on
+        self.retry_on_status = retry_on_status
         self.max_delay = max_delay
         self.retry_unsafe = retry_unsafe
 
@@ -109,6 +119,7 @@ class RetryConfig:
             self.max_retries == other.max_retries
             and self.backoff_factor == other.backoff_factor
             and self.retry_on == other.retry_on
+            and self.retry_on_status == other.retry_on_status
             and self.max_delay == other.max_delay
             and self.retry_unsafe == other.retry_unsafe
         )
@@ -156,11 +167,22 @@ class RetryConfig:
             if attempt > 0:
                 await asyncio.sleep(self._backoff_delay(attempt))
             try:
-                return await make_request_func()
+                raw_response, response = await make_request_func()
             except Exception as exc:
                 if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
                     raise
                 attempt += 1
+                continue
+
+            if (
+                not self.retry_on_status
+                or raw_response.status not in self.retry_on_status
+                or attempt >= self.max_retries
+            ):
+                return raw_response, response
+            if not raw_response.closed:
+                await raw_response.async_close()
+            attempt += 1
 
     def execute_sync(self, make_request_func: Callable[..., tuple[Response, Any]]) -> tuple[Response, Any]:
         """Execute a synchronous request and retry matching failures.
@@ -187,11 +209,22 @@ class RetryConfig:
             if attempt > 0:
                 time.sleep(self._backoff_delay(attempt))
             try:
-                return make_request_func()
+                raw_response, response = make_request_func()
             except Exception as exc:
                 if not isinstance(exc, self.retry_on) or attempt >= self.max_retries:
                     raise
                 attempt += 1
+                continue
+
+            if (
+                not self.retry_on_status
+                or raw_response.status not in self.retry_on_status
+                or attempt >= self.max_retries
+            ):
+                return raw_response, response
+            if not raw_response.closed:
+                raw_response.close()
+            attempt += 1
 
 
 def retry(
@@ -199,6 +232,7 @@ def retry(
     *,
     backoff_factor: float = 1.0,
     retry_on: tuple[type[Exception], ...] | type[Exception] = (HTTPServerError,),
+    retry_on_status: tuple[int, ...] | int = (),
     max_delay: Optional[float] = None,
     retry_unsafe: bool = False,
 ) -> RequestDecorator[Any, Any]:
@@ -214,6 +248,9 @@ def retry(
     retry_on: tuple[type[Exception], ...] | type[Exception]
         Exception types that trigger a retry attempt. Defaults to
         :class:`HTTPServerError` (5xx responses).
+    retry_on_status: tuple[int, ...] | int
+        HTTP response statuses that trigger a retry attempt without an
+        exception. Defaults to an empty tuple.
     max_delay: Optional[float]
         Upper bound on the sleep delay in seconds. ``None`` means no cap.
     retry_unsafe: bool
@@ -241,10 +278,13 @@ def retry(
     """
     if isinstance(retry_on, type):
         retry_on = (retry_on,)
+    if isinstance(retry_on_status, int) and not isinstance(retry_on_status, bool):
+        retry_on_status = (retry_on_status,)
     config = RetryConfig(
         max_retries=max_retries,
         backoff_factor=backoff_factor,
         retry_on=retry_on,
+        retry_on_status=cast(tuple[int, ...], retry_on_status),
         max_delay=max_delay,
         retry_unsafe=retry_unsafe,
     )
