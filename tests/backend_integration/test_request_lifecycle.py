@@ -32,7 +32,7 @@ from typing import Annotated, Any
 import pytest
 
 from ahttp_client import AsyncSession, Header, Path, Query, Response, Session, get
-from tests.integration.backend_matrix import (
+from tests.backend_integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
     BACKEND_BY_SESSION,
@@ -173,7 +173,7 @@ def _header(payload: dict[str, Any], name: str) -> str | None:
     return {key.lower(): value for key, value in payload["headers"].items()}.get(name.lower())
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_validation_and_request_session_hooks(backend: type, base_url: str) -> None:
     async def run() -> tuple[dict[str, Any], dict[str, Any], bool]:
@@ -191,7 +191,7 @@ def test_async_validation_and_request_session_hooks(backend: type, base_url: str
     assert after_called is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_validation_and_request_session_hooks(backend: type, base_url: str) -> None:
     with SyncLifecycleAPI(base_url, backend) as api:
@@ -207,7 +207,7 @@ def test_sync_validation_and_request_session_hooks(backend: type, base_url: str)
     assert after_called is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_direct_response_skips_function_and_can_close(backend: type, base_url: str) -> None:
     async def run() -> tuple[Response, bool]:
@@ -226,7 +226,7 @@ def test_async_direct_response_skips_function_and_can_close(backend: type, base_
     assert response.closed is True
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_direct_response_skips_function_and_can_close(backend: type, base_url: str) -> None:
     with SyncLifecycleAPI(base_url, backend, directly_response=True) as api:
@@ -245,7 +245,7 @@ def _assert_isolated(payload: dict[str, Any], resource: str, value: str, marker:
     assert _header(payload, "X-Marker") == marker
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_concurrent_calls_keep_request_state_isolated(backend: type, base_url: str) -> None:
     async def run() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -261,7 +261,7 @@ def test_async_concurrent_calls_keep_request_state_isolated(backend: type, base_
     _assert_isolated(second, "second", "two", "second-marker")
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_sequential_calls_keep_request_state_isolated(backend: type, base_url: str) -> None:
     with SyncIsolationAPI(base_url, backend) as api:

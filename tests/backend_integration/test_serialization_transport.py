@@ -36,7 +36,7 @@ from pydantic import BaseModel, Field
 from ahttp_client import AsyncSession, Session, post
 from ahttp_client.enum import DirectResponseType
 from ahttp_client.serializer import serialize
-from tests.integration.backend_matrix import (
+from tests.backend_integration.backend_matrix import (
     ASYNC_BACKEND_IDS,
     ASYNC_BACKENDS,
     SYNC_BACKEND_IDS,
@@ -173,7 +173,7 @@ def _assert_dataclass_round_trip(payload: DataclassEchoPayload) -> None:
     }
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", ASYNC_BACKENDS, ids=ASYNC_BACKEND_IDS)
 def test_async_serialization_round_trip(backend: type, base_url: str) -> None:
     async def run() -> tuple[EchoPayload, DataclassEchoPayload]:
@@ -189,7 +189,7 @@ def test_async_serialization_round_trip(backend: type, base_url: str) -> None:
     _assert_dataclass_round_trip(dataclass_payload)
 
 
-@pytest.mark.integration
+@pytest.mark.backend_integration
 @pytest.mark.parametrize("backend", SYNC_BACKENDS, ids=SYNC_BACKEND_IDS)
 def test_sync_serialization_round_trip(backend: type, base_url: str) -> None:
     with SyncSerializationAPI(base_url, backend) as api:
